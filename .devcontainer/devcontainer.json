@@ -11,7 +11,5 @@
         "ms-python.vscode-pylance"
       ]
     }
-  },
-  "forwardPorts": [8000],
-  "runArgs": ["--env-file", ".env"]
+  }
 }
