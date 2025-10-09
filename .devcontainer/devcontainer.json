@@ -12,6 +12,5 @@
       ]
     }
   },
-  "forwardPorts": [8000],
-  "runArgs": ["--env-file", ".env"]
+  "forwardPorts": [8000]
 }
