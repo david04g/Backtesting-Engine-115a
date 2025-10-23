@@ -1,16 +1,13 @@
-#import os
-#import dotenv
+import os
+import dotenv
 from supabase import Client, create_client
 
-"""
 dotenv.load_dotenv()
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_PASS = os.getenv("SUPABASE_PASS")
-"""
 
-#loading url and key in this file, best practice is to try to use env files
-supabase: Client = create_client("https://qlgyxqafprlghppeqjrk.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFsZ3l4cWFmcHJsZ2hwcGVxanJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA5OTI1NzgsImV4cCI6MjA3NjU2ODU3OH0.T1rMmyq6satNMiZbHcjNouB-pmTHIiWV6hnHZ5Zp6pc")
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_PASS)
 
 def add_user(username: str, email: str, password_hash: str):
     try:

@@ -6,4 +6,5 @@ print(f"Result: {result}")
 result = db_util.get_user_by_id(2)
 print(f"Result: {result}")
 
-db_util.delete_user_by_id(2)
+#db_util.delete_user_by_id(2)
+db_util.delete_user_by_username("test_user")
