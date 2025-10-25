@@ -1,7 +1,7 @@
 import os
 import dotenv
 from supabase import Client, create_client
-
+import bcrypt
 dotenv.load_dotenv()
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
@@ -9,8 +9,9 @@ SUPABASE_PASS = os.getenv("SUPABASE_PASS")
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_PASS)
 
-def add_user(username: str, email: str, password_hash: str):
+def add_user(username: str, email: str, password_plain: str):
     try:
+        password_hash = bcrypt.hashpw(password_plain.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         response = supabase.table("users").insert({
             "username": username,
             "email": email,
@@ -25,7 +26,28 @@ def add_user(username: str, email: str, password_hash: str):
             return {"success": False, "message": "user already exists"}
         else:
             return {"success": False, "message": f"error adding user: {e}"}
-        
+
+def login_user(email: str, password_plain: str):
+    try:
+        # ✅ Get user record by email
+        response = supabase.table("users").select("*").eq("email", email).execute()
+
+        if not response.data or len(response.data) == 0:
+            return {"success": False, "message": "User not found"}
+
+        user = response.data[0]
+        stored_hash = user["password_hash"]
+
+        # ✅ Verify password
+        if bcrypt.checkpw(password_plain.encode("utf-8"), stored_hash.encode("utf-8")):
+            return {"success": True, "user": user}
+        else:
+            return {"success": False, "message": "Invalid password"}
+
+    except Exception as e:
+        return {"success": False, "message": f"Error logging in: {e}"}
+
+
 def get_user_by_id(uid: int):
     response = supabase.table("users").select("*").eq("id", uid).execute()
     if response.data:

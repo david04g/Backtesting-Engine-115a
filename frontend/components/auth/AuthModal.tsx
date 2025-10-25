@@ -1,99 +1,126 @@
-import React, { useState } from 'react';
-import { TrendingUp } from 'lucide-react';
-import { AuthModalProps } from '../../types';
+"use client";
+import React, { useState } from "react";
+import { TrendingUp } from "lucide-react";
+import { AuthModalProps } from "../../types";
 
-export const AuthModal: React.FC<AuthModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  initialMode = 'login' 
+export const AuthModal: React.FC<AuthModalProps> = ({
+  isOpen,
+  onClose,
+  initialMode = "login",
 }) => {
-  const [isLoginMode, setIsLoginMode] = useState(initialMode === 'login');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
+  const [isLoginMode, setIsLoginMode] = useState(initialMode === "login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
 
-  const handleSubmit = () => {
-    console.log(isLoginMode ? 'Login' : 'Signup', { email, password, name });
-    // After successful auth, redirect to strategy builder
-    // onClose();
+  const handleSubmit = async () => {
+    const endpoint = isLoginMode
+      ? "http://localhost:8000/api/login_user"
+      : "http://localhost:8000/api/add_user";
+
+    const payload = isLoginMode
+      ? { email, password_hash: password }
+      : { name, email, password_hash: password };
+
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      console.log("✅ Server response:", data);
+    } catch (err) {
+      console.error("❌ Error submitting form:", err);
+    }
   };
 
   if (!isOpen) return null;
-
+   
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-800 rounded-2xl p-8 max-w-md w-full border border-slate-700 relative">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-
-        <div className="text-center mb-8">
-          <TrendingUp className="w-12 h-12 text-blue-400 mx-auto mb-4" />
-          <h2 className="text-3xl font-bold text-white mb-2">
-            {isLoginMode ? 'Welcome Back' : 'Get Started'}
+      <div className="relative flex w-full max-w-4xl bg-white rounded-2xl overflow-hidden shadow-2xl border border-gray-200">
+        {/* Left Panel */}
+        <div className="w-1/2 bg-lime-200 flex flex-col justify-center items-center p-10 text-center">
+          <TrendingUp className="w-12 h-12 text-gray-800 mb-4" />
+          <h2 className="text-3xl font-bold text-gray-800 mb-3">
+            {isLoginMode ? "Welcome !" : "Hello There!"}
           </h2>
-          <p className="text-slate-400">
-            {isLoginMode ? 'Log in to continue building' : 'Create your account to start backtesting'}
+          <p className="text-gray-700 mb-6 max-w-xs">
+            {isLoginMode
+              ? "Backtest your trading. Login to continue."
+              : "Join Simple Strategies to start optimizing your trades!"}
           </p>
+          <button
+            onClick={() => setIsLoginMode(!isLoginMode)}
+            className="px-8 py-2 border border-gray-800 rounded-full font-semibold hover:bg-gray-800 hover:text-white transition-all"
+          >
+            {isLoginMode ? "Sign Up" : "Sign In"}
+          </button>
         </div>
 
-        <div className="space-y-4">
+        <div className="w-1/2 bg-white p-10 flex flex-col justify-center">
+          <h3 className="text-2xl font-semibold text-gray-800 mb-6">
+            {isLoginMode ? "Sign In" : "Create Account"}
+          </h3>
+
           {!isLoginMode && (
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Name</label>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Name
+              </label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-400"
                 placeholder="Your name"
               />
             </div>
           )}
 
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Email</label>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Email
+            </label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-400"
               placeholder="you@example.com"
+              required
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Password</label>
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Password
+            </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-400"
               placeholder="••••••••"
+              required
             />
           </div>
 
           <button
             onClick={handleSubmit}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold transition-colors"
+            className="w-full bg-gray-900 hover:bg-gray-800 text-white py-2 rounded-md font-semibold transition-colors"
           >
-            {isLoginMode ? 'Log In' : 'Create Account'}
+            {isLoginMode ? "Sign In" : "Sign Up"}
           </button>
         </div>
 
-        <div className="mt-6 text-center">
-          <button
-            onClick={() => setIsLoginMode(!isLoginMode)}
-            className="text-slate-400 hover:text-white transition-colors"
-          >
-            {isLoginMode ? "Don't have an account? Sign up" : 'Already have an account? Log in'}
-          </button>
-        </div>
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 transition-colors"
+        >
+          ✕
+        </button>
       </div>
     </div>
   );
