@@ -2,30 +2,27 @@ import React from 'react';
 
 const Navigation: React.FC = () => {
   return (
-    <nav className="flex items-center justify-between px-12 py-6">
-      {/* Logo */}
-      <div className="text-2xl font-semibold">
-        <span className="text-pink-500 italic">Simple</span>
-        <span className="text-gray-800"> Strategies</span>
+    <nav className="px-12 py-6 bg-white border-b border-gray-200">
+      <div className="flex items-center justify-between">
+        <div className="text-2xl font-bold text-gray-800">
+          TradingBacktest
+        </div>
+        
+        <div className="flex items-center gap-8">
+          <a href="#features" className="text-gray-600 hover:text-gray-800 transition-colors">
+            Features
+          </a>
+          <a href="#pricing" className="text-gray-600 hover:text-gray-800 transition-colors">
+            Pricing
+          </a>
+          <a href="#docs" className="text-gray-600 hover:text-gray-800 transition-colors">
+            Docs
+          </a>
+          <button className="px-6 py-2 bg-gray-800 hover:bg-gray-900 text-white rounded-full font-medium transition-colors">
+            Sign in
+          </button>
+        </div>
       </div>
-      
-      {/* Center Navigation */}
-      <div className="flex items-center gap-8">
-        <button className="px-8 py-3 bg-lime-300 hover:bg-lime-400 text-gray-800 rounded-full font-medium transition-colors">
-          Home
-        </button>
-        <button className="px-6 py-3 text-gray-700 hover:text-gray-900 font-medium transition-colors">
-          Product
-        </button>
-        <button className="px-6 py-3 text-gray-700 hover:text-gray-900 font-medium transition-colors">
-          About
-        </button>
-      </div>
-
-      {/* Sign In Button */}
-      <button className="px-8 py-3 bg-lime-300 hover:bg-lime-400 text-gray-800 rounded-full font-medium transition-colors">
-        Sign in
-      </button>
     </nav>
   );
 };
