@@ -117,3 +117,32 @@ def upload_profile_picture_by_user_id(uid: int, file_path: str):
     supabase.table("users").update({"profile_image": public_url}).eq("id", uid).execute()
 
     return public_url
+
+def get_user_password_hash(uid: int):
+    res = supabase.table("users").select("password_hash").eq("id", uid).execute()
+    if res.data and len(res.data) > 0:
+        return res.data[0]["password_hash"]
+    return None
+
+def verify_password(uid: int, password_attempt: str) -> bool:
+    stored_hash = get_user_password_hash(uid)
+    if not stored_hash:
+        print("User not found or no password hash stored.")
+        return False
+
+    return bcrypt.checkpw(password_attempt.encode("utf-8"), stored_hash.encode("utf-8"))
+
+def change_password(uid: int, old_password: str, new_password: str) -> bool:
+    if not verify_password(uid, old_password):
+        print("Old password is incorrect.")
+        return False
+
+    new_hash = bcrypt.hashpw(new_password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    res = supabase.table("users").update({"password_hash": new_hash}).eq("id", uid).execute()
+
+    if res.data:
+        print("Password updated successfully.")
+        return True
+    else:
+        print("Password update failed.")
+        return False
