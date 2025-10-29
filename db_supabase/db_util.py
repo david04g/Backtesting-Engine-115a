@@ -4,6 +4,9 @@ from supabase import Client, create_client
 import bcrypt
 import imghdr
 import mimetypes
+import secrets
+import smtplib
+from email.mime.text import MIMEText
 
 dotenv.load_dotenv()
 
@@ -12,15 +15,19 @@ SUPABASE_PASS = os.getenv("SUPABASE_PASS")
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_PASS)
 
+#note: when creating an account, it will be assigned an account creation time. this, by default,
+#will be in UTC-0 (Greenwich) time. subtract by 8 hours to get UTC-8 (PST) time
 def add_user(username: str, email: str, password_plain: str):
     try:
         password_hash = bcrypt.hashpw(password_plain.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        verification_token = secrets.token_urlsafe(32)
         response = supabase.table("users").insert({
             "username": username,
             "email": email,
             "password_hash": password_hash,
             #insert default pfp
-            "profile_image": "https://qlgyxqafprlghppeqjrk.supabase.co/storage/v1/object/public/profile-pictures/default_profile_image.png"
+            "profile_image": "https://qlgyxqafprlghppeqjrk.supabase.co/storage/v1/object/public/profile-pictures/default_profile_image.png",
+            "verification_token": verification_token
         }).execute()
         if response.data:
             return {"success": True, "user": response.data[0]}
@@ -55,7 +62,7 @@ def get_user_by_id(uid: int):
     else:
         return None
     
-def get_user_by_username(username: int):
+def get_user_by_username(username: str):
     response = supabase.table("users").select("*").eq("username", username).execute()
     if response.data:
         return response.data[0]
@@ -64,15 +71,24 @@ def get_user_by_username(username: int):
 
 def get_all_users():
     response = supabase.table("users").select("*").execute()
-    return response.data if response.data else []
+    if response.data:
+        return response.data
+    else:
+        return []
 
 def delete_user_by_username(username: str):
     response = supabase.table("users").delete().eq("username", username).execute()
-    return {"deleted": len(response.data)} if response.data else {"deleted": 0}
+    if len(response.data) > 0:
+        return True
+    else:
+        return False
 
 def delete_user_by_id(uid: int):
     response = supabase.table("users").delete().eq("id", uid).execute()
-    return {"deleted": len(response.data)} if response.data else {"deleted": 0}
+    if len(response.data) > 0:
+        return True
+    else:
+        return False
 
 def is_image_file(path: str):
     file_type = imghdr.what(path)
@@ -97,10 +113,8 @@ def upload_profile_picture_by_user_id(uid: int, file_path: str):
     if mime_type is None:
         mime_type = "image/png" #fallback if fails, not sure if this is the best idea
 
-    
-
     with open(file_path, "rb") as f:
-        #if user_{uid}.png already exists, it will replace the user_{uid}.png photo
+        #if user_{uid}.png already exists, it will replace the user_{uid}.png photo. otherwise it will upload the db to storage
         res = supabase.storage.from_(bucket).upload(file_name, f, {"upsert": "true", "content-type": mime_type})
 
     """
@@ -109,6 +123,9 @@ def upload_profile_picture_by_user_id(uid: int, file_path: str):
         return None
     """
     #note: as of now, there is no error handling. will be added in future
+    if not res.data:
+        print("something went wrong uploading user profile picture")
+        return None
 
     #build public url
     public_url = f"{os.getenv('SUPABASE_URL')}/storage/v1/object/public/{bucket}/{file_name}"
@@ -117,6 +134,10 @@ def upload_profile_picture_by_user_id(uid: int, file_path: str):
     supabase.table("users").update({"profile_image": public_url}).eq("id", uid).execute()
 
     return public_url
+
+def get_user_id_by_username(username: str):
+    result = get_user_by_username(username)
+    return result["id"] 
 
 def get_user_password_hash(uid: int):
     res = supabase.table("users").select("password_hash").eq("id", uid).execute()
@@ -146,3 +167,27 @@ def change_password(uid: int, old_password: str, new_password: str) -> bool:
     else:
         print("Password update failed.")
         return False
+    
+def verify_email(token: str):
+    res = supabase.table("users").select("id").eq("verification_token", token).execute()
+    if not res.data:
+        return "Invalid or expired token."
+
+    uid = res.data[0]["id"]
+    supabase.table("users").update({
+        "email_verified": True,
+        "verification_token": None
+    }).eq("id", uid).execute()
+
+    return "successfully verified email"
+
+def send_verification_email(email, verification_link):
+    msg = MIMEText(f"Click here to verify your account: {verification_link}")
+    msg["Subject"] = "Verify Your Email"
+    #OUR ACTUAL COMPANY EMAIL GOES HERE
+    msg["From"] = "simple-strategies@gmail.com"
+    msg["To"] = email
+
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        server.login(os.getenv("SMTP_USER"), os.getenv("SMTP_PASS"))
+        server.send_message(msg)
