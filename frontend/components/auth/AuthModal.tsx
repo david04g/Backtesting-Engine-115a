@@ -29,9 +29,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         body: JSON.stringify(payload),
       });
       const data = await res.json();
-      console.log("✅ Server response:", data);
+      console.log(" Server response:", data);
     } catch (err) {
-      console.error("❌ Error submitting form:", err);
+      console.error(" Error submitting form:", err);
     }
   };
 

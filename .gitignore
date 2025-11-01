@@ -12,11 +12,13 @@ dist/
 
 # Misc
 .DS_Store
+Thumbs.db
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+.env.*.local
 
 # Logs
 npm-debug.log*
@@ -29,12 +31,53 @@ lerna-debug.log*
 .vscode/*
 !.vscode/extensions.json
 .idea
+.idea/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+*.swp
+*.swo
 
 # Vite
 *.local
 .vite/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+dist-python/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE
+*.iml
+.project
+.classpath
+.settings/
+
+# OS
+*.DS_Store
+.AppleDouble
+.LSOverride
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
