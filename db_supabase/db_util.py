@@ -29,7 +29,7 @@ def add_user(username: str, email: str, password_plain: str):
 
 def login_user(email: str, password_plain: str):
     try:
-        # ✅ Get user record by email
+      
         response = supabase.table("users").select("*").eq("email", email).execute()
 
         if not response.data or len(response.data) == 0:
@@ -38,7 +38,7 @@ def login_user(email: str, password_plain: str):
         user = response.data[0]
         stored_hash = user["password_hash"]
 
-        # ✅ Verify password
+
         if bcrypt.checkpw(password_plain.encode("utf-8"), stored_hash.encode("utf-8")):
             return {"success": True, "user": user}
         else:

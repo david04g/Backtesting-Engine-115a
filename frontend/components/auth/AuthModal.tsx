@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { TrendingUp } from "lucide-react";
-import { AuthModalProps } from "../../types";
+import { AuthModalProps } from "@types";
 
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
@@ -36,7 +36,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   if (!isOpen) return null;
-   
+
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="relative flex w-full max-w-4xl bg-white rounded-2xl overflow-hidden shadow-2xl border border-gray-200">
