@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { TrendingUp } from "lucide-react";
-import { AuthModalProps } from "@types";
+import { AuthModalProps } from "../../types";
 
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,

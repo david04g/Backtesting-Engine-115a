@@ -4,10 +4,13 @@ from db_supabase.db_util import add_user, login_user
 
 app = FastAPI()
 
-# ✅ Allow frontend to connect
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # You can restrict this later e.g. ["http://localhost:5173"]
+     allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173"  
+    ], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
