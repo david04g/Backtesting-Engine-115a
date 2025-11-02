@@ -6,7 +6,7 @@ import { AuthModalProps } from "../../types";
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
   onClose,
-  initialMode = "login",
+  initialMode,
 }) => {
   const [isLoginMode, setIsLoginMode] = useState(initialMode === "login");
   const [email, setEmail] = useState("");

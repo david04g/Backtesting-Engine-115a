@@ -11,10 +11,7 @@ const Navigation: React.FC = () => {
     setShowAuthModal(true);
   };
 
-  const handleSignupClick = () => {
-    setAuthMode("signup");
-    setShowAuthModal(true);
-  };
+
   return (
     <nav className="flex items-center justify-between px-12 py-6">
       {/* Logo */}
