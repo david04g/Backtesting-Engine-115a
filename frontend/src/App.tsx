@@ -4,6 +4,8 @@ import Navigation from './components/Navigation';
 import Hero from './components/Hero';
 import { ProductContent } from './pages/product';
 import { AboutContent } from './pages/about';
+import { ProfileContent } from './pages/profile';
+import { PortfolioContent } from './pages/portfolio';
 
 const App: React.FC = () => {
   return (
@@ -25,6 +27,18 @@ const App: React.FC = () => {
           <div className="min-h-screen bg-gray-50">
             <Navigation />
             <AboutContent />
+          </div>
+        } />
+        <Route path="/profile" element={
+          <div className="min-h-screen bg-gray-50">
+            <Navigation />
+            <ProfileContent />
+          </div>
+        } />
+        <Route path="/portfolio" element={
+          <div className="min-h-screen bg-gray-50">
+            <Navigation />
+            <PortfolioContent />
           </div>
         } />
       </Routes>

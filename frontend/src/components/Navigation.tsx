@@ -52,6 +52,26 @@ const Navigation: React.FC = () => {
         >
           About
         </Link>
+        <Link
+          to="/profile"
+          className={`px-6 py-3 rounded-full font-medium transition-colors ${
+            location.pathname === "/profile"
+              ? "bg-lime-300 hover:bg-lime-400 text-gray-800"
+              : "text-gray-700 hover:text-gray-900"
+          }`}
+        >
+          Profile
+        </Link>
+        <Link
+          to="/portfolio"
+          className={`px-6 py-3 rounded-full font-medium transition-colors ${
+            location.pathname === "/portfolio"
+              ? "bg-lime-300 hover:bg-lime-400 text-gray-800"
+              : "text-gray-700 hover:text-gray-900"
+          }`}
+        >
+          Portfolio
+        </Link>
         <button
           className="px-6 py-3 rounded-full font-medium"
           onClick={handleLoginClick}
