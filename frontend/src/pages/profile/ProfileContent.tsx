@@ -1,15 +1,10 @@
 import React from 'react';
 import SidebarSimple from '../../components/SidebarSimple';
 
-const StatCard: React.FC<{ title: string; value?: string; className?: string }> = ({ title, value, className }) => (
-  <div className={`rounded-md p-4 border border-black/10`} style={{ backgroundColor: '#D9F2A6' }}>
-    <div className="text-xs font-bold uppercase tracking-wide text-gray-700">{title}</div>
-    {value && (
-      <div className="mt-2 flex items-baseline gap-2">
-        <span className="text-xl font-bold">$</span>
-        <span className="text-lg font-semibold">{value}</span>
-      </div>
-    )}
+const Card: React.FC<{ title?: string; children?: React.ReactNode; bg?: string; className?: string }> = ({ title, children, bg = '#D9F2A6', className }) => (
+  <div className={`rounded-md p-4 border border-black/10 ${className || ''}`} style={{ backgroundColor: bg }}>
+    {title && <div className="text-sm font-bold uppercase tracking-wide text-gray-700">{title}</div>}
+    {children}
   </div>
 );
 
@@ -35,21 +30,32 @@ export const ProfileContent: React.FC = () => {
               </div>
 
               <div className="px-8 py-6 grid grid-cols-12 gap-6">
-                <div className="col-span-6">
-                  <StatCard title="Total Portfolio Value" value="50,000.25" />
-                </div>
-                <div className="col-span-6">
-                  <div className="rounded-md p-4 border border-black/10 h-full" style={{ backgroundColor: '#D9F2A6' }}>
-                    <div className="text-xs font-bold uppercase tracking-wide text-gray-700">Top Strategies</div>
-                    <div className="mt-3 text-sm">
-                      <div className="flex font-semibold"><span className="w-2/3">Name</span><span className="w-1/3">Profit</span></div>
-                      <div className="mt-4 text-xs text-gray-700">EndYear</div>
-                      <div className="mt-1 flex"><span className="w-2/3">2000</span><span className="w-1/3">&nbsp;</span></div>
+                <div className="col-span-7">
+                  <Card title="Learn">
+                    <div className="mt-3 flex items-center gap-3 rounded-md px-4 py-3" style={{ backgroundColor: '#E8B6B6' }}>
+                      <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-black text-white">▶</span>
+                      <span className="text-sm font-semibold">Grow your market mastery</span>
                     </div>
+                  </Card>
+                  <div className="mt-6">
+                    <Card title="Create">
+                      <div className="mt-3 flex items-center gap-3 rounded-md px-4 py-3" style={{ backgroundColor: '#E8B6B6' }}>
+                        <span className="inline-flex h-6 w-6 items-center justify-center rounded bg-white text-black font-bold">＋</span>
+                        <span className="text-sm font-semibold">Create new strategy</span>
+                      </div>
+                    </Card>
                   </div>
                 </div>
-                <div className="col-span-12">
-                  <StatCard title="Total Portfolio Value" />
+                <div className="col-span-5">
+                  <Card>
+                    <div className="text-xs font-bold uppercase text-center mb-3">Current Level</div>
+                    <div className="mx-auto rounded-md p-6 text-center" style={{ backgroundColor: '#F0B3BD' }}>
+                      <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full" style={{ backgroundColor: '#D9F2A6' }}>
+                        <span className="text-2xl">⤴</span>
+                      </div>
+                      <div className="font-extrabold">Level 1</div>
+                    </div>
+                  </Card>
                 </div>
               </div>
             </div>
@@ -61,5 +67,4 @@ export const ProfileContent: React.FC = () => {
 };
 
 export default ProfileContent;
-
 

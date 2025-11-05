@@ -33,15 +33,21 @@ const Navigation: React.FC = () => {
           Home
         </Link>
         <Link
-          to="/product"
+          to="/profile"
           className={`px-6 py-3 rounded-full font-medium transition-colors ${
-            location.pathname === "/product"
+            location.pathname === "/profile"
               ? "bg-lime-300 hover:bg-lime-400 text-gray-800"
               : "text-gray-700 hover:text-gray-900"
           }`}
         >
-          Product
+          Profile
         </Link>
+        <button
+          className="px-6 py-3 rounded-full font-medium"
+          onClick={handleLoginClick}
+        >
+          Login
+        </button>
         <Link
           to="/about"
           className={`px-6 py-3 rounded-full font-medium transition-colors ${
@@ -52,32 +58,6 @@ const Navigation: React.FC = () => {
         >
           About
         </Link>
-        <Link
-          to="/profile"
-          className={`px-6 py-3 rounded-full font-medium transition-colors ${
-            location.pathname === "/profile"
-              ? "bg-lime-300 hover:bg-lime-400 text-gray-800"
-              : "text-gray-700 hover:text-gray-900"
-          }`}
-        >
-          Profile
-        </Link>
-        <Link
-          to="/portfolio"
-          className={`px-6 py-3 rounded-full font-medium transition-colors ${
-            location.pathname === "/portfolio"
-              ? "bg-lime-300 hover:bg-lime-400 text-gray-800"
-              : "text-gray-700 hover:text-gray-900"
-          }`}
-        >
-          Portfolio
-        </Link>
-        <button
-          className="px-6 py-3 rounded-full font-medium"
-          onClick={handleLoginClick}
-        >
-          Login
-        </button>
       </div>
 
       {/* Sign In Button */}
