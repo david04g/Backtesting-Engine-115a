@@ -203,16 +203,23 @@ def verify_email(uid: int, verification_code: int):
     print("Email successfully verified!")
     return True
 
-def send_verification_email(email, verification_code):
-    msg = MIMEText(f"You code to verify your email: {verification_code}")
+def send_verification_email(email):
+    response = supabase.table("users").select("*").eq("email", email).execute()
+    if not response.data:
+        print("No user found with that email.")
+        return
+    verification_code = response.data[0].get("verification_code")
+
+    msg = MIMEText(f"Your code to verify your email: {verification_code}")
     msg["Subject"] = "Verify Your Email"
-    #OUR ACTUAL COMPANY EMAIL GOES HERE
     msg["From"] = os.getenv("SMTP_USER")
     msg["To"] = email
 
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
         server.login(os.getenv("SMTP_USER"), os.getenv("SMTP_PASS"))
         server.send_message(msg)
+    
+    print(f"Verification email sent to {email}")
 
 def generate_new_verification_code(uid: int):
     random_int = random.randint(0, 999999)
