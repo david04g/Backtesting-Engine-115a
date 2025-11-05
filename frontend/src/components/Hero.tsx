@@ -33,9 +33,6 @@ const Hero: React.FC = () => {
             >
               Get started
             </button>
-            <button className="px-8 py-4 bg-lime-300 hover:bg-lime-400 text-gray-800 rounded-full font-medium text-lg transition-colors">
-              View demo
-            </button>
           </div>
         </div>
         <AuthModal

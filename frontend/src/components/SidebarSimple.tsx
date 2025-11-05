@@ -20,7 +20,7 @@ const IconList: React.FC = () => (
 
 export const SidebarSimple: React.FC<SidebarSimpleProps> = ({ active }) => {
   return (
-    <aside className="flex flex-col justify-between" style={{ width: 200, backgroundColor: '#D9F2A6' }}>
+    <aside className="flex flex-col justify-between" style={{ width: 240, backgroundColor: '#D9F2A6' }}>
       <div>
         <div className="px-6 pt-6 text-sm italic text-gray-700">Simple <span className="not-italic font-semibold">Strategies</span></div>
         <nav className="mt-6 space-y-3 px-4">
