@@ -4,8 +4,8 @@ from supabase import Client, create_client
 import bcrypt
 import imghdr
 import mimetypes
-import secrets
 import smtplib
+import random
 from email.mime.text import MIMEText
 
 dotenv.load_dotenv()
@@ -20,14 +20,15 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_PASS)
 def add_user(username: str, email: str, password_plain: str):
     try:
         password_hash = bcrypt.hashpw(password_plain.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-        verification_token = secrets.token_urlsafe(32)
+        random_int = random.randint(0, 999999)
+        verification_string = f"{random_int:06d}"
         response = supabase.table("users").insert({
             "username": username,
             "email": email,
             "password_hash": password_hash,
             #insert default pfp
             "profile_image": "https://qlgyxqafprlghppeqjrk.supabase.co/storage/v1/object/public/profile-pictures/default_profile_image.png",
-            "verification_token": verification_token
+            "verification_code": int(verification_string)
         }).execute()
         if response.data:
             return {"success": True, "user": response.data[0]}
@@ -64,6 +65,13 @@ def get_user_by_id(uid: int):
     
 def get_user_by_username(username: str):
     response = supabase.table("users").select("*").eq("username", username).execute()
+    if response.data:
+        return response.data[0]
+    else:
+        return None
+
+def get_user_by_email(email: str):
+    response = supabase.table("users").select("*").eq("email", email).execute()
     if response.data:
         return response.data[0]
     else:
@@ -139,6 +147,10 @@ def get_user_id_by_username(username: str):
     result = get_user_by_username(username)
     return result["id"] 
 
+def get_user_id_by_email(email: str):
+    result = get_user_by_email(email)
+    return result["id"]
+
 def get_user_password_hash(uid: int):
     res = supabase.table("users").select("password_hash").eq("id", uid).execute()
     if res.data and len(res.data) > 0:
@@ -168,26 +180,53 @@ def change_password(uid: int, old_password: str, new_password: str) -> bool:
         print("Password update failed.")
         return False
     
-def verify_email(token: str):
-    res = supabase.table("users").select("id").eq("verification_token", token).execute()
+def verify_email(uid: int, verification_code: int):
+    res = supabase.table("users").select("id, verification_code").eq("id", uid).execute()
     if not res.data:
-        return "Invalid or expired token."
+        print("User not found")
+        return False
 
-    uid = res.data[0]["id"]
+    user_data = res.data[0]
+    stored_code = user_data.get("verification_code")
+    if stored_code is None:
+        print("No verification code set. Please request a new one.")
+        return False
+
+    if str(stored_code) != str(verification_code):
+        print("Invalid verification code.")
+        return False
+
     supabase.table("users").update({
         "email_verified": True,
-        "verification_token": None
+        "verification_code": None
     }).eq("id", uid).execute()
+    print("Email successfully verified!")
+    return True
 
-    return "successfully verified email"
-
-def send_verification_email(email, verification_link):
-    msg = MIMEText(f"Click here to verify your account: {verification_link}")
+def send_verification_email(email, verification_code):
+    msg = MIMEText(f"You code to verify your email: {verification_code}")
     msg["Subject"] = "Verify Your Email"
     #OUR ACTUAL COMPANY EMAIL GOES HERE
-    msg["From"] = "simple-strategies@gmail.com"
+    msg["From"] = os.getenv("SMTP_USER")
     msg["To"] = email
 
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
         server.login(os.getenv("SMTP_USER"), os.getenv("SMTP_PASS"))
         server.send_message(msg)
+
+def generate_new_verification_code(uid: int):
+    random_int = random.randint(0, 999999)
+    verification_code = f"{random_int:06d}"
+    res = supabase.table("users").select("*").eq("id", uid).execute()
+    if not res.data:
+        print("User not found")
+        return False
+    
+    response = supabase.table("users").update({"verification_code": int(verification_code)}).eq("id", uid).execute()
+    
+    if not response.data:
+        print("Failed to update verification code.")
+        return None
+    
+    print(f"Verification code {verification_code} generated for user {uid}.")
+    return verification_code
