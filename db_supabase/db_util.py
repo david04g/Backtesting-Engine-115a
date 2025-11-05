@@ -203,7 +203,7 @@ def verify_email(uid: int, verification_code: int):
     print("Email successfully verified!")
     return True
 
-def send_verification_email(email):
+def send_verification_email(email:str):
     response = supabase.table("users").select("*").eq("email", email).execute()
     if not response.data:
         print("No user found with that email.")

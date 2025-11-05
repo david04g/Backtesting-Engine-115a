@@ -1,20 +1,38 @@
 ﻿from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from db_supabase.db_util import add_user, login_user
+from db_supabase.db_util import ( add_user, login_user,  verify_email as verify_email_service,
+    send_verification_email as send_verification_email_service)
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-     allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:5173"  
-    ], 
+    allow_origins=["*"],  # Use "*" for local testing only
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+@app.post ("/api/send_verification_email")
+async def send_verification_email_root(request: Request):
+    data = await request.json()
+    email = data.get("email")
+    if not email:
+        return {"status": "error", "message": "Missing email"}
+
+    try:
+        result = send_verification_email_service(email)
+        return {"status": "success", "data": result}
+    except Exception as e:
+        print("❌ Error sending verification email:", e)
+        return {"status": "error", "message": str(e)}
+    
+@app.post("/api/verify_email")
+async def verify_email_root(request: Request):
+    data = await request.json()
+    result = verify_email_service(data["email"], data["verification_code"])
+    return {"status": "success", "data": result}
+
+
 
 @app.post("/api/add_user")
 async def add_user_root(request: Request):

@@ -1,11 +1,7 @@
-import React from 'react'
+import React from "react";
 
 const VerficationModal = () => {
-  return (
-    <div>
-      
-    </div>
-  )
-}
+  return <div></div>;
+};
 
-export default VerficationModal
+export default VerficationModal;
