@@ -16,7 +16,7 @@ export const ProfileContent: React.FC = () => {
           <SidebarSimple active="portfolio" />
           <div className="flex-1 flex flex-col">
             <div className="px-12 pt-10 pb-8 border-b border-black/10">
-              <div className="text-3xl font-bold text-center">Portfolio Overview</div>
+              <div className="text-3xl font-bold text-center">Profile Overview</div>
               <div className="mt-8 flex items-center gap-8">
                 <div className="rounded-full" style={{ width: 110, height: 110, backgroundColor: '#D9F2A6' }} />
                 <div className="flex-1">
