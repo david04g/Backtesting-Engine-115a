@@ -22,10 +22,10 @@ const App: React.FC = () => {
           </div>
         } />
         <Route path="/profile" element={
-          <div className="min-h-screen bg-gray-50">
+          <>
             <Navigation />
             <ProfileContent />
-          </div>
+          </>
         } />
       </Routes>
     </Router>

@@ -13,7 +13,7 @@ const Navigation: React.FC = () => {
 
 
   return (
-    <nav className="flex items-center justify-between px-12 py-6">
+    <nav className="flex items-center justify-between px-12 py-4">
       {/* Logo */}
       <Link to="/" className="text-2xl font-semibold">
         <span className="text-pink-500 italic">Simple</span>

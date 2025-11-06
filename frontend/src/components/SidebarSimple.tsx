@@ -1,7 +1,7 @@
 import React from 'react';
 
 type SidebarSimpleProps = {
-  active: 'portfolio' | 'strategy';
+  active: 'profile' | 'strategies';
 };
 
 const IconDot: React.FC = () => (
@@ -22,17 +22,22 @@ export const SidebarSimple: React.FC<SidebarSimpleProps> = ({ active }) => {
   return (
     <aside className="flex flex-col justify-between" style={{ width: 240, backgroundColor: '#D9F2A6' }}>
       <div>
-        <div className="px-6 pt-6 text-sm italic text-gray-700">Simple <span className="not-italic font-semibold">Strategies</span></div>
-        <nav className="mt-6 space-y-3 px-4">
-          <div className={`flex items-center gap-3 px-3 py-2 rounded-md ${active === 'portfolio' ? 'bg-white/40' : ''}`}>
+        <nav className="pt-6 space-y-3 px-4">
+          <button 
+            onClick={() => {}}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-all hover:opacity-80 active:scale-[0.98] cursor-pointer ${active === 'profile' ? 'bg-white/40' : ''}`}
+          >
             <IconDot />
-            <span className="font-semibold">Portfolio</span>
+            <span className="font-semibold">Profile</span>
             <span className="ml-auto">‹</span>
-          </div>
-          <div className={`flex items-center gap-3 px-3 py-2 rounded-md ${active === 'strategy' ? 'bg-white/40' : ''}`}>
+          </button>
+          <button 
+            onClick={() => {}}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-all hover:opacity-80 active:scale-[0.98] cursor-pointer ${active === 'strategies' ? 'bg-white/40' : ''}`}
+          >
             <IconList />
-            <span className="font-semibold">Strategy</span>
-          </div>
+            <span className="font-semibold">Strategies</span>
+          </button>
         </nav>
       </div>
       <div className="px-6 pb-6 text-xs">
