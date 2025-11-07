@@ -16,7 +16,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [verify, setVerify] = useState(false);
 
   const sendVerificationEmail = async () => {
-    console.log("🟢 sending verification email...");
+    console.log(" sending verification email...");
     const endpoint = "http://localhost:8000/api/send_verification_email";
     const payload = { email };
 
@@ -33,7 +33,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
   const verifyEmail = async () => {
-    console.log("🟣 verifying email...");
+    console.log("verifying email...");
     const endpoint = "http://localhost:8000/api/verify_email";
     const payload = { email, verification_code: verifyCode };
     try {
@@ -51,7 +51,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
   const handleSubmit = async () => {
-    console.log("🟡 handleSubmit triggered");
+    console.log(" handleSubmit triggered");
     const endpoint = isLoginMode
       ? "http://localhost:8000/api/login_user"
       : "http://localhost:8000/api/add_user";
@@ -72,6 +72,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         await sendVerificationEmail();
         setVerify(true);
       }
+      
+      
+
     } catch (err) {
       console.error(" Error submitting form:", err);
     }

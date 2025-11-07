@@ -1,3 +1,0 @@
-export { ProfileContent } from './ProfileContent';
-
-
