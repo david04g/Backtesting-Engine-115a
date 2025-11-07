@@ -66,7 +66,7 @@ export const WhyPricesMove: React.FC = () => {
   const troughIndex = priceData.indexOf(Math.max(...priceData.slice(50, 65)));
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 h-full">
       <div className="rounded-md p-6" style={{ backgroundColor: '#E8B6B6' }}>
         <h2 className="text-2xl font-bold mb-4">Why Prices Move</h2>
         <p className="text-base leading-relaxed mb-4">

@@ -44,6 +44,14 @@ export const Level0Content: React.FC = () => {
   
   const [currentIndex, setCurrentIndex] = useState(currentSlideIndex >= 0 ? currentSlideIndex : 0);
   const [completedSlides, setCompletedSlides] = useState<Set<number>>(new Set());
+  const [quizComplete, setQuizComplete] = useState(false);
+  
+  // Reset quiz completion when leaving the quiz slide
+  useEffect(() => {
+    if (currentIndex !== 3) { // 3 is the index for "What is a stock?" slide
+      setQuizComplete(false);
+    }
+  }, [currentIndex]);
   
   useEffect(() => {
     // If no slide parameter, navigate to first slide
@@ -88,9 +96,13 @@ export const Level0Content: React.FC = () => {
   
   const CurrentSlideComponent = SLIDE_COMPONENTS[currentIndex];
   
+  // Check if we can proceed to next slide
+  const canProceedNext = currentIndex < SLIDES.length - 1 && 
+    (currentIndex !== 3 || quizComplete); // Block if on quiz slide and not complete
+  
   return (
     <div className="min-h-screen bg-white">
-      <div className="w-full h-[calc(100vh-72px)] flex">
+      <div className="w-full h-[calc(100vh-72px)] flex overflow-hidden">
         <div className="w-64 p-6 bg-white relative">
           <ProgressBar
             slides={SLIDES}
@@ -100,17 +112,21 @@ export const Level0Content: React.FC = () => {
           <div className="absolute right-0 top-0 bottom-0 w-px bg-gray-300" style={{ right: '-32px' }}></div>
         </div>
         
-        <div className="flex-1 flex flex-col p-8 overflow-y-auto" style={{ marginLeft: '32px' }}>
-          <div className="max-w-4xl mx-auto w-full flex flex-col" style={{ minHeight: 'calc(100vh - 200px)' }}>
-            <div className="flex-1">
-              <CurrentSlideComponent />
+        <div className="flex-1 flex flex-col p-8 overflow-hidden" style={{ marginLeft: '32px' }}>
+          <div className="max-w-4xl mx-auto w-full flex flex-col h-full">
+            <div className="flex-1 overflow-y-auto">
+              {currentIndex === 3 ? (
+                <WhatIsAStock onQuizComplete={setQuizComplete} />
+              ) : (
+                <CurrentSlideComponent />
+              )}
             </div>
-            <div className="mt-auto pt-8">
+            <div className="mt-auto pt-8 flex-shrink-0">
               <NavigationButtons
                 onPrevious={handlePrevious}
                 onNext={handleNext}
                 canGoPrevious={currentIndex > 0}
-                canGoNext={currentIndex < SLIDES.length - 1}
+                canGoNext={canProceedNext}
               />
             </div>
           </div>

@@ -2,7 +2,7 @@ import React from 'react';
 
 export const TickersBidAsk: React.FC = () => {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 h-full">
       <div className="rounded-md p-6" style={{ backgroundColor: '#E8B6B6' }}>
         <h2 className="text-2xl font-bold mb-4">Tickers, Bid/Ask, Market Hours</h2>
         <p className="text-base leading-relaxed">

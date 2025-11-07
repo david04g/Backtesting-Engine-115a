@@ -44,16 +44,16 @@ export const LongVsShort: React.FC = () => {
     .join(' ');
 
   const buyX = indexToX(0) + 12;
-  // Triangle tip should be at priceToY(buyPrice), and tip is at buyY - 15, so buyY = priceToY(buyPrice) + 15
-  // Moving buy down by a very small amount by increasing the offset slightly
-  const buyY = priceToY(buyPrice) + 6;
+  // Triangle tip should be at priceToY(priceData[0]), and tip is at buyY - 15
+  // Position so triangle tip sits on the stock line - accounting for line stroke
+  const buyY = priceToY(priceData[0]) + 15 - 3.5;
   const sellX = Math.min(indexToX(priceData.length - 1), padding.left + plotWidth - 6);
-  // Triangle tip should be at priceToY(sellPrice), and tip is at sellY - 15, so sellY = priceToY(sellPrice) + 15
-  // Moving sell up more by reducing the offset
-  const sellY = priceToY(sellPrice) + 18;
+  // Triangle tip should be at priceToY(priceData[priceData.length - 1]), and tip is at sellY - 15
+  // Position so triangle tip sits on the stock line - accounting for line stroke
+  const sellY = priceToY(priceData[priceData.length - 1]) + 15 - 0.5;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 h-full">
       <div className="rounded-md p-6" style={{ backgroundColor: '#E8B6B6' }}>
         <h2 className="text-2xl font-bold mb-4">Long vs Short</h2>
         <p className="text-base leading-relaxed">

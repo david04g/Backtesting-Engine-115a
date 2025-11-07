@@ -45,8 +45,13 @@ export const BuyAndHold: React.FC = () => {
     })
     .join(' ');
 
+  // Calculate exact y-coordinate for first point (same as path calculation)
+  // Adjust to ensure circle sits on the line
+  const buyY = priceToY(priceData[0]) - 4;
+  const buyX = indexToX(0) + 12;
+
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 h-full">
       <div className="rounded-md p-6" style={{ backgroundColor: '#E8B6B6' }}>
         <h2 className="text-2xl font-bold mb-4">Buy and Hold!</h2>
         <p className="text-base leading-relaxed">
@@ -161,16 +166,16 @@ export const BuyAndHold: React.FC = () => {
                     fill="none"
                   />
 
-                  {/* Buy point (black dot at start) - offset slightly from y-axis, aligned with line */}
+                  {/* Buy point (black dot at start) - aligned with line */}
                   <circle
-                    cx={indexToX(0) + 12}
-                    cy={priceToY(buyPrice) - 6}
+                    cx={buyX}
+                    cy={buyY}
                     r="6"
                     fill="black"
                   />
                   <text
-                    x={indexToX(0) + 12}
-                    y={priceToY(buyPrice) - 21}
+                    x={buyX}
+                    y={buyY - 15}
                     fontSize="10"
                     fill="black"
                     textAnchor="middle"
