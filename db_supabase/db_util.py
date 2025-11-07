@@ -48,10 +48,14 @@ def login_user(email: str, password_plain: str):
 
         user = response.data[0]
         stored_hash = user["password_hash"]
-        if bcrypt.checkpw(password_plain.encode("utf-8"), stored_hash.encode("utf-8")):
-            return {"success": True, "user": user}
-        else:
+
+        if not bcrypt.checkpw(password_plain.encode("utf-8"), stored_hash.encode("utf-8")):
             return {"success": False, "message": "Invalid password"}
+        
+        if not user.get("email_verified", False):
+            return {"success": False, "message": "Email not verified. Please verify your email before logging in."}
+
+        return {"success": True, "user": user}
 
     except Exception as e:
         return {"success": False, "message": f"Error logging in: {e}"}
@@ -203,7 +207,7 @@ def verify_email(uid: int, verification_code: int):
     print("Email successfully verified!")
     return True
 
-def send_verification_email(email:str):
+def send_verification_email(email):
     response = supabase.table("users").select("*").eq("email", email).execute()
     if not response.data:
         print("No user found with that email.")
@@ -237,3 +241,14 @@ def generate_new_verification_code(uid: int):
     
     print(f"Verification code {verification_code} generated for user {uid}.")
     return verification_code
+
+def is_user_verified(uid: int) -> bool:
+    try:
+        response = supabase.table("users").select("email_verified").eq("id", uid).execute()
+        if not response.data or len(response.data) == 0:
+            print("User not found.")
+            return False
+        return response.data[0].get("email_verified", False)
+    except Exception as e:
+        print(f"Error checking verification status: {e}")
+        return False
