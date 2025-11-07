@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import SidebarSimple from '../../components/SidebarSimple';
 
 const Card: React.FC<{ title?: string; children?: React.ReactNode; bg?: string; className?: string }> = ({ title, children, bg = '#D9F2A6', className }) => (
@@ -9,6 +10,12 @@ const Card: React.FC<{ title?: string; children?: React.ReactNode; bg?: string; 
 );
 
 export const ProfileContent: React.FC = () => {
+  const navigate = useNavigate();
+  
+  const handleLearnClick = () => {
+    navigate('/learn/level0?slide=what-is-a-market');
+  };
+  
   return (
     <div className="w-full h-[calc(100vh-72px)] bg-white flex">
       <SidebarSimple active="profile" />
@@ -29,7 +36,7 @@ export const ProfileContent: React.FC = () => {
           <div className="col-span-8">
             <Card title="Learn">
               <button 
-                onClick={() => {}} 
+                onClick={handleLearnClick}
                 className="mt-4 w-full flex items-center gap-4 rounded-md px-6 py-4 transition-all hover:opacity-90 active:scale-[0.98] cursor-pointer" 
                 style={{ backgroundColor: '#E8B6B6' }}
               >
