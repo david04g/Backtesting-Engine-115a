@@ -13,7 +13,7 @@ const Navigation: React.FC = () => {
 
 
   return (
-    <nav className="flex items-center justify-between px-12 py-6">
+    <nav className="flex items-center justify-between px-12 py-4">
       {/* Logo */}
       <Link to="/" className="text-2xl font-semibold">
         <span className="text-pink-500 italic">Simple</span>
@@ -33,15 +33,21 @@ const Navigation: React.FC = () => {
           Home
         </Link>
         <Link
-          to="/product"
+          to="/profile"
           className={`px-6 py-3 rounded-full font-medium transition-colors ${
-            location.pathname === "/product"
+            location.pathname === "/profile"
               ? "bg-lime-300 hover:bg-lime-400 text-gray-800"
               : "text-gray-700 hover:text-gray-900"
           }`}
         >
-          Product
+          Profile
         </Link>
+        <button
+          className="px-6 py-3 rounded-full font-medium"
+          onClick={handleLoginClick}
+        >
+          Login
+        </button>
         <Link
           to="/about"
           className={`px-6 py-3 rounded-full font-medium transition-colors ${
@@ -52,12 +58,6 @@ const Navigation: React.FC = () => {
         >
           About
         </Link>
-        <button
-          className="px-6 py-3 rounded-full font-medium"
-          onClick={handleLoginClick}
-        >
-          Login
-        </button>
       </div>
 
       {/* Sign In Button */}
