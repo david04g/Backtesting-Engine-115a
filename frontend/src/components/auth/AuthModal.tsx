@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { TrendingUp } from "lucide-react";
 import { AuthModalProps } from "../../types";
+import { useNavigate } from "react-router-dom";
 
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
@@ -13,10 +14,37 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [verifyCode, setVerifyCode] = useState("");
-  const [verify, setVerify] = useState(false);
+  const [showVerifyStep, setShowVerifyStep] = useState(false);
+
+  const navigate = useNavigate();
+
+  const checkUserVerified = async (email: string) => {
+    console.log("Checking if user is verified...");
+    const endpoint = "http://localhost:8000/api/is_user_verified";
+    const payload = { email };
+
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      console.log("Verification check result:", data);
+
+      if (data.status === "success" && data.data === true) {
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error("Error checking verification:", err);
+      return false;
+    }
+  };
 
   const sendVerificationEmail = async () => {
-    console.log("🟢 sending verification email...");
+    console.log("Sending verification email...");
     const endpoint = "http://localhost:8000/api/send_verification_email";
     const payload = { email };
 
@@ -27,31 +55,45 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         body: JSON.stringify(payload),
       });
       const data = await res.json();
-      console.log(" Server response:", data);
+      console.log("Server response:", data);
+      setShowVerifyStep(true);
     } catch (err) {
-      console.error(" Error sending Verification email:", err);
+      console.error("Error sending verification email:", err);
     }
   };
+
   const verifyEmail = async () => {
-    console.log("🟣 verifying email...");
+    console.log("Verifying email...");
     const endpoint = "http://localhost:8000/api/verify_email";
     const payload = { email, verification_code: verifyCode };
+
     try {
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+
       const data = await res.json();
-      console.log("Server response", data);
-      return true;
+      console.log("Verification result:", data);
+
+      if (data.success || data.status === "success") {
+        alert("Email verified successfully!");
+        localStorage.setItem("isLoggedIn", "true");
+
+        navigate("/profile");
+      } else {
+        alert("Invalid verification code. Try again.");
+      }
     } catch (err) {
-      console.log("Error verifying email");
-      return false;
+      console.error("Error verifying email:", err);
+      alert("Verification failed. Please try again.");
     }
   };
+
   const handleSubmit = async () => {
-    console.log("🟡 handleSubmit triggered");
+    console.log("Submitting credentials...");
+
     const endpoint = isLoginMode
       ? "http://localhost:8000/api/login_user"
       : "http://localhost:8000/api/add_user";
@@ -66,14 +108,31 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+
       const data = await res.json();
-      console.log(" Server response:", data);
-      if (!isLoginMode) {
-        await sendVerificationEmail();
-        setVerify(true);
+      console.log("isLoginMode:", isLoginMode);
+      console.log("data.status:", data.status);
+
+      if (data.status === "success") {
+        if (!isLoginMode) {
+          await sendVerificationEmail();
+          setShowVerifyStep(true);
+        } else {
+          const isVerified = await checkUserVerified(email);
+          if (isVerified) {
+            localStorage.setItem("isLoggedIn", "true");
+
+            navigate("/profile");
+          } else {
+            alert("Please verify your email before continuing.");
+          }
+        }
+      } else {
+        alert(`Error: ${data.message || "Something went wrong"}`);
       }
     } catch (err) {
-      console.error(" Error submitting form:", err);
+      console.error("Error submitting form:", err);
+      alert("Unable to connect to server.");
     }
   };
 
@@ -82,15 +141,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="relative flex w-full max-w-4xl bg-white rounded-2xl overflow-hidden shadow-2xl border border-gray-200">
-        {/* Left Panel */}
+        {/* Left Side */}
         <div className="w-1/2 bg-lime-200 flex flex-col justify-center items-center p-10 text-center">
           <TrendingUp className="w-12 h-12 text-gray-800 mb-4" />
           <h2 className="text-3xl font-bold text-gray-800 mb-3">
-            {isLoginMode ? "Welcome !" : "Hello There!"}
+            {isLoginMode ? "Welcome Back!" : "Hello There!"}
           </h2>
           <p className="text-gray-700 mb-6 max-w-xs">
             {isLoginMode
-              ? "Backtest your trading. Login to continue."
+              ? "Backtest your trading. Log in to continue."
               : "Join Simple Strategies to start optimizing your trades!"}
           </p>
           <button
@@ -102,40 +161,36 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         </div>
 
         <div className="w-1/2 bg-white p-10 flex flex-col justify-center">
-          {verify ? (
+          {showVerifyStep ? (
             <>
               <h3 className="text-2xl font-semibold text-gray-800 mb-6">
-                Verification Sent
+                Verify Your Email
               </h3>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Verification Code
-                </label>
-                <input
-                  type="number"
-                  value={verifyCode}
-                  onChange={(e) => setVerifyCode(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-400"
-                  placeholder="i.e. 12345"
-                />
-              </div>
+              <p className="text-sm text-gray-600 mb-4">
+                We've sent a code to <strong>{email}</strong>. Enter it below to
+                verify your account.
+              </p>
+
+              <input
+                type="number"
+                value={verifyCode}
+                onChange={(e) => setVerifyCode(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-400"
+                placeholder="Enter verification code"
+              />
+
               <button
-                onClick={async () => {
-                  const success = await verifyEmail();
-                  if (success) {
-                    alert("Email verified!");
-                    setVerify(false);
-                  }
-                }}
-                className="w-full bg-lime-500 hover:bg-lime-600 text-white py-2 rounded-md font-semibold transition-colors"
+                onClick={verifyEmail}
+                className="mt-4 w-full bg-lime-500 hover:bg-lime-600 text-white py-2 rounded-md font-semibold transition-colors"
               >
                 Verify
               </button>
+
               <button
-                onClick={() => setVerify(false)}
-                className="w-full bg-lime-500 hover:bg-lime-600 text-white py-2 rounded-md font-semibold transition-colors"
+                onClick={() => setShowVerifyStep(false)}
+                className="mt-2 w-full border border-gray-300 py-2 rounded-md font-semibold text-gray-700 hover:bg-gray-100 transition-colors"
               >
-                Go back
+                Go Back
               </button>
             </>
           ) : (
@@ -196,6 +251,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </>
           )}
         </div>
+
+        {/* Close button */}
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 transition-colors"

@@ -242,13 +242,21 @@ def generate_new_verification_code(uid: int):
     print(f"Verification code {verification_code} generated for user {uid}.")
     return verification_code
 
-def is_user_verified(uid: int) -> bool:
+def is_user_verified(email: str) -> bool:
     try:
-        response = supabase.table("users").select("email_verified").eq("id", uid).execute()
+        response = (
+            supabase.table("users")
+            .select("email_verified")
+            .eq("email", email)
+            .execute()
+        )
+
         if not response.data or len(response.data) == 0:
-            print("User not found.")
+            print(f"User with email '{email}' not found.")
             return False
+
         return response.data[0].get("email_verified", False)
+
     except Exception as e:
-        print(f"Error checking verification status: {e}")
+        print(f"Error checking verification status for {email}: {e}")
         return False
