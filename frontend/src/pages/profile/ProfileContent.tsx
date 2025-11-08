@@ -11,6 +11,7 @@ const Card: React.FC<{ title?: string; children?: React.ReactNode; bg?: string; 
 
 export const ProfileContent: React.FC = () => {
   const navigate = useNavigate();
+
   
   const handleLearnClick = () => {
     navigate('/learn/level0?slide=what-is-a-market');
@@ -47,7 +48,7 @@ export const ProfileContent: React.FC = () => {
             <div className="mt-6">
               <Card title="Create">
                 <button 
-                  onClick={() => {}} 
+                  onClick={() => navigate('/create')} 
                   className="mt-4 w-full flex items-center gap-4 rounded-md px-6 py-4 transition-all hover:opacity-90 active:scale-[0.98] cursor-pointer" 
                   style={{ backgroundColor: '#E8B6B6' }}
                 >

@@ -4,6 +4,7 @@ import Navigation from './components/Navigation';
 import Hero from './components/Hero';
 import { AboutContent } from './pages/about';
 import { ProfileContent } from './pages/profile';
+import { CreatePage } from './pages/create';
 import { Level0Content } from './pages/learn';
 
 const App: React.FC = () => {
@@ -28,6 +29,11 @@ const App: React.FC = () => {
             <ProfileContent />
           </>
         } />
+        <Route path="/create" element={
+          <div className="min-h-screen bg-gray-50">
+            <Navigation />
+            <CreatePage />
+          </div>
         <Route path="/learn/level0" element={
           <>
             <Navigation />
