@@ -11,6 +11,7 @@ from db_supabase.db_util import (
     send_verification_email as send_verification_email_service,
     verify_email as verify_email_service,
     is_user_verified as user_verified,
+    get_user_by_id as get_user,
 )
 
 try:
@@ -74,6 +75,13 @@ async def login_user_root(request: Request):
     result = login_user(data["email"], data["password_hash"])
     return {"status": "success", "data": result}
 
+
+@app.get("/api/user/{user_id}")
+async def get_user_root(user_id: str):
+    result = get_user(user_id)
+    if not result:
+        return {"status": "error", "message": "user not found"}
+    return {"status": "success", "data": result}
 
 @app.post("/api/strategies/buy_hold")
 async def run_buy_and_hold(request: Request):

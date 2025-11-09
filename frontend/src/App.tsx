@@ -34,6 +34,7 @@ const App: React.FC = () => {
             <Navigation />
             <CreatePage />
           </div>
+        } />
         <Route path="/learn/level0" element={
           <>
             <Navigation />
