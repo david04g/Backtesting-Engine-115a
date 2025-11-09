@@ -5,6 +5,7 @@ import Hero from './components/Hero';
 import { AboutContent } from './pages/about';
 import { ProfileContent } from './pages/profile';
 import { CreatePage } from './pages/create';
+import { Level0Content } from './pages/learn';
 
 const App: React.FC = () => {
   return (
@@ -33,6 +34,11 @@ const App: React.FC = () => {
             <Navigation />
             <CreatePage />
           </div>
+        <Route path="/learn/level0" element={
+          <>
+            <Navigation />
+            <Level0Content />
+          </>
         } />
       </Routes>
     </Router>
