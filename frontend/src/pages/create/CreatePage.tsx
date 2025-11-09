@@ -64,8 +64,8 @@ const Chart: React.FC<{ data: { date: string; value: number }[] }> = ({
     >
       <defs>
         <linearGradient id="chart-gradient" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor="#84cc16" stopOpacity="0.25" />
-          <stop offset="100%" stopColor="#84cc16" stopOpacity="0" />
+          <stop offset="0%" stopColor="#DEF693" stopOpacity="0.25" />
+          <stop offset="100%" stopColor="#DEF693" stopOpacity="0" />
         </linearGradient>
       </defs>
       <path
@@ -76,7 +76,7 @@ const Chart: React.FC<{ data: { date: string; value: number }[] }> = ({
       <path
         d={path}
         fill="none"
-        stroke="#84cc16"
+        stroke="#B8E994"
         strokeWidth={4}
         strokeLinejoin="round"
         strokeLinecap="round"
@@ -161,7 +161,7 @@ const CreatePage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 pb-16">
         <div className="mx-auto max-w-5xl px-6 pt-12">
-          <div className="rounded-3xl bg-pink-200 px-8 py-10 text-center shadow-sm">
+          <div className="rounded-3xl bg-[#FFB8D4] px-8 py-10 text-center shadow-sm">
             <h1 className="text-3xl font-semibold text-gray-800">
               Lookup strategy
             </h1>
@@ -181,7 +181,7 @@ const CreatePage: React.FC = () => {
             {filteredStrategies.map(strategy => (
               <div
                 key={strategy.id}
-                className="rounded-3xl bg-white px-8 py-10 shadow-sm ring-1 ring-gray-100"
+                className="rounded-3xl bg-[#DEF693] px-8 py-10 shadow-sm ring-1 ring-gray-100"
               >
                 <h2 className="text-xl font-semibold text-gray-800">
                   {strategy.name}
@@ -191,7 +191,7 @@ const CreatePage: React.FC = () => {
                 </p>
                 <button
                   onClick={() => setSelectedStrategy(strategy.id)}
-                  className="mt-6 inline-flex items-center rounded-full bg-lime-300 px-6 py-2 text-sm font-semibold text-gray-800 shadow transition hover:bg-lime-200"
+                  className="mt-6 inline-flex items-center rounded-full bg-[#FFB8D4] px-6 py-2 text-sm font-semibold text-gray-800 shadow transition hover:bg-pink-100"
                 >
                   Create
                 </button>
@@ -211,7 +211,7 @@ const CreatePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
       <div className="mx-auto max-w-6xl px-6 pt-12">
-        <div className="rounded-3xl bg-pink-200 px-8 py-10 text-center shadow-sm">
+        <div className="rounded-3xl bg-[#FFB8D4] px-8 py-10 text-center shadow-sm">
           <h1 className="text-3xl font-semibold text-gray-800">
             Lookup strategy
           </h1>
@@ -219,7 +219,7 @@ const CreatePage: React.FC = () => {
         </div>
 
         <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(360px,1fr)_minmax(480px,1.25fr)]">
-          <section className="rounded-3xl bg-pink-200 p-6 shadow-sm">
+          <section className="rounded-3xl bg-[#FFB8D4] p-6 shadow-sm">
             <h2 className="text-2xl font-semibold text-gray-800">Inputs</h2>
             <div className="mt-6 space-y-5">
               <div>
@@ -232,7 +232,7 @@ const CreatePage: React.FC = () => {
                   onChange={event =>
                     setTicker(event.target.value.toUpperCase())
                   }
-                  className="mt-2 w-full rounded-md bg-lime-200 px-4 py-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-lime-400"
+                  className="mt-2 w-full rounded-md bg-[#DEF693] px-4 py-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-lime-400"
                 />
               </div>
 
@@ -243,7 +243,7 @@ const CreatePage: React.FC = () => {
                     type="date"
                     value={buyDate}
                     onChange={event => setBuyDate(event.target.value)}
-                    className="mt-2 w-full rounded-md bg-lime-200 px-4 py-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-lime-400"
+                    className="mt-2 w-full rounded-md bg-[#DEF693] px-4 py-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-lime-400"
                   />
                 </div>
                 <div>
@@ -267,7 +267,7 @@ const CreatePage: React.FC = () => {
                   type="number"
                   value={capital}
                   onChange={event => setCapital(event.target.value)}
-                  className="mt-2 w-full rounded-md bg-lime-200 px-4 py-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-lime-400"
+                  className="mt-2 w-full rounded-md bg-[#DEF693] px-4 py-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-lime-400"
                   min={0}
                   step={100}
                 />
@@ -291,13 +291,13 @@ const CreatePage: React.FC = () => {
           </section>
 
           <section className="space-y-6">
-            <div className="rounded-3xl bg-pink-200 p-6 shadow-sm">
+            <div className="rounded-3xl bg-[#FFB8D4] p-6 shadow-sm">
               <div className="rounded-xl bg-lime-200 px-4 py-4 text-center text-lg font-semibold text-gray-800">
                 Total Return: {summary ? summary.totalReturn : 'TBD'}
               </div>
             </div>
 
-            <div className="rounded-3xl bg-pink-200 p-6 shadow-sm">
+            <div className="rounded-3xl bg-[#FFB8D4] p-6 shadow-sm">
               <Chart data={chartData} />
             </div>
           </section>
