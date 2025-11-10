@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Navigation from "../components/Navigation";
 import Hero from "../components/Hero";
 import { AboutContent } from "../pages/about";
-import { ProfileContent } from "../pages/profile";
 
 const App: React.FC = () => {
   return (
@@ -25,15 +24,6 @@ const App: React.FC = () => {
               <Navigation />
               <AboutContent />
             </div>
-          }
-        />
-        <Route
-          path="/profile"
-          element={
-            <>
-              <Navigation />
-              <ProfileContent />
-            </>
           }
         />
       </Routes>

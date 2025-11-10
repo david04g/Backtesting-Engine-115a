@@ -1,8 +1,8 @@
 import os
 import dotenv
 from supabase import Client, create_client
-import db_util
 
+import uuid
 dotenv.load_dotenv()
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_PASS = os.getenv("SUPABASE_PASS")
@@ -15,12 +15,12 @@ def verify_uid_exists(uid: int):
     else:
         return True
     
-def add_learning_user(uid: int, starting_level_progress: int, starting_lesson_progress: int):
+def add_learning_user(uid: uuid):
     if verify_uid_exists(uid) is False:
         print("User ID does not exist")
         return None
     try:
-        response = supabase.table("user_level_progress").insert({"id": uid, "level_progress": starting_level_progress, "lesson_progress": starting_lesson_progress}).execute()
+        response = supabase.table("user_level_progress").insert({"id": uid, "level_progress": 0, "lesson_progress": 0}).execute()
         if response.data:
             return {"success": True, "user": response.data[0]}
         else:
@@ -43,7 +43,7 @@ def set_user_learning_progress(uid: int, level_progress: int, lesson_progress: i
         print("Failed to update user learning progress")
         return None
     
-def get_user_learning_progress(uid: int):
+def get_user_learning_progress(uid: uuid):
     response = supabase.table("user_level_progress").select("*").eq("id", uid).execute()
     if response.data:
         return response.data[0]

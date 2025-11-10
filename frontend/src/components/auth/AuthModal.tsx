@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { TrendingUp } from "lucide-react";
 import { AuthModalProps } from "../../types";
 import { useNavigate } from "react-router-dom";
+import { get_uid_by_email } from "../apiServices/userApi";
 
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
@@ -18,6 +19,28 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   const navigate = useNavigate();
 
+  const add_learning_user = async (userId: string) => {
+    const endpoint = "http://localhost:8000/api/add_learning_user";
+    const payload = { uid: userId };
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+
+      console.log("added lessons to user :", data);
+
+      if (data.status === "success" && data.data === true) {
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error("Error adding lessons:", err);
+      return false;
+    }
+  };
   const checkUserVerified = async (email: string) => {
     console.log("Checking if user is verified...");
     const endpoint = "http://localhost:8000/api/is_user_verified";
@@ -80,6 +103,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       if (data.success || data.status === "success") {
         alert("Email verified successfully!");
         localStorage.setItem("isLoggedIn", "true");
+        localStorage.setItem("userEmail", email);
+        const userId = await get_uid_by_email();
+        if (userId) {
+          await add_learning_user(userId);
+        }
 
         navigate("/profile");
       } else {
@@ -121,6 +149,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           const isVerified = await checkUserVerified(email);
           if (isVerified) {
             localStorage.setItem("isLoggedIn", "true");
+            const userId = await get_uid_by_email();
+            if (userId) {
+              await add_learning_user(userId);
+            }
 
             navigate("/profile");
           } else {

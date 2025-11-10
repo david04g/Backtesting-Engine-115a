@@ -60,7 +60,7 @@ def login_user(email: str, password_plain: str):
     except Exception as e:
         return {"success": False, "message": f"Error logging in: {e}"}
 
-def get_user_by_id(uid: int):
+def get_user_by_id(uid):
     response = supabase.table("users").select("*").eq("id", uid).execute()
     if response.data:
         return response.data[0]
@@ -95,7 +95,7 @@ def delete_user_by_username(username: str):
     else:
         return False
 
-def delete_user_by_id(uid: int):
+def delete_user_by_id(uid):
     response = supabase.table("users").delete().eq("id", uid).execute()
     if len(response.data) > 0:
         return True
@@ -109,7 +109,7 @@ def is_image_file(path: str):
     else:
         return False
 
-def upload_profile_picture_by_user_id(uid: int, file_path: str):
+def upload_profile_picture_by_user_id(uid, file_path: str):
     bucket = "profile-pictures"
     file_name = f"user_{uid}.png"
     
@@ -155,13 +155,13 @@ def get_user_id_by_email(email: str):
     result = get_user_by_email(email)
     return result["id"]
 
-def get_user_password_hash(uid: int):
+def get_user_password_hash(uid):
     res = supabase.table("users").select("password_hash").eq("id", uid).execute()
     if res.data and len(res.data) > 0:
         return res.data[0]["password_hash"]
     return None
 
-def verify_password(uid: int, password_attempt: str) -> bool:
+def verify_password(uid, password_attempt: str) -> bool:
     stored_hash = get_user_password_hash(uid)
     if not stored_hash:
         print("User not found or no password hash stored.")
@@ -169,7 +169,7 @@ def verify_password(uid: int, password_attempt: str) -> bool:
 
     return bcrypt.checkpw(password_attempt.encode("utf-8"), stored_hash.encode("utf-8"))
 
-def change_password(uid: int, old_password: str, new_password: str) -> bool:
+def change_password(uid, old_password: str, new_password: str) -> bool:
     if not verify_password(uid, old_password):
         print("Old password is incorrect.")
         return False
@@ -184,7 +184,7 @@ def change_password(uid: int, old_password: str, new_password: str) -> bool:
         print("Password update failed.")
         return False
     
-def verify_email(uid: int, verification_code: int):
+def verify_email(uid, verification_code: int):
     res = supabase.table("users").select("id, verification_code").eq("id", uid).execute()
     if not res.data:
         print("User not found")
@@ -208,24 +208,44 @@ def verify_email(uid: int, verification_code: int):
     return True
 
 def send_verification_email(email):
-    response = supabase.table("users").select("*").eq("email", email).execute()
-    if not response.data:
-        print("No user found with that email.")
-        return
-    verification_code = response.data[0].get("verification_code")
+    try:
+        response = supabase.table("users").select("*").eq("email", email).execute()
+        if not response.data:
+            print("No user found with that email.")
+            return
+        
+        verification_code = response.data[0].get("verification_code")
+        
+        # Verify environment variables are loaded
+        smtp_user = os.getenv("SMTP_USER")
+        smtp_pass = os.getenv("SMTP_PASS")
+        
+        if not smtp_user or not smtp_pass:
+            print("Error: SMTP credentials not found in environment variables")
+            return
+        
+        print(f"Attempting to send email from: {smtp_user}")
+        
+        msg = MIMEText(f"Your code to verify your email: {verification_code}")
+        msg["Subject"] = "Verify Your Email"
+        msg["From"] = smtp_user
+        msg["To"] = email
 
-    msg = MIMEText(f"Your code to verify your email: {verification_code}")
-    msg["Subject"] = "Verify Your Email"
-    msg["From"] = os.getenv("SMTP_USER")
-    msg["To"] = email
-
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-        server.login(os.getenv("SMTP_USER"), os.getenv("SMTP_PASS"))
-        server.send_message(msg)
-    
-    print(f"Verification email sent to {email}")
-
-def generate_new_verification_code(uid: int):
+        # Use SMTP_SSL for port 465
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(smtp_user, smtp_pass)
+            server.send_message(msg)
+        
+        print(f"Verification email sent to {email}")
+        
+    except smtplib.SMTPAuthenticationError as e:
+        print(f"SMTP Authentication Error: {e}")
+        print("Make sure you're using a Gmail App Password, not your regular password")
+    except Exception as e:
+        print(f"Error sending email: {e}")
+        
+        
+def generate_new_verification_code(uid):
     random_int = random.randint(0, 999999)
     verification_code = f"{random_int:06d}"
     res = supabase.table("users").select("*").eq("id", uid).execute()
