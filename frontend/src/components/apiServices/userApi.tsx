@@ -1,6 +1,6 @@
 const savedEmail = localStorage.getItem("userEmail");
-export const get_uid_by_email = async () => {
-  const endpoint = "http://localhost:8000/api/get_user_by_email";
+export const get_user_id = async () => {
+  const endpoint = "http://localhost:8000/api/get_user_id";
   const payload = { email: savedEmail };
   try {
     const res = await fetch(endpoint, {
@@ -56,8 +56,6 @@ export const get_user_progress = async (uuid: string) => {
   }
 };
 
-
-
 export const get_lesson_by_id = async (lesson_id: number) => {
   const endpoint = "http://localhost:8000/api/get_lesson_by_id";
   const payload = { lesson_id };
@@ -81,4 +79,4 @@ export const get_lesson_by_id = async (lesson_id: number) => {
     console.error("Error fetching lesson by id:", err);
     return null;
   }
-}
+};

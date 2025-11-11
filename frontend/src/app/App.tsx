@@ -3,7 +3,8 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Navigation from "../components/Navigation";
 import Hero from "../components/Hero";
 import { AboutContent } from "../pages/about";
-
+import { ProfileContent } from "../Private/profile/ProfileContent";
+import LessonPage from "../Private/lessons";
 const App: React.FC = () => {
   return (
     <Router>
@@ -26,6 +27,8 @@ const App: React.FC = () => {
             </div>
           }
         />
+        <Route path="/profile" element={<ProfileContent />} />
+        <Route path="/lessons/:level/:pageNumber" element={<LessonPage />} />
       </Routes>
     </Router>
   );

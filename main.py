@@ -11,8 +11,8 @@ from db_supabase.db_util import (
     send_verification_email as send_verification_email_service,
     verify_email as verify_email_service,
     is_user_verified as user_verified,
-    get_user_by_id as get_user,
-    get_user_by_email
+    get_user_id_by_email as get_user_id,
+    
 )
 
 
@@ -77,11 +77,11 @@ async def add_learning_root(request:Request):
     uid = data.get("uid")
     return add_learning_user(uid);
  
-@app.post("/api/get_user_by_email")
-async def get_user_by_email_root(request: Request):
+@app.post("/api/get_user_id")
+async def get_user_id_root(request: Request):
     data = await request.json()
     email = data.get("email")
-    user = get_user_by_email(email)
+    user = get_user_id(email)
     if user:
         return {"status": "success", "data": user}
     else:

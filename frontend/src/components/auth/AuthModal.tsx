@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { TrendingUp } from "lucide-react";
 import { AuthModalProps } from "../../types";
 import { useNavigate } from "react-router-dom";
-import { get_uid_by_email } from "../apiServices/userApi";
+import { get_user_id } from "../apiServices/userApi";
 
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
@@ -104,7 +104,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         alert("Email verified successfully!");
         localStorage.setItem("isLoggedIn", "true");
         localStorage.setItem("userEmail", email);
-        const userId = await get_uid_by_email();
+        const userId = await get_user_id();
         if (userId) {
           await add_learning_user(userId);
         }
@@ -149,7 +149,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           const isVerified = await checkUserVerified(email);
           if (isVerified) {
             localStorage.setItem("isLoggedIn", "true");
-            const userId = await get_uid_by_email();
+            const userId = await get_user_id();
             if (userId) {
               await add_learning_user(userId);
             }
