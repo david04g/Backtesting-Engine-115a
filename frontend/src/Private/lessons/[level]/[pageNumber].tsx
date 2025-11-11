@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import {
-  get_uid_by_email,
+  get_user_id,
   get_lesson_by_id,
   get_user_progress,
 } from "../../../components/apiServices/userApi";
@@ -22,7 +22,7 @@ const LessonPage = () => {
 
   useEffect(() => {
     const loadLesson = async () => {
-      const uuid = await get_uid_by_email();
+      const uuid = await get_user_id();
       if (!uuid) return;
 
       const progress = await get_user_progress(uuid);
