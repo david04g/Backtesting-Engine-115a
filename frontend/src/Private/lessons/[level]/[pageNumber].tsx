@@ -5,6 +5,7 @@ import {
   get_lesson_by_id,
   get_user_progress,
 } from "../../../components/apiServices/userApi";
+import LearningPath from "../../../components/lesson/LearningPath/LearningPath";
 
 interface Lesson {
   id: number;
@@ -43,7 +44,7 @@ const LessonPage = () => {
       {/* Lesson title */}
       <div className="bg-lime-200 p-4 rounded-xl font-bold text-gray-800 text-lg">
         {lessonData?.lesson_title}
-        {/* component: lesson map goes here*/}
+        <LearningPath step={lessonData?.lesson_title}/>
       </div>
 
       {/* Page content */}
