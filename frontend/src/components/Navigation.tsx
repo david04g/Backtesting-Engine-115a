@@ -37,13 +37,35 @@ const Navigation: React.FC = () => {
       </Link>
 
       
-      {isLoggedIn && !isPublicPage ? (
-        <button
-          onClick={handleLogout}
-          className="px-6 py-3 rounded-full bg-gray-800 text-white font-medium hover:bg-gray-700 transition-colors"
-        >
-          Logout
-        </button>
+      {isLoggedIn ? (
+        <div className="flex items-center gap-6">
+          <Link
+            to="/"
+            className={`px-6 py-3 rounded-full font-medium transition-colors ${
+              location.pathname === "/"
+                ? "bg-lime-300 hover:bg-lime-400 text-gray-800"
+                : "text-gray-700 hover:text-gray-900"
+            }`}
+          >
+            Home
+          </Link>
+          <Link
+            to="/profile"
+            className={`px-6 py-3 rounded-full font-medium transition-colors ${
+              location.pathname === "/profile"
+                ? "bg-lime-300 hover:bg-lime-400 text-gray-800"
+                : "text-gray-700 hover:text-gray-900"
+            }`}
+          >
+            Profile
+          </Link>
+          <button
+            onClick={handleLogout}
+            className="px-6 py-3 rounded-full bg-gray-800 text-white font-medium hover:bg-gray-700 transition-colors"
+          >
+            Logout
+          </button>
+        </div>
       ) : (
         <div className="flex items-center gap-6">
           <Link
