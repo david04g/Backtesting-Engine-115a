@@ -1,7 +1,21 @@
-﻿from fastapi import FastAPI, Request
+﻿from datetime import datetime
+from typing import Any, Dict, List
+
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from db_supabase.db_util import ( add_user, login_user, get_user_by_email, verify_email as verify_email_service,
-    send_verification_email as send_verification_email_service, is_user_verified as user_verified)
+from fastapi.responses import JSONResponse
+
+from db_supabase.db_util import (
+    add_user,
+    login_user,
+    send_verification_email as send_verification_email_service,
+    verify_email as verify_email_service,
+    is_user_verified as user_verified,
+    get_user_by_id as get_user,
+    get_user_by_email
+)
+
+
 
 from db_supabase.db_level_user_progress_util import add_learning_user, get_user_learning_progress
 

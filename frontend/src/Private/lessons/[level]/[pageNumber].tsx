@@ -44,7 +44,7 @@ const LessonPage = () => {
       {/* Lesson title */}
       <div className="bg-lime-200 p-4 rounded-xl font-bold text-gray-800 text-lg">
         {lessonData?.lesson_title}
-        <LearningPath step={lessonData?.lesson_title}/>
+        <LearningPath />
       </div>
 
       {/* Page content */}
