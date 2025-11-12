@@ -19,8 +19,16 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_PASS)
 #will be in UTC-0 (Greenwich) time. subtract by 8 hours to get UTC-8 (PST) time
 def add_user(username: str, email: str, password_plain: str):
     try:
+        email_check = supabase.table("users").select("id").eq("email", email).execute()
+        if email_check.data:
+            return {"success": False, "message": "Email already in use."}
+
+        username_check = supabase.table("users").select("id").eq("username", username).execute()
+        if username_check.data:
+            return {"success": False, "message": "Username already taken."}
+
         password_hash = bcrypt.hashpw(password_plain.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-        random_int = random.randint(0, 999999)
+        random_int = random.randint(100000, 999999)
         verification_string = f"{random_int:06d}"
         response = supabase.table("users").insert({
             "username": username,
@@ -219,14 +227,16 @@ def send_verification_email(email):
     msg["From"] = os.getenv("SMTP_USER")
     msg["To"] = email
 
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-        server.login(os.getenv("SMTP_USER"), os.getenv("SMTP_PASS"))
-        server.send_message(msg)
-    
-    print(f"Verification email sent to {email}")
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(os.getenv("SMTP_USER"), os.getenv("SMTP_PASS"))
+            server.send_message(msg)
+        print(f"Verification email sent to {email}")
+    except Exception as e:
+        print(f"Error sending email: {e}")
 
 def generate_new_verification_code(uid: str):
-    random_int = random.randint(0, 999999)
+    random_int = random.randint(100000, 999999)
     verification_code = f"{random_int:06d}"
     res = supabase.table("users").select("*").eq("id", uid).execute()
     if not res.data:
