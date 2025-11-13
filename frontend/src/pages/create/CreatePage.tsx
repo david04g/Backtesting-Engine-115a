@@ -14,6 +14,11 @@ const strategies = [
     name: 'Buy and Hold (simple)',
     description: 'Buy once and hold until sell date.',
   },
+  {
+    id: 'simple_moving_average_crossover',
+    name: 'Simple Moving Average Crossover',
+    description: 'Trade based on short vs. long moving average crossovers.',
+  },
 ];
 
 const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:8000';
@@ -64,8 +69,8 @@ const Chart: React.FC<{ data: { date: string; value: number }[] }> = ({
     >
       <defs>
         <linearGradient id="chart-gradient" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor="#DEF693" stopOpacity="0.25" />
-          <stop offset="100%" stopColor="#DEF693" stopOpacity="0" />
+          <stop offset="0%" stopColor="#84cc16" stopOpacity="0.25" />
+          <stop offset="100%" stopColor="#84cc16" stopOpacity="0" />
         </linearGradient>
       </defs>
       <path
@@ -76,7 +81,7 @@ const Chart: React.FC<{ data: { date: string; value: number }[] }> = ({
       <path
         d={path}
         fill="none"
-        stroke="#B8E994"
+        stroke="#84cc16"
         strokeWidth={4}
         strokeLinejoin="round"
         strokeLinecap="round"
@@ -94,6 +99,8 @@ const CreatePage: React.FC = () => {
   const [sellDate, setSellDate] = useState('2025-07-08');
   const [capital, setCapital] = useState('1000');
   const [loading, setLoading] = useState(false);
+  const [shortWindow, setShortWindow] = useState('100');
+  const [longWindow, setLongWindow] = useState('250');
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<StrategyResult | null>(null);
 
@@ -113,40 +120,58 @@ const CreatePage: React.FC = () => {
     }));
   }, [result]);
 
+
   const summary = useMemo(() => {
     if (!result) return null;
-    return {
+    const base = {
       totalReturn: `${result.total_return_pct.toFixed(2)}%`,
       finalValue: `$${result.final_value.toFixed(2)}`,
-      buyPrice: `$${result.buy_price.toFixed(2)}`,
-      sellPrice: `$${result.sell_price.toFixed(2)}`,
     };
-  }, [result]);
+    if (selectedStrategy === 'buy_hold') {
+      return {
+        ...base,
+        buyPrice: `$${result.buy_price.toFixed(2)}`,
+        sellPrice: `$${result.sell_price.toFixed(2)}`,
+      };
+    } else if (selectedStrategy === 'simple_moving_average_crossover') {
+      return {
+        ...base,
+        shortWindow: result.short_window,
+        longWindow: result.long_window,
+      };
+    }
+    return base;
+  }, [result, selectedStrategy]);
 
   const handleRun = async () => {
+    if (!selectedStrategy) return;
+
     setLoading(true);
     setError(null);
     setResult(null);
 
     try {
-      const response = await fetch(`${API_BASE}/api/strategies/buy_hold`, {
+      const endpoint = `${API_BASE}/api/strategies/${selectedStrategy}`;
+      const body: Record<string, any> = {
+        ticker,
+        start_date: buyDate,
+        end_date: sellDate,
+        capital: parseFloat(capital),
+      };
+
+      if (selectedStrategy === 'simple_moving_average_crossover') {
+        body.short_window = parseInt(shortWindow, 10);
+        body.long_window = parseInt(longWindow, 10);
+      }
+      const response = await fetch(endpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ticker,
-          start_date: buyDate,
-          end_date: sellDate,
-          capital: parseFloat(capital),
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
       });
 
       const data = await response.json();
       if (!response.ok || data.status !== 'success') {
-        const message =
-          data?.message || 'Unable to run strategy. Please try again.';
-        throw new Error(message);
+        throw new Error(data?.message || 'Unable to run strategy.');
       }
 
       setResult(data.data);
@@ -161,7 +186,7 @@ const CreatePage: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 pb-16">
         <div className="mx-auto max-w-5xl px-6 pt-12">
-          <div className="rounded-3xl bg-[#FFB8D4] px-8 py-10 text-center shadow-sm">
+          <div className="rounded-3xl bg-pink-200 px-8 py-10 text-center shadow-sm">
             <h1 className="text-3xl font-semibold text-gray-800">
               Lookup strategy
             </h1>
@@ -181,7 +206,7 @@ const CreatePage: React.FC = () => {
             {filteredStrategies.map(strategy => (
               <div
                 key={strategy.id}
-                className="rounded-3xl bg-[#DEF693] px-8 py-10 shadow-sm ring-1 ring-gray-100"
+                className="rounded-3xl bg-white px-8 py-10 shadow-sm ring-1 ring-gray-100"
               >
                 <h2 className="text-xl font-semibold text-gray-800">
                   {strategy.name}
@@ -191,7 +216,7 @@ const CreatePage: React.FC = () => {
                 </p>
                 <button
                   onClick={() => setSelectedStrategy(strategy.id)}
-                  className="mt-6 inline-flex items-center rounded-full bg-[#FFB8D4] px-6 py-2 text-sm font-semibold text-gray-800 shadow transition hover:bg-pink-100"
+                  className="mt-6 inline-flex items-center rounded-full bg-lime-300 px-6 py-2 text-sm font-semibold text-gray-800 shadow transition hover:bg-lime-200"
                 >
                   Create
                 </button>
@@ -211,7 +236,7 @@ const CreatePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
       <div className="mx-auto max-w-6xl px-6 pt-12">
-        <div className="rounded-3xl bg-[#FFB8D4] px-8 py-10 text-center shadow-sm">
+        <div className="rounded-3xl bg-pink-200 px-8 py-10 text-center shadow-sm">
           <h1 className="text-3xl font-semibold text-gray-800">
             Lookup strategy
           </h1>
@@ -219,9 +244,40 @@ const CreatePage: React.FC = () => {
         </div>
 
         <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(360px,1fr)_minmax(480px,1.25fr)]">
-          <section className="rounded-3xl bg-[#FFB8D4] p-6 shadow-sm">
+          <section className="rounded-3xl bg-pink-200 p-6 shadow-sm">
             <h2 className="text-2xl font-semibold text-gray-800">Inputs</h2>
             <div className="mt-6 space-y-5">
+              {selectedStrategy === 'simple_moving_average_crossover' && (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="block text-sm text-gray-700">
+                      Short Moving Average Window
+                    </label>
+                    <input
+                      type="number"
+                      value={shortWindow}
+                      onChange={e => setShortWindow(e.target.value)}
+                      className="mt-2 w-full rounded-md bg-lime-200 px-4 py-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-lime-400"
+                      min={1}
+                      step={1}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm text-gray-700">
+                      Long Moving Average Window
+                    </label>
+                    <input
+                      type="number"
+                      value={longWindow}
+                      onChange={e => setLongWindow(e.target.value)}
+                      className="mt-2 w-full rounded-md bg-red-300 px-4 py-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-200"
+                      min={1}
+                      step={1}
+                    />
+                  </div>
+                </div>
+              )}
               <div>
                 <label className="block text-sm text-gray-700">
                   Ticker (stock of choice)
@@ -232,7 +288,7 @@ const CreatePage: React.FC = () => {
                   onChange={event =>
                     setTicker(event.target.value.toUpperCase())
                   }
-                  className="mt-2 w-full rounded-md bg-[#DEF693] px-4 py-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-lime-400"
+                  className="mt-2 w-full rounded-md bg-lime-200 px-4 py-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-lime-400"
                 />
               </div>
 
@@ -243,7 +299,7 @@ const CreatePage: React.FC = () => {
                     type="date"
                     value={buyDate}
                     onChange={event => setBuyDate(event.target.value)}
-                    className="mt-2 w-full rounded-md bg-[#DEF693] px-4 py-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-lime-400"
+                    className="mt-2 w-full rounded-md bg-lime-200 px-4 py-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-lime-400"
                   />
                 </div>
                 <div>
@@ -267,7 +323,7 @@ const CreatePage: React.FC = () => {
                   type="number"
                   value={capital}
                   onChange={event => setCapital(event.target.value)}
-                  className="mt-2 w-full rounded-md bg-[#DEF693] px-4 py-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-lime-400"
+                  className="mt-2 w-full rounded-md bg-lime-200 px-4 py-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-lime-400"
                   min={0}
                   step={100}
                 />
@@ -291,13 +347,13 @@ const CreatePage: React.FC = () => {
           </section>
 
           <section className="space-y-6">
-            <div className="rounded-3xl bg-[#FFB8D4] p-6 shadow-sm">
+            <div className="rounded-3xl bg-pink-200 p-6 shadow-sm">
               <div className="rounded-xl bg-lime-200 px-4 py-4 text-center text-lg font-semibold text-gray-800">
                 Total Return: {summary ? summary.totalReturn : 'TBD'}
               </div>
             </div>
 
-            <div className="rounded-3xl bg-[#FFB8D4] p-6 shadow-sm">
+            <div className="rounded-3xl bg-pink-200 p-6 shadow-sm">
               <Chart data={chartData} />
             </div>
           </section>
