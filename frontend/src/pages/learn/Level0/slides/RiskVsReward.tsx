@@ -25,7 +25,17 @@ export const RiskVsReward: React.FC = () => {
             
             {/* Axis labels */}
             <text x="250" y="330" fontSize="14" fill="black" textAnchor="middle" fontWeight="bold">Risk →</text>
-            <text x="20" y="175" fontSize="14" fill="black" textAnchor="middle" transform="rotate(-90 20 175)" fontWeight="bold">Reward ↑</text>
+            <text
+              x="20"
+              y="175"
+              fontSize="14"
+              fill="black"
+              textAnchor="middle"
+              transform="rotate(-90 20 175)"
+              fontWeight="bold"
+            >
+              Reward ↑
+            </text>
             
             {/* Risk-Reward curve (dark green, concave down) */}
             <path

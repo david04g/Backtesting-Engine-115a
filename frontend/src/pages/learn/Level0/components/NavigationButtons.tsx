@@ -45,6 +45,3 @@ export const NavigationButtons: React.FC<NavigationButtonsProps> = ({
     </div>
   );
 };
-
-
-
