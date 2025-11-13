@@ -45,6 +45,8 @@ export const Level0Content: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState(currentSlideIndex >= 0 ? currentSlideIndex : 0);
   const [completedSlides, setCompletedSlides] = useState<Set<number>>(new Set());
   const [quizComplete, setQuizComplete] = useState(false);
+  const [levelUpComplete, setLevelUpComplete] = useState(false);
+  const [showCongratsModal, setShowCongratsModal] = useState(false);
   
   // Reset quiz completion when leaving the quiz slide
   useEffect(() => {
@@ -77,6 +79,37 @@ export const Level0Content: React.FC = () => {
     }
     setCompletedSlides(newCompleted);
   }, [currentIndex]);
+
+  useEffect(() => {
+    const incrementLevel = async () => {
+      const uid = localStorage.getItem("user_id");
+      if (!uid) return;
+
+      console.log("🎉 Level 0 complete — incrementing user level...");
+      try {
+        const res = await fetch("http://localhost:8000/api/increment_user_level", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ uid }),
+        });
+        const data = await res.json();
+        if (data.status === "success") {
+          // alert("🎉 Congratulations! You've completed Level 0!");
+          setShowCongratsModal(true);
+          setLevelUpComplete(true);
+          navigate("/profile");
+        } else {
+          console.error("Failed to level up:", data);
+        }
+      } catch (err) {
+        console.error("Error incrementing level:", err);
+      }
+    };
+    if (currentIndex === SLIDES.length - 1 && !levelUpComplete) {
+      setLevelUpComplete(true);
+      incrementLevel();
+    }
+  }, [currentIndex, levelUpComplete, navigate]);
   
   const handlePrevious = () => {
     if (currentIndex > 0) {
@@ -86,12 +119,36 @@ export const Level0Content: React.FC = () => {
     }
   };
   
-  const handleNext = () => {
+  const handleNext = async () => {
+    console.log("handleNext called at slide", currentIndex, "of", SLIDES.length);
     if (currentIndex < SLIDES.length - 1) {
       const newIndex = currentIndex + 1;
       setCurrentIndex(newIndex);
       navigate(`/learn/level0?slide=${SLIDES[newIndex].id}`, { replace: true });
     }
+    // } else {
+    //   // end of level 0
+    //   if (!levelUpComplete) {
+    //     setLevelUpComplete(true);
+    //     const uid = localStorage.getItem("user_id");
+    //     try {
+    //       const res = await fetch(`http://localhost:8000/api/increment_user_level`, {
+    //         method: "POST",
+    //         headers: {"Content-Type": "application/json"},
+    //         body: JSON.stringify({uid}),
+    //       });
+    //       const data = await res.json();
+    //       if (data.status === "success") {
+    //         alert("congratulations ! you've completed level 0 !");
+    //         navigate("/profile");
+    //       } else {
+    //         console.error("couldn't level up: ", data);
+    //       }
+    //     } catch (err) {
+    //       console.error("error incrementing level:", err);
+    //     }
+    //   }
+    // }
   };
   
   const CurrentSlideComponent = SLIDE_COMPONENTS[currentIndex];
@@ -132,6 +189,41 @@ export const Level0Content: React.FC = () => {
           </div>
         </div>
       </div>
+      {showCongratsModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fadeIn">
+          <div
+            className="rounded-2xl p-10 text-center shadow-xl border border-black/20"
+            style={{ backgroundColor: "#D9F2A6", width: "420px" }}
+          >
+            <div className="text-5xl mb-4">🎉</div>
+            <h2 className="text-2xl font-bold mb-2">Level Complete!</h2>
+            <p className="text-gray-700 mb-6">
+              You’ve finished Level 0 — excellent work!  
+              Keep going to build your trading mastery.
+            </p>
+            <button
+              onClick={() => navigate("/profile")}
+              className="w-full py-3 rounded-full font-semibold transition-all"
+              style={{
+                backgroundColor: "#E8B6B6",
+                color: "black",
+                border: "1px solid rgba(0,0,0,0.2)",
+              }}
+            >
+              Back to Profile
+            </button>
+          </div>
+        </div>
+      )}
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: scale(0.97); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.35s ease-out forwards;
+        }
+      `}</style>
     </div>
   );
 };

@@ -18,6 +18,7 @@ from db_supabase.db_level_user_progress_util import (
     add_learning_user,
     set_user_learning_progress,
     get_user_learning_progress,
+    increment_user_level,
 )
 
 try:
@@ -113,7 +114,19 @@ async def set_user_learning_progress_root(request: Request):
 async def get_user_learning_progress_root(request: Request):
     data = await request.json()
     result = get_user_learning_progress(data["uid"])
+    if result is None:
+        new = add_learning_user(data["uid"], 0, 0)
+        if new and new.get("success"):
+            result = new["user"]
+        else:
+            return {"status": "error", "message": "failed to find progress"}
     return {"status": "success", "data": result}
+
+@app.post("/api/increment_user_level")
+async def increment_user_level_root(request: Request):
+    data = await request.json()
+    result = increment_user_level(data["uid"])
+    return {"status": "success", "data": result.data if hasattr(result, "data") else result}
 
 @app.post("/api/strategies/buy_hold")
 async def run_buy_and_hold(request: Request):

@@ -116,6 +116,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
       if (data.status === "success") {
         if (!isLoginMode) {
+          const uid = data.data.user.id;
+          if (uid) {
+            const progressRes = await fetch(`http://localhost:8000/api/add_learning_user`, {
+              method: "POST",
+              headers: {"Content-Type": "application/json"},
+              body: JSON.stringify({
+                uid,
+                starting_level_progress: 0,
+                starting_lesson_progress: 0,
+              }),
+            });
+            const progressData = await progressRes.json();
+            console.log("progress initialization result: ", progressData);
+          }
           await sendVerificationEmail();
           setShowVerifyStep(true);
         } else {

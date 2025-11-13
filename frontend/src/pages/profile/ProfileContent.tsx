@@ -18,6 +18,7 @@ interface User {
 export const ProfileContent: React.FC = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
+  const [progress, setProgress] = useState<{level_progress: Number; lesson_progress: Number} | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -36,6 +37,16 @@ export const ProfileContent: React.FC = () => {
         } else {
           console.error("api error: ", json.message);
           navigate("/");
+        }
+        const progRes = await fetch(`http://localhost:8000/api/get_user_learning_progress`, {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({uid: userId}),
+        });
+        const progJson = await progRes.json();
+        console.log(progJson.data);
+        if (progJson.status === "success" && progJson.data) {
+          setProgress(progJson.data);
         }
       } catch (err) {
         console.error("error fetching user: ", err);
@@ -105,7 +116,9 @@ export const ProfileContent: React.FC = () => {
                 <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full" style={{ backgroundColor: '#D9F2A6' }}>
                   <span className="text-3xl">⤴</span>
                 </div>
-                <div className="font-extrabold">Level 0</div>
+                <div className="font-extrabold">
+                  {progress ? `Level ${progress.level_progress}` : "Loading..."}
+                </div>
               </div>
             </Card>
           </div>
