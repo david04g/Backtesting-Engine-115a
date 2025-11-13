@@ -8,14 +8,14 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_PASS = os.getenv("SUPABASE_PASS")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_PASS)
 
-def verify_uid_exists(uid: int):
+def verify_uid_exists(uid: str):
     response = str(supabase.table("users").select("*").eq("id", uid).execute())
     if "data=[]" in response:
         return False
     else:
         return True
     
-def add_learning_user(uid: int, starting_level_progress: int, starting_lesson_progress: int):
+def add_learning_user(uid: str, starting_level_progress: int, starting_lesson_progress: int):
     if verify_uid_exists(uid) is False:
         print("User ID does not exist")
         return None
@@ -31,7 +31,7 @@ def add_learning_user(uid: int, starting_level_progress: int, starting_lesson_pr
         else:
             return {"success": False, "message": f"error adding user: {e}"}
         
-def set_user_learning_progress(uid: int, level_progress: int, lesson_progress: int):
+def set_user_learning_progress(uid: str, level_progress: int, lesson_progress: int):
     try:
         response = supabase.table("user_level_progress").update({"level_progress": level_progress, "lesson_progress": lesson_progress}).eq("id", uid).execute()
         if "data=[]" in str(response):
@@ -43,28 +43,28 @@ def set_user_learning_progress(uid: int, level_progress: int, lesson_progress: i
         print("Failed to update user learning progress")
         return None
     
-def get_user_learning_progress(uid: int):
+def get_user_learning_progress(uid: str):
     response = supabase.table("user_level_progress").select("*").eq("id", uid).execute()
     if response.data:
         return response.data[0]
     else:
         return None
 
-def get_user_level_progress(uid: int):
+def get_user_level_progress(uid: str):
     response = supabase.table("user_level_progress").select("*").eq("id", uid).execute()
     if response.data:
         return response.data[0]["level_progress"]
     else:
         return None
     
-def get_user_lesson_progress(uid: int):
+def get_user_lesson_progress(uid: str):
     response = supabase.table("user_level_progress").select("*").eq("id", uid).execute()
     if response.data:
         return response.data[0]["lesson_progress"]
     else:
         return None
     
-def increment_user_level(uid: int):
+def increment_user_level(uid: str):
     try:
         user_level = get_user_level_progress(uid)
         user_level += 1
@@ -78,7 +78,7 @@ def increment_user_level(uid: int):
         print("Failed to update user learning progress")
         return None
 
-def increment_user_lesson(uid: int):
+def increment_user_lesson(uid: str):
     try:
         user_lesson = get_user_lesson_progress(uid)
         user_lesson += 1
@@ -92,7 +92,7 @@ def increment_user_lesson(uid: int):
         print("Failed to update user learning progress")
         return None
     
-def reset_user_level(uid: int):
+def reset_user_level(uid: str):
     try:
         response = supabase.table("user_level_progress").update({"level_progress": 1}).eq("id", uid).execute()
         if "data=[]" in str(response):
@@ -104,7 +104,7 @@ def reset_user_level(uid: int):
         print("Failed to update user learning progress")
         return None
 
-def increment_user_lesson_and_reset_user_level(uid: int):
+def increment_user_lesson_and_reset_user_level(uid: str):
     if verify_uid_exists(uid) is False:
         print("User does not exist")
         return None

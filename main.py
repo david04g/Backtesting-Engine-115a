@@ -14,6 +14,12 @@ from db_supabase.db_util import (
     get_user_by_id as get_user,
 )
 
+from db_supabase.db_level_user_progress_util import (
+    add_learning_user,
+    set_user_learning_progress,
+    get_user_learning_progress,
+)
+
 try:
     import yfinance as yf
 except Exception:
@@ -81,6 +87,32 @@ async def get_user_root(user_id: str):
     result = get_user(user_id)
     if not result:
         return {"status": "error", "message": "user not found"}
+    return {"status": "success", "data": result}
+
+@app.post("/api/add_learning_user")
+async def add_learning_user_root(request: Request):
+    data = await request.json()
+    result = add_learning_user(
+        data["uid"], 
+        data.get("starting_level_progress", 0), 
+        data.get("starting_lesson_progress", 0),
+    )
+    return {"status": "success", "data": result}
+
+@app.post("/api/set_user_learning_progress")
+async def set_user_learning_progress_root(request: Request):
+    data = await request.json()
+    result = set_user_learning_progress(
+        data["uid"], 
+        data["level_progress"],
+        data["lesson_progress"],
+    )
+    return {"status": "success", "data": result}
+
+@app.post("/api/get_user_learning_progress")
+async def get_user_learning_progress_root(request: Request):
+    data = await request.json()
+    result = get_user_learning_progress(data["uid"])
     return {"status": "success", "data": result}
 
 @app.post("/api/strategies/buy_hold")
