@@ -5,6 +5,8 @@ import { AuthModalProps } from "../../types";
 import { useNavigate } from "react-router-dom";
 import { get_user_id } from "../apiServices/userApi";
 
+
+
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
   onClose,

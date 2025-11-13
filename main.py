@@ -77,8 +77,8 @@ async def add_learning_root(request:Request):
     uid = data.get("uid")
     return add_learning_user(uid);
  
-@app.post("/api/get_user_id")
-async def get_user_id_root(request: Request):
+@app.post("/api/get_user_id_by_email")
+async def get_user_id_by_email_root(request: Request):
     data = await request.json()
     email = data.get("email")
     user = get_user_id(email)
