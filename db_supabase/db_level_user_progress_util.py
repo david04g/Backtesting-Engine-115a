@@ -2,7 +2,6 @@ import os
 import dotenv
 from supabase import Client, create_client
 from datetime import datetime, timezone
-import db_util
 
 dotenv.load_dotenv()
 SUPABASE_URL = os.getenv("SUPABASE_URL")
