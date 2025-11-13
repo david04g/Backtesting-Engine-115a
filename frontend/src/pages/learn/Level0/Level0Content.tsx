@@ -46,7 +46,7 @@ export const Level0Content: React.FC = () => {
   const [completedSlides, setCompletedSlides] = useState<Set<number>>(new Set());
   const [quizComplete, setQuizComplete] = useState(false);
   const [levelUpComplete, setLevelUpComplete] = useState(false);
-  const [showCongratsModal, setShowCongratsModal] = useState(false);
+  // const [showCongratsModal, setShowCongratsModal] = useState(false);
   
   // Reset quiz completion when leaving the quiz slide
   useEffect(() => {
@@ -94,8 +94,8 @@ export const Level0Content: React.FC = () => {
         });
         const data = await res.json();
         if (data.status === "success") {
-          // alert("🎉 Congratulations! You've completed Level 0!");
-          setShowCongratsModal(true);
+          alert("🎉 Congratulations! You've completed Level 0!");
+          // setShowCongratsModal(true);
           setLevelUpComplete(true);
           navigate("/profile");
         } else {
@@ -189,7 +189,7 @@ export const Level0Content: React.FC = () => {
           </div>
         </div>
       </div>
-      {showCongratsModal && (
+      {/* {showCongratsModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fadeIn">
           <div
             className="rounded-2xl p-10 text-center shadow-xl border border-black/20"
@@ -223,7 +223,7 @@ export const Level0Content: React.FC = () => {
         .animate-fadeIn {
           animation: fadeIn 0.35s ease-out forwards;
         }
-      `}</style>
+      `}</style> */}
     </div>
   );
 };
