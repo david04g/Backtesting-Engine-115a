@@ -43,14 +43,14 @@ export const LongVsShort: React.FC = () => {
     })
     .join(' ');
 
-  const buyX = indexToX(0) + 12;
-  // Triangle tip should be at priceToY(priceData[0]), and tip is at buyY - 15
-  // Position so triangle tip sits on the stock line - accounting for line stroke
-  const buyY = priceToY(priceData[0]) + 15 - 3.5;
-  const sellX = Math.min(indexToX(priceData.length - 1), padding.left + plotWidth - 6);
-  // Triangle tip should be at priceToY(priceData[priceData.length - 1]), and tip is at sellY - 15
-  // Position so triangle tip sits on the stock line - accounting for line stroke
-  const sellY = priceToY(priceData[priceData.length - 1]) + 15 - 0.5;
+  const markerWidth = 16;
+  const markerHeight = 12;
+  const buyX = indexToX(0);
+  const buyY = priceToY(priceData[0]);
+  const sellX = indexToX(priceData.length - 1);
+  const sellY = priceToY(priceData[priceData.length - 1]);
+  const buyMarkerOffset = { x: 10, y: -4 };
+  const sellLabelOffsetY = 2;
 
   return (
     <div className="flex flex-col gap-6 h-full">
@@ -168,12 +168,12 @@ export const LongVsShort: React.FC = () => {
 
               {/* Buy (long) marker - red downward-pointing triangle */}
               <polygon
-                points={`${buyX},${buyY - 15} ${buyX - 8},${buyY - 5} ${buyX + 8},${buyY - 5}`}
+                points={`${buyX + buyMarkerOffset.x},${buyY + buyMarkerOffset.y} ${buyX + buyMarkerOffset.x - markerWidth / 2},${buyY + buyMarkerOffset.y + markerHeight} ${buyX + buyMarkerOffset.x + markerWidth / 2},${buyY + buyMarkerOffset.y + markerHeight}`}
                 fill="#ef4444"
               />
               <text
-                x={buyX}
-                y={buyY + 5}
+                x={buyX + buyMarkerOffset.x}
+                y={buyY + buyMarkerOffset.y + markerHeight + 6}
                 fontSize="11"
                 fill="black"
                 textAnchor="middle"
@@ -184,12 +184,12 @@ export const LongVsShort: React.FC = () => {
 
               {/* Sell (short) marker - red downward-pointing triangle */}
               <polygon
-                points={`${sellX},${sellY - 15} ${sellX - 8},${sellY - 5} ${sellX + 8},${sellY - 5}`}
+                points={`${sellX},${sellY} ${sellX - markerWidth / 2},${sellY + markerHeight} ${sellX + markerWidth / 2},${sellY + markerHeight}`}
                 fill="#ef4444"
               />
               <text
                 x={sellX}
-                y={sellY + 5}
+                y={sellY + markerHeight + 6 + sellLabelOffsetY}
                 fontSize="11"
                 fill="black"
                 textAnchor="middle"
