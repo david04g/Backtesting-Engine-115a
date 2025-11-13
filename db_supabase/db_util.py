@@ -19,6 +19,8 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_PASS)
 #will be in UTC-0 (Greenwich) time. subtract by 8 hours to get UTC-8 (PST) time
 def add_user(username: str, email: str, password_plain: str):
     try:
+        email = email.strip().lower()
+        username = username.strip()
         email_check = supabase.table("users").select("id").eq("email", email).execute()
         if email_check.data:
             return {"success": False, "message": "Email already in use."}
@@ -50,6 +52,7 @@ def add_user(username: str, email: str, password_plain: str):
 
 def login_user(email: str, password_plain: str):
     try:
+        email = email.strip().lower()
         response = supabase.table("users").select("*").eq("email", email).execute()
         if not response.data or len(response.data) == 0:
             return {"success": False, "message": "User email not found"}
