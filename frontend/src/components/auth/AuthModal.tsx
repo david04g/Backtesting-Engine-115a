@@ -80,7 +80,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       if (data.success || data.status === "success") {
         alert("Email verified successfully!");
         localStorage.setItem("isLoggedIn", "true");
-
+        localStorage.setItem("userEmail", email);
         navigate("/profile");
       } else {
         alert("Invalid verification code. Try again.");
@@ -112,12 +112,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       const data = await res.json();
       console.log("isLoginMode:", isLoginMode);
       console.log("data.status:", data.status);
-      console.log("data.data:", data.data.user.id);
+      //console.log("data.data:", data.data.user.id);
 
       if (data.status === "success") {
         if (!isLoginMode) {
           await sendVerificationEmail();
           setShowVerifyStep(true);
+          if (data.data && data.data.user.id) {
+            localStorage.setItem("user_id", data.data.user.id);
+          }
         } else {
           const isVerified = await checkUserVerified(email);
           if (isVerified) {

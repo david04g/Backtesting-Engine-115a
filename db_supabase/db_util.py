@@ -195,8 +195,8 @@ def change_password(uid: str, old_password: str, new_password: str) -> bool:
         print("Password update failed.")
         return False
     
-def verify_email(uid: str, verification_code: int):
-    res = supabase.table("users").select("id, verification_code").eq("id", uid).execute()
+def verify_email(email: str, verification_code: int):
+    res = supabase.table("users").select("id, verification_code").eq("email", email).execute()
     if not res.data:
         print("User not found")
         return False
@@ -213,8 +213,8 @@ def verify_email(uid: str, verification_code: int):
 
     supabase.table("users").update({
         "email_verified": True,
-        "verification_code": None
-    }).eq("id", uid).execute()
+        "verification_code": 100100
+    }).eq("email", email).execute()
     print("Email successfully verified!")
     return True
 
