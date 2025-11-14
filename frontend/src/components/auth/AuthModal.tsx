@@ -4,6 +4,12 @@ import { TrendingUp } from "lucide-react";
 import { AuthModalProps } from "../../types";
 import { useNavigate } from "react-router-dom";
 
+import {
+  get_user_progress,
+  get_user_id_by_email,
+  get_lesson_by_id,
+} from "../apiServices/userApi";
+
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
   onClose,
@@ -79,7 +85,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
       if (data.success || data.status === "success") {
         alert("Email verified successfully!");
-        localStorage.setItem("isLoggedIn", "true");
 
         navigate("/profile");
       } else {
@@ -121,7 +126,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           const isVerified = await checkUserVerified(email);
           if (isVerified) {
             localStorage.setItem("isLoggedIn", "true");
-
+            const userId = await get_user_id_by_email(email);
+            if (userId) {
+              await add_learning_user(userId);
+            }
             navigate("/profile");
           } else {
             alert("Please verify your email before continuing.");
