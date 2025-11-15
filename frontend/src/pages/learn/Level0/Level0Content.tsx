@@ -10,6 +10,7 @@ import { LongVsShort } from './slides/LongVsShort';
 import { RiskVsReward } from './slides/RiskVsReward';
 import { BrokerageAccounts } from './slides/BrokerageAccounts';
 import { BuyAndHold } from './slides/BuyAndHold';
+import { LevelCompletionPopup } from '../../../components/LevelCompletionPopup';
 
 const SLIDES: Slide[] = [
   { id: 'what-is-a-market', title: 'What is a Market?' },
@@ -46,7 +47,7 @@ export const Level0Content: React.FC = () => {
   const [completedSlides, setCompletedSlides] = useState<Set<number>>(new Set());
   const [quizComplete, setQuizComplete] = useState(false);
   const [levelUpComplete, setLevelUpComplete] = useState(false);
-  // const [showCongratsModal, setShowCongratsModal] = useState(false);
+  const [showLevelCompletionPopup, setShowLevelCompletionPopup] = useState(false);
   
   // Reset quiz completion when leaving the quiz slide
   useEffect(() => {
@@ -85,7 +86,6 @@ export const Level0Content: React.FC = () => {
       const uid = localStorage.getItem("user_id");
       if (!uid) return;
 
-      console.log("🎉 Level 0 complete — incrementing user level...");
       try {
         const res = await fetch("http://localhost:8000/api/increment_user_level", {
           method: "POST",
@@ -94,22 +94,21 @@ export const Level0Content: React.FC = () => {
         });
         const data = await res.json();
         if (data.status === "success") {
-          alert("🎉 Congratulations! You've completed Level 0!");
-          // setShowCongratsModal(true);
-          setLevelUpComplete(true);
-          navigate("/profile");
+          setShowLevelCompletionPopup(true);
         } else {
           console.error("Failed to level up:", data);
+          setLevelUpComplete(false);
         }
       } catch (err) {
         console.error("Error incrementing level:", err);
+        setLevelUpComplete(false);
       }
     };
     if (currentIndex === SLIDES.length - 1 && !levelUpComplete) {
       setLevelUpComplete(true);
       incrementLevel();
     }
-  }, [currentIndex, levelUpComplete, navigate]);
+  }, [currentIndex, levelUpComplete]);
   
   const handlePrevious = () => {
     if (currentIndex > 0) {
@@ -120,7 +119,6 @@ export const Level0Content: React.FC = () => {
   };
   
   const handleNext = async () => {
-    console.log("handleNext called at slide", currentIndex, "of", SLIDES.length);
     if (currentIndex < SLIDES.length - 1) {
       const newIndex = currentIndex + 1;
       setCurrentIndex(newIndex);
@@ -224,6 +222,16 @@ export const Level0Content: React.FC = () => {
           animation: fadeIn 0.35s ease-out forwards;
         }
       `}</style> */}
+      <LevelCompletionPopup
+        isOpen={showLevelCompletionPopup}
+        message={"Congratulations on completing Level 0! You have now unlocked the Buy and Hold strategy."}
+        actionLabel="Back to Profile"
+        onAction={() => {
+          setShowLevelCompletionPopup(false);
+          navigate("/profile");
+        }}
+        onClose={() => setShowLevelCompletionPopup(false)}
+      />
     </div>
   );
 };

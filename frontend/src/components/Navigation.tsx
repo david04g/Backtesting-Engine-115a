@@ -7,12 +7,28 @@ const Navigation: React.FC = () => {
   const location = useLocation();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+    return localStorage.getItem("isLoggedIn") === "true";
+  });
 
   useEffect(() => {
     const loggedIn = localStorage.getItem("isLoggedIn") === "true";
     setIsLoggedIn(loggedIn);
   }, [location]);
+
+  useEffect(() => {
+    const syncLoginState = () => {
+      setIsLoggedIn(localStorage.getItem("isLoggedIn") === "true");
+    };
+
+    window.addEventListener("storage", syncLoginState);
+    return () => {
+      window.removeEventListener("storage", syncLoginState);
+    };
+  }, []);
 
   const handleLoginClick = () => {
     setAuthMode("login");
@@ -20,13 +36,11 @@ const Navigation: React.FC = () => {
   };
 
   const handleLogout = () => {
-    localStorage.clear();
+    localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("user_id");
     setIsLoggedIn(false);
     navigate("/");
   };
-
-
-  const isPublicPage = location.pathname === "/";
 
   return (
     <nav className="flex items-center justify-between px-12 py-4 bg-white shadow-sm">
@@ -36,14 +50,33 @@ const Navigation: React.FC = () => {
         <span className="text-gray-800"> Strategies</span>
       </Link>
 
-      
-      {isLoggedIn && !isPublicPage ? (
-        <button
-          onClick={handleLogout}
-          className="px-6 py-3 rounded-full bg-gray-800 text-white font-medium hover:bg-gray-700 transition-colors"
-        >
-          Logout
-        </button>
+      {isLoggedIn ? (
+        <div className="flex items-center gap-6">
+          {location.pathname !== "/profile" && (
+            <Link
+              to="/profile"
+              className="px-6 py-3 rounded-full font-medium text-gray-700 hover:text-gray-900 transition-colors"
+            >
+              Profile
+            </Link>
+          )}
+          <button
+            onClick={handleLogout}
+            className="px-6 py-3 rounded-full bg-gray-800 text-white font-medium hover:bg-gray-700 transition-colors"
+          >
+            Logout
+          </button>
+          <Link
+            to="/about"
+            className={`px-6 py-3 rounded-full font-medium transition-colors ${
+              location.pathname === "/about"
+                ? "bg-lime-300 hover:bg-lime-400 text-gray-800"
+                : "text-gray-700 hover:text-gray-900"
+            }`}
+          >
+            About
+          </Link>
+        </div>
       ) : (
         <div className="flex items-center gap-6">
           <Link
