@@ -2,8 +2,9 @@
 import React, { useState } from "react";
 import { TrendingUp } from "lucide-react";
 import { AuthModalProps } from "../../types";
+import { useUser } from "../../context/UserContext";
 import { useNavigate } from "react-router-dom";
-import { get_user_id } from "../apiServices/userApi";
+import { get_user_id_by_email } from "../apiServices/userApi";
 
 
 
@@ -12,6 +13,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onClose,
   initialMode,
 }) => {
+  const { setUser } = useUser();
+
   const [isLoginMode, setIsLoginMode] = useState(initialMode === "login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -106,9 +109,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         alert("Email verified successfully!");
         localStorage.setItem("isLoggedIn", "true");
         localStorage.setItem("userEmail", email);
-        const userId = await get_user_id();
+        const userId = await get_user_id_by_email(email);
         if (userId) {
           await add_learning_user(userId);
+          setUser({
+          id: userId,
+          email: email})
         }
 
         navigate("/profile");
@@ -151,9 +157,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           const isVerified = await checkUserVerified(email);
           if (isVerified) {
             localStorage.setItem("isLoggedIn", "true");
-            const userId = await get_user_id();
+            const userId = await get_user_id_by_email(email);
             if (userId) {
               await add_learning_user(userId);
+              setUser({
+          id: userId,
+          email: email})
             }
 
             navigate("/profile");

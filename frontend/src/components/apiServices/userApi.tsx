@@ -1,7 +1,7 @@
-const savedEmail = localStorage.getItem("userEmail");
-export const get_user_id = async () => {
-  const endpoint = "http://localhost:8000/api/get_user_id";
-  const payload = { email: savedEmail };
+
+export const get_user_id_by_email = async (email:string) => {
+  const endpoint = "http://localhost:8000/api/get_user_id_by_email";
+  const payload = { email };
   try {
     const res = await fetch(endpoint, {
       method: "POST",

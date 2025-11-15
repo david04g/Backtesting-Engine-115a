@@ -1,11 +1,12 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import {
-  get_user_id,
+  get_user_id_by_email,
   get_lesson_by_id,
   get_user_progress,
 } from "../../../components/apiServices/userApi";
 import LearningPath from "../../../components/lesson/LearningPath/LearningPath";
+import { useUser } from "../../../context/UserContext";
 
 interface Lesson {
   id: number;
@@ -19,10 +20,11 @@ interface Lesson {
 const LessonPage = () => {
   const [lessonData, setLessonData] = useState<Lesson | null>(null);
   const [loading, setLoading] = useState(true);
-
+  const { user } = useUser();
   useEffect(() => {
     const loadLesson = async () => {
-      const uuid = await get_user_id();
+      if (!user) return;
+      const uuid = await get_user_id_by_email(user?.email);
       if (!uuid) return;
 
       const progress = await get_user_progress(uuid);
@@ -35,7 +37,7 @@ const LessonPage = () => {
     };
 
     loadLesson();
-  }, []);
+  }, [user]);
 
   if (loading) return <div>Loading...</div>;
 

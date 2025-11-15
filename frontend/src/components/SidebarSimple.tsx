@@ -1,17 +1,29 @@
-import React from 'react';
+import React from "react";
 
 type SidebarSimpleProps = {
-  active: 'profile' | 'strategies';
+  active: "profile" | "strategies" | "lessons";
 };
 
 const IconDot: React.FC = () => (
-  <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 20 20"
+    fill="currentColor"
+    aria-hidden="true"
+  >
     <circle cx="10" cy="10" r="3" />
   </svg>
 );
 
 const IconList: React.FC = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    aria-hidden="true"
+  >
     <rect x="4" y="6" width="16" height="2" rx="1" />
     <rect x="4" y="11" width="16" height="2" rx="1" />
     <rect x="4" y="16" width="16" height="2" rx="1" />
@@ -20,23 +32,39 @@ const IconList: React.FC = () => (
 
 export const SidebarSimple: React.FC<SidebarSimpleProps> = ({ active }) => {
   return (
-    <aside className="flex flex-col justify-between" style={{ width: 240, backgroundColor: '#D9F2A6' }}>
+    <aside
+      className="flex flex-col justify-between"
+      style={{ width: 240, backgroundColor: "#D9F2A6" }}
+    >
       <div>
         <nav className="pt-6 space-y-3 px-4">
-          <button 
+          <button
             onClick={() => {}}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-all hover:opacity-80 active:scale-[0.98] cursor-pointer ${active === 'profile' ? 'bg-white/40' : ''}`}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-all hover:opacity-80 active:scale-[0.98] cursor-pointer ${
+              active === "profile" ? "bg-white/40" : ""
+            }`}
           >
             <IconDot />
             <span className="font-semibold">Profile</span>
             <span className="ml-auto">‹</span>
           </button>
-          <button 
+          <button
             onClick={() => {}}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-all hover:opacity-80 active:scale-[0.98] cursor-pointer ${active === 'strategies' ? 'bg-white/40' : ''}`}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-all hover:opacity-80 active:scale-[0.98] cursor-pointer ${
+              active === "strategies" ? "bg-white/40" : ""
+            }`}
           >
             <IconList />
             <span className="font-semibold">Strategies</span>
+          </button>
+          <button
+            onClick={Navigate("/")}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-all hover:opacity-80 active:scale-[0.98] cursor-pointer ${
+              active === "lessons" ? "bg-white/40" : ""
+            }`}
+          >
+            <IconList />
+            <span className="font-semibold">Lessons</span>
           </button>
         </nav>
       </div>
@@ -49,5 +77,3 @@ export const SidebarSimple: React.FC<SidebarSimpleProps> = ({ active }) => {
 };
 
 export default SidebarSimple;
-
-

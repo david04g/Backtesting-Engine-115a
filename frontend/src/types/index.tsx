@@ -22,3 +22,4 @@ export interface FeatureCardProps {
   iconBgColor: string;
   iconColor: string;
 }
+
