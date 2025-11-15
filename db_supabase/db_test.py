@@ -23,5 +23,6 @@ db_util.send_verification_email("nsnham@ucsc.edu")
 print(db_util.verify_email(db_util.get_user_id_by_email("nsnham@ucsc.edu"), ver_code))
 """
 
-print(db_util.is_user_verified(db_util.get_user_id_by_email("nsnham@ucsc.edu")))
-print(db_util.is_user_verified(db_util.get_user_id_by_username("Nishan")))
+#print(db_util.add_user("test_nham", "nsnham@ucsc.edu", "testpass1"))
+#print(db_util.send_verification_email("nsnham@ucsc.edu"))
+print(db_util.verify_email(db_util.get_user_id_by_email("nsnham@ucsc.edu"), 248350))
