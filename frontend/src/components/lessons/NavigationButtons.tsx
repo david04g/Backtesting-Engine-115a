@@ -16,7 +16,7 @@ export const NavigationButtons: React.FC<NavigationButtonsProps> = ({
   nextLabel = "Next",
 }) => {
   return (
-    <div className="flex justify-center gap-8 mt-8">
+    <div className="flex flex-wrap items-center justify-center gap-6">
       <button
         onClick={onPrevious}
         disabled={!canGoPrevious}

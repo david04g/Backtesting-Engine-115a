@@ -1,4 +1,7 @@
 import os
+import json
+from typing import List, Optional
+
 import dotenv
 from supabase import Client, create_client
 from datetime import datetime, timezone
@@ -28,6 +31,7 @@ def add_learning_user(uid: str):
             "level_progress": 0,
             "lesson_progress": 1,
             "last_updated": get_current_timestamp(),
+            "completed_lessons": [],
         }).execute()
         if response.data:
             return {"success": True, "user": response.data[0]}
@@ -39,13 +43,22 @@ def add_learning_user(uid: str):
         else:
             return {"success": False, "message": f"error adding user: {e}"}
         
-def set_user_learning_progress(uid: str, level_progress: int, lesson_progress: int):
+def set_user_learning_progress(
+    uid: str,
+    level_progress: int,
+    lesson_progress: int,
+    completed_lessons: Optional[List[int]] = None,
+):
     try:
-        response = supabase.table("user_progress").update({
+        update_data = {
             "level_progress": level_progress,
             "lesson_progress": lesson_progress,
             "last_updated": get_current_timestamp(),
-        }).eq("id", uid).execute()
+        }
+        if completed_lessons is not None:
+            update_data["completed_lessons"] = completed_lessons
+
+        response = supabase.table("user_progress").update(update_data).eq("id", uid).execute()
         if not response.data:
             print("User does not exist")
             return None
@@ -53,6 +66,46 @@ def set_user_learning_progress(uid: str, level_progress: int, lesson_progress: i
     except Exception as e:
         print("Failed to update user learning progress:", e)
         return None
+
+
+def set_user_completed_lessons(uid: str, completed_lessons: List[int]):
+    try:
+        response = supabase.table("user_progress").update({
+            "completed_lessons": completed_lessons,
+            "last_updated": get_current_timestamp(),
+        }).eq("id", uid).execute()
+
+        if response.data:
+            return response.data[0]
+
+        init = add_learning_user(uid)
+        if not init or not init.get("success"):
+            return None
+
+        retry_response = supabase.table("user_progress").update({
+            "completed_lessons": completed_lessons,
+            "last_updated": get_current_timestamp(),
+        }).eq("id", uid).execute()
+
+        if retry_response.data:
+            return retry_response.data[0]
+        return None
+    except Exception as e:
+        print("Failed to update user completed lessons:", e)
+        return None
+
+
+def parse_completed_lessons(raw_value):
+    if isinstance(raw_value, list):
+        return raw_value
+    if isinstance(raw_value, str):
+        try:
+            parsed = json.loads(raw_value)
+            if isinstance(parsed, list):
+                return parsed
+        except json.JSONDecodeError:
+            pass
+    return []
     
 def get_user_learning_progress(id: str):
     response = supabase.table("user_progress").select("*").eq("id", id).execute()

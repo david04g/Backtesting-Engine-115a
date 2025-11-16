@@ -23,6 +23,8 @@ from db_supabase.db_level_user_progress_util import (
     get_user_learning_progress,
     add_learning_user,
     set_user_learning_progress,
+    set_user_completed_lessons,
+    parse_completed_lessons,
 )
 
 try:
@@ -66,12 +68,17 @@ async def get_user_learning_progress_root(request: Request):
                 return {"status": "error", "message": "Unable to initialize learning progress"}
             progress = init["user"]
 
+        completed_lessons = parse_completed_lessons(
+            progress.get("completed_lessons")
+        )
+
         # Normalize response to what frontend expects
         response_data = {
             "user": user,
             "level_progress": progress.get("level_progress", 0),
             "lesson_progress": progress.get("lesson_progress", 0),
             "current_lesson_id": progress.get("current_lesson_id"),
+            "completed_lessons": completed_lessons,
         }
         return {"status": "success", "data": response_data}
     except Exception as e:
@@ -164,6 +171,9 @@ async def add_learning_user_root(request: Request):
             "level_progress": user_progress.get("level_progress", 0),
             "lesson_progress": user_progress.get("lesson_progress", 0),
             "last_updated": user_progress.get("last_updated"),
+            "completed_lessons": parse_completed_lessons(
+                user_progress.get("completed_lessons", [])
+            ),
         }
         # Include both keys for compatibility with varying frontend checks
         return {"status": "success", "success": "success", "data": response_data}
@@ -176,6 +186,7 @@ async def set_user_learning_progress_root(request: Request):
     uid = data.get("uid")
     level_progress = data.get("level_progress")
     lesson_progress = data.get("lesson_progress")
+    completed_lessons_raw = data.get("completed_lessons")
 
     if not uid:
         return {"status": "error", "message": "Missing uid"}
@@ -183,12 +194,58 @@ async def set_user_learning_progress_root(request: Request):
         return {"status": "error", "message": "Missing level or lesson progress"}
 
     try:
-        updated = set_user_learning_progress(uid, int(level_progress), int(lesson_progress))
+        completed_lessons = None
+        if completed_lessons_raw is not None:
+            completed_lessons = parse_completed_lessons(completed_lessons_raw)
+
+        updated = set_user_learning_progress(
+            uid,
+            int(level_progress),
+            int(lesson_progress),
+            completed_lessons,
+        )
         if not updated:
             return {"status": "error", "message": "Unable to update learning progress"}
-        return {"status": "success", "data": updated}
+        return {
+            "status": "success",
+            "data": {
+                **updated,
+                "completed_lessons": parse_completed_lessons(
+                    updated.get("completed_lessons")
+                ),
+            },
+        }
     except Exception as e:
         print("Error updating user learning progress", e)
+        return {"status": "error", "message": str(e)}
+
+
+@app.post("/api/set_user_completed_lessons")
+async def set_user_completed_lessons_root(request: Request):
+    data = await request.json()
+    uid = data.get("uid")
+    completed_lessons_raw = data.get("completed_lessons")
+
+    if not uid:
+        return {"status": "error", "message": "Missing uid"}
+
+    completed_lessons = parse_completed_lessons(completed_lessons_raw)
+
+    try:
+        updated = set_user_completed_lessons(uid, completed_lessons)
+        if not updated:
+            return {"status": "error", "message": "Unable to update completed lessons"}
+        return {
+            "status": "success",
+            "data": {
+                **updated,
+                "completed_lessons": parse_completed_lessons(
+                    updated.get("completed_lessons")
+                ),
+            },
+        }
+    except Exception as e:
+        print("Error updating user completed lessons", e)
         return {"status": "error", "message": str(e)}
 
 @app.post("/api/login_user")

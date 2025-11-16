@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   get_lesson,
@@ -77,6 +77,7 @@ const PageContent = () => {
   const [lessons, setLessons] = useState<LessonRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [isQuizComplete, setIsQuizComplete] = useState(false);
+  const [quizCompletionState, setQuizCompletionState] = useState<Record<number, boolean>>({});
   const [userId, setUserId] = useState<string | null>(null);
   const [userProgress, setUserProgress] = useState<{ level: number; lesson: number } | null>(null);
   const [nextLevelInfo, setNextLevelInfo] = useState<{ level: number; firstLesson: number } | null>(null);
@@ -157,8 +158,51 @@ const PageContent = () => {
   }, [levelNum, lessonNum, navigate]);
 
   useEffect(() => {
-    setIsQuizComplete(false);
-  }, [lessonData?.id]);
+    if (!lessonData?.id) {
+      setIsQuizComplete(false);
+      return;
+    }
+
+    const lessonId = lessonData.id;
+    const previouslyCompleted = quizCompletionState[lessonId] ?? false;
+
+    let derivedComplete = previouslyCompleted;
+
+    if (!derivedComplete && userProgress) {
+      const hasSavedProgress =
+        lessonData.level < (userProgress?.level ?? 0) ||
+        (lessonData.level === (userProgress?.level ?? 0) && lessonData.page_number < (userProgress?.lesson ?? 1));
+
+      if (hasSavedProgress) {
+        derivedComplete = true;
+        setQuizCompletionState((prev) =>
+          prev[lessonId] ? prev : { ...prev, [lessonId]: true }
+        );
+      }
+    }
+
+    setIsQuizComplete(derivedComplete);
+  }, [lessonData, quizCompletionState, userProgress]);
+
+  const handleQuizCompletion = useCallback(
+    (complete: boolean) => {
+      const lessonId = lessonData?.id;
+      if (!lessonId) {
+        setIsQuizComplete(complete);
+        return;
+      }
+
+      if (complete) {
+        setQuizCompletionState((prev) =>
+          prev[lessonId] ? prev : { ...prev, [lessonId]: true }
+        );
+        setIsQuizComplete(true);
+      } else if (!quizCompletionState[lessonId]) {
+        setIsQuizComplete(false);
+      }
+    },
+    [lessonData?.id, quizCompletionState]
+  );
 
   const currentIndex = useMemo(() => {
     if (!lessons.length) {
@@ -226,8 +270,10 @@ const PageContent = () => {
     : null;
   const dragAndDropConfig = DRAG_AND_DROP_CONFIG[lessonData.page_number];
   const isDragAndDrop = lessonData.content_type === "drag_and_drop" && dragAndDropConfig;
+  const hasPersistedCompletion = lessonData.id ? !!quizCompletionState[lessonData.id] : false;
+  const isLessonComplete = isQuizComplete || hasPersistedCompletion;
   const isLastLesson = currentIndex >= 0 && currentIndex === lessons.length - 1;
-  const baseCanAdvance = !isDragAndDrop || isQuizComplete;
+  const baseCanAdvance = !isDragAndDrop || isLessonComplete;
   const canAdvanceWithinLevel = currentIndex >= 0 && currentIndex < lessons.length - 1 && baseCanAdvance;
   const canStartNextLevel = currentIndex >= 0 && isLastLesson && !!nextLevelInfo && baseCanAdvance;
   const canGoNext = canAdvanceWithinLevel || canStartNextLevel;
@@ -252,11 +298,12 @@ const PageContent = () => {
         </div>
 
         <div
-          className="flex-1 flex flex-col p-8 overflow-hidden"
+          className="flex-1 flex flex-col p-8"
           style={{ marginLeft: "32px" }}
         >
-          <div className="max-w-5xl mx-auto w-full h-full flex flex-col gap-8">
-            <div className="flex flex-col gap-6">
+          <div className="max-w-5xl mx-auto w-full flex flex-col h-full">
+            <div className="flex-1 overflow-y-auto pr-1">
+              <div className="flex flex-col gap-6 pb-8">
               <div className="inline-flex items-center gap-4 rounded-lg px-6 py-3 text-sm font-semibold"
                 style={{ backgroundColor: "#D9F2A6", color: "#1f2937", maxWidth: "fit-content" }}
               >
@@ -264,7 +311,7 @@ const PageContent = () => {
                 <span className="opacity-70">Page {lessonData.page_number}</span>
               </div>
 
-              <div className="rounded-xl border border-black/10 bg-white shadow-sm">
+                <div className="rounded-xl border border-black/10 bg-white shadow-sm">
                 <div className="rounded-t-xl px-6 py-5" style={{ backgroundColor: "#F5C3D2" }}>
                   <h2 className="text-3xl font-bold text-gray-900">{supportingTitle}</h2>
                 </div>
@@ -292,18 +339,18 @@ const PageContent = () => {
                         )}
                       </div>
                       <DragAndDropQuiz
-                        items={dragAndDropConfig.items}
-                        categories={dragAndDropConfig.categories}
-                        onQuizComplete={setIsQuizComplete}
-                        containerClassName="max-h-[28rem]"
-                        categoryClassName="bg-white"
-                      />
-                      {!isQuizComplete && (
+                    items={dragAndDropConfig.items}
+                    categories={dragAndDropConfig.categories}
+                    onQuizComplete={handleQuizCompletion}
+                    containerClassName="max-h-[28rem]"
+                    categoryClassName="bg-white"
+                  />
+                      {!isLessonComplete && (
                         <p className="text-sm text-rose-700 font-medium text-center">
                           Complete the quiz and click “Check Answers” to continue.
                         </p>
                       )}
-                      {isQuizComplete && (
+                      {isLessonComplete && (
                         <p className="text-sm text-green-700 font-medium text-center">
                           Great job! You can move to the next lesson.
                         </p>
@@ -312,9 +359,10 @@ const PageContent = () => {
                   )}
                 </div>
               </div>
+              </div>
             </div>
 
-            <div className="mt-auto pt-6">
+            <div className="pt-6">
               <NavigationButtons
                 onPrevious={() => handleNavigate("prev")}
                 onNext={async () => {

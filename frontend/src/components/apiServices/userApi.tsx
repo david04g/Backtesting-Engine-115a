@@ -66,11 +66,19 @@ export const get_user_progress = async (uuid: string) => {
     console.log("user progress:", data);
 
     if (data.status === "success" && data.data) {
+      const rawCompleted = Array.isArray(data.data.completed_lessons)
+        ? data.data.completed_lessons
+        : [];
+      const completedLessons = rawCompleted
+        .map((value: unknown) => Number(value))
+        .filter((value: number) => !Number.isNaN(value));
+
       return {
         userId: data.data.user.id,
         lesson: data.data.lesson_progress,
         level: data.data.level_progress,
         currentLessonId: data.data.current_lesson_id,
+        completedLessons,
       };
     } else {
       console.error("User not found or invalid response");
@@ -85,14 +93,19 @@ export const get_user_progress = async (uuid: string) => {
 export const set_user_learning_progress = async (
   uuid: string,
   level: number,
-  lesson: number
+  lesson: number,
+  completedLessons?: number[]
 ) => {
   const endpoint = "http://localhost:8000/api/set_user_learning_progress";
-  const payload = {
+  const payload: Record<string, unknown> = {
     uid: uuid,
     level_progress: level,
     lesson_progress: lesson,
   };
+
+  if (completedLessons) {
+    payload.completed_lessons = completedLessons;
+  }
 
   try {
     const res = await fetch(endpoint, {
@@ -111,6 +124,37 @@ export const set_user_learning_progress = async (
     }
   } catch (err) {
     console.error("Error setting user learning progress:", err);
+    return null;
+  }
+};
+
+export const set_user_completed_lessons = async (
+  uuid: string,
+  completedLessons: number[],
+) => {
+  const endpoint = "http://localhost:8000/api/set_user_completed_lessons";
+  const payload = {
+    uid: uuid,
+    completed_lessons: completedLessons,
+  };
+
+  try {
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+
+    if (data.status === "success" && data.data) {
+      return data.data;
+    }
+
+    console.error("Failed to update completed lessons", data);
+    return null;
+  } catch (err) {
+    console.error("Error updating completed lessons:", err);
     return null;
   }
 };
