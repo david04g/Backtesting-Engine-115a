@@ -17,10 +17,12 @@ from db_supabase.db_util import (
 
 from db_supabase.db_lessons import (
     get_lesson,
+    get_lessons_by_level,
 )
 from db_supabase.db_level_user_progress_util import (
     get_user_learning_progress,
     add_learning_user,
+    set_user_learning_progress,
 )
 
 try:
@@ -97,7 +99,21 @@ async def get_lesson_root(request: Request):
     except Exception as e:
         print("Error receiving lesson", e)
         return {"status": "error", "message": str(e)}
-    
+
+
+
+@app.get("/api/lessons/{level}")
+async def get_lessons_for_level(level: int):
+    try:
+        lessons = get_lessons_by_level(level)
+        if not lessons:
+            return {"status": "error", "message": "No lessons found"}
+        lessons_sorted = sorted(lessons, key=lambda row: row.get("page_number", 0))
+        return {"status": "success", "data": lessons_sorted}
+    except Exception as e:
+        print("Error fetching lessons for level", level, e)
+        return {"status": "error", "message": str(e)}
+
 
 @app.post("/api/send_verification_email")
 async def send_verification_email_root(request: Request):
@@ -152,6 +168,28 @@ async def add_learning_user_root(request: Request):
         # Include both keys for compatibility with varying frontend checks
         return {"status": "success", "success": "success", "data": response_data}
     return {"status": "error", "message": result.get("message") if isinstance(result, dict) else "Failed to add learning user"}
+
+
+@app.post("/api/set_user_learning_progress")
+async def set_user_learning_progress_root(request: Request):
+    data = await request.json()
+    uid = data.get("uid")
+    level_progress = data.get("level_progress")
+    lesson_progress = data.get("lesson_progress")
+
+    if not uid:
+        return {"status": "error", "message": "Missing uid"}
+    if level_progress is None or lesson_progress is None:
+        return {"status": "error", "message": "Missing level or lesson progress"}
+
+    try:
+        updated = set_user_learning_progress(uid, int(level_progress), int(lesson_progress))
+        if not updated:
+            return {"status": "error", "message": "Unable to update learning progress"}
+        return {"status": "success", "data": updated}
+    except Exception as e:
+        print("Error updating user learning progress", e)
+        return {"status": "error", "message": str(e)}
 
 @app.post("/api/login_user")
 async def login_user_root(request: Request):

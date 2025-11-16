@@ -10,8 +10,14 @@ const Navigation: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    const loggedIn = localStorage.getItem("isLoggedIn") === "true";
-    setIsLoggedIn(loggedIn);
+    const syncAuth = () => {
+      const loggedIn = localStorage.getItem("isLoggedIn") === "true";
+      setIsLoggedIn(loggedIn);
+    };
+
+    syncAuth();
+    window.addEventListener("auth-changed", syncAuth);
+    return () => window.removeEventListener("auth-changed", syncAuth);
   }, [location]);
 
   const handleLoginClick = () => {
@@ -50,14 +56,14 @@ const Navigation: React.FC = () => {
             Home
           </Link>
           <Link
-            to="/profile"
+            to="/learn/0/1"
             className={`px-6 py-3 rounded-full font-medium transition-colors ${
-              location.pathname === "/profile"
+              location.pathname.startsWith("/learn")
                 ? "bg-lime-300 hover:bg-lime-400 text-gray-800"
                 : "text-gray-700 hover:text-gray-900"
             }`}
           >
-            Profile
+            Learn
           </Link>
           <button
             onClick={handleLogout}

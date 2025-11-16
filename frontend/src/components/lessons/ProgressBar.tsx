@@ -9,13 +9,15 @@ interface ProgressBarProps {
   slides: Slide[];
   currentSlideIndex: number;
   completedSlides: Set<number>;
+  heading?: string;
 }
 
-export const ProgressBar: React.FC<ProgressBarProps> = ({ slides, currentSlideIndex, completedSlides }) => {
+export const ProgressBar: React.FC<ProgressBarProps> = ({ slides, currentSlideIndex, completedSlides, heading }) => {
+  const title = heading && heading.trim().length > 0 ? heading : 'Lesson Overview';
   return (
     <div className="w-64 flex flex-col">
       <div className="rounded-md px-4 py-3 mb-6" style={{ backgroundColor: '#D9F2A6' }}>
-        <div className="text-lg font-bold italic text-black">Level 0 Basics</div>
+        <div className="text-lg font-bold italic text-black">{title}</div>
       </div>
       
       <div className="relative flex flex-col">

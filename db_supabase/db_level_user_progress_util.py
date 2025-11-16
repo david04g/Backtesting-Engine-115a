@@ -39,17 +39,17 @@ def add_learning_user(uid: str):
         else:
             return {"success": False, "message": f"error adding user: {e}"}
         
-def set_user_learning_progress(uid: int, level_progress: int, lesson_progress: int):
+def set_user_learning_progress(uid: str, level_progress: int, lesson_progress: int):
     try:
         response = supabase.table("user_progress").update({
-            "level_progress": lesson_progress,
-            "lesson_progress": level_progress,
+            "level_progress": level_progress,
+            "lesson_progress": lesson_progress,
             "last_updated": get_current_timestamp(),
         }).eq("id", uid).execute()
-        if "data=[]" in str(response):
+        if not response.data:
             print("User does not exist")
             return None
-        return response
+        return response.data[0]
     except Exception as e:
         print("Failed to update user learning progress:", e)
         return None

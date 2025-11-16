@@ -5,6 +5,7 @@ interface NavigationButtonsProps {
   onNext: () => void;
   canGoPrevious: boolean;
   canGoNext: boolean;
+  nextLabel?: string;
 }
 
 export const NavigationButtons: React.FC<NavigationButtonsProps> = ({
@@ -12,6 +13,7 @@ export const NavigationButtons: React.FC<NavigationButtonsProps> = ({
   onNext,
   canGoPrevious,
   canGoNext,
+  nextLabel = "Next",
 }) => {
   return (
     <div className="flex justify-center gap-8 mt-8">
@@ -39,7 +41,7 @@ export const NavigationButtons: React.FC<NavigationButtonsProps> = ({
         }`}
         style={{ backgroundColor: '#E8B6B6' }}
       >
-        <span className="font-semibold">Next</span>
+        <span className="font-semibold">{nextLabel}</span>
         <span className="text-lg">→</span>
       </button>
     </div>

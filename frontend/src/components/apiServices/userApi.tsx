@@ -82,6 +82,58 @@ export const get_user_progress = async (uuid: string) => {
   }
 };
 
+export const set_user_learning_progress = async (
+  uuid: string,
+  level: number,
+  lesson: number
+) => {
+  const endpoint = "http://localhost:8000/api/set_user_learning_progress";
+  const payload = {
+    uid: uuid,
+    level_progress: level,
+    lesson_progress: lesson,
+  };
+
+  try {
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+
+    if (data.status === "success" && data.data) {
+      return data.data;
+    } else {
+      console.error("Failed to update user learning progress");
+      return null;
+    }
+  } catch (err) {
+    console.error("Error setting user learning progress:", err);
+    return null;
+  }
+};
+
+export const get_lessons_by_level = async (level: number) => {
+  const endpoint = `http://localhost:8000/api/lessons/${level}`;
+
+  try {
+    const res = await fetch(endpoint);
+    const data = await res.json();
+
+    if (data.status === "success" && Array.isArray(data.data)) {
+      return data.data;
+    } else {
+      console.error("Lessons not found for level", level);
+      return [];
+    }
+  } catch (err) {
+    console.error("Error fetching lessons for level:", err);
+    return [];
+  }
+};
+
 export const get_lesson = async (level: number, lesson: number) => {
   const endpoint = "http://localhost:8000/api/get_lesson";
   const payload = { level, lesson };

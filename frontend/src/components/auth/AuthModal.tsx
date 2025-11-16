@@ -83,7 +83,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         const uid = data.data.user.id;
         const userProgress = await get_user_progress(uid);
         // persist session
-        try { localStorage.setItem("user_id", uid); } catch {}
+        try {
+          localStorage.setItem("user_id", uid);
+          localStorage.setItem("isLoggedIn", "true");
+          localStorage.setItem("level", String(userProgress?.level ?? 0));
+          localStorage.setItem("lesson", String(userProgress?.lesson ?? 1));
+          window.dispatchEvent(new Event("auth-changed"));
+        } catch {}
         setCurrentUser({
           id: uid,
           name: name,
@@ -92,7 +98,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           lesson: userProgress?.lesson ?? 1,
         });
 
-        navigate("/profile");
+        navigate(`/learn/${userProgress?.level ?? 0}/${userProgress?.lesson ?? 1}`);
       } else {
         alert("Invalid verification code. Try again.");
       }
@@ -133,10 +139,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           const isVerified = await checkUserVerified(email);
           if (isVerified) {
             const uid = data.data.user?.id;
+            let userProgress = null;
             if (uid) {
-              try { localStorage.setItem("user_id", uid); } catch {}
+              try {
+                localStorage.setItem("user_id", uid);
+                window.dispatchEvent(new Event("auth-changed"));
+            } catch {}
+              userProgress = await get_user_progress(uid);
             }
-            const userProgress = uid ? await get_user_progress(uid) : null;
             setCurrentUser({
               id: uid,
               name: name,
@@ -145,7 +155,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               level: userProgress?.level ?? 0,
             });
 
-            navigate("/profile");
+            try {
+              localStorage.setItem("isLoggedIn", "true");
+              localStorage.setItem("level", String(userProgress?.level ?? 0));
+              localStorage.setItem("lesson", String(userProgress?.lesson ?? 1));
+              window.dispatchEvent(new Event("auth-changed"));
+            } catch {}
+
+            navigate(`/learn/${userProgress?.level ?? 0}/${userProgress?.lesson ?? 1}`);
           } else {
             alert("Please verify your email before continuing.");
           }
