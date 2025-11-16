@@ -14,6 +14,14 @@ from db_supabase.db_util import (
     get_user_by_id as get_user,
 )
 
+from db_supabase.db_lessons import (
+    get_lesson,
+)
+from db_supabase.db_level_user_progress_util import (
+    get_user_learning_progress,
+    add_learning_user,
+)
+
 try:
     import yfinance as yf
 except Exception:
@@ -32,6 +40,40 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+
+@app.post ("/api/get_user_learning_progress")
+async def get_user_learning_progress_root(request: Request):
+    data = await request.json()
+    id = data.get("id")
+    if not id:
+        return {"status": "error", "message": "No User"}
+    try:
+        result = get_user_learning_progress(id)
+        return {"status": "success", "data": result}
+    except Exception as e:
+        print("Error receiving user's learning progress", e)
+        return {"status": "error", "message": str(e)}
+
+
+
+@app.post ("/api/get_lesson")
+async def get_lesson_root(request: Request):
+    data = await request.json()
+    level = data.get("level")
+    lesson = data.get("lesson")
+    if not level or not lesson:
+        return {"status": "error", "message": "No level or lesson_number"}
+    try:
+        result = get_lesson(level, lesson)
+        if not result:
+            return {"status": "error", "message": "Lesson not found"}
+        return {"status": "success", "data": result}
+    
+    except Exception as e:
+        print("Error receiving lesson", e)
+        return {"status": "error", "message": str(e)}
+    
 
 @app.post("/api/send_verification_email")
 async def send_verification_email_root(request: Request):
@@ -68,6 +110,13 @@ async def add_user_root(request: Request):
     result = add_user(data["name"], data["email"], data["password_hash"])
     return {"status": "success", "data": result}
 
+@app.post("/api/add_learning_user")
+async def add_learning_user_root(request: Request):
+    data = await request.json()
+    result = add_learning_user(
+        data["uid"]
+    )
+    return {"status": "success", "data": result}
 
 @app.post("/api/login_user")
 async def login_user_root(request: Request):
@@ -82,6 +131,8 @@ async def get_user_root(user_id: str):
     if not result:
         return {"status": "error", "message": "user not found"}
     return {"status": "success", "data": result}
+
+
 
 @app.post("/api/strategies/buy_hold")
 async def run_buy_and_hold(request: Request):
@@ -205,6 +256,8 @@ async def run_buy_and_hold(request: Request):
             "series": series,
         },
     }
+
+
 
 @app.post("/api/strategies/simple_moving_average_crossover")
 async def run_simple_moving_average_crossover(request: Request):

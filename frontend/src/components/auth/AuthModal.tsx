@@ -1,13 +1,15 @@
 "use client";
 import React, { useState } from "react";
 import { TrendingUp } from "lucide-react";
-import { AuthModalProps } from "../../types";
+import { AuthModalProps, UserProps } from "../../types";
 import { useNavigate } from "react-router-dom";
+import { get_user_progress } from "../apiServices/userApi";
 
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
   onClose,
   initialMode,
+  user,
 }) => {
   const [isLoginMode, setIsLoginMode] = useState(initialMode === "login");
   const [email, setEmail] = useState("");
@@ -15,7 +17,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [name, setName] = useState("");
   const [verifyCode, setVerifyCode] = useState("");
   const [showVerifyStep, setShowVerifyStep] = useState(false);
-
+  const [currentUser, setCurrentUser] = useState<UserProps | null>(null);
   const navigate = useNavigate();
 
   const checkUserVerified = async (email: string) => {
@@ -78,9 +80,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       console.log("Verification result:", data);
 
       if (data.success || data.status === "success") {
-        alert("Email verified successfully!");
-        localStorage.setItem("isLoggedIn", "true");
-        localStorage.setItem("userEmail", email);
+        const userProgress = await get_user_progress(data.data.user.id);
+        //add_learning
+        setCurrentUser({
+          id: data.data.user.id,
+          name: name,
+          email: email,
+          level: userProgress?.level,
+          lesson: userProgress?.lesson,
+        });
+
         navigate("/profile");
       } else {
         alert("Invalid verification code. Try again.");
@@ -118,16 +127,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         if (!isLoginMode) {
           await sendVerificationEmail();
           setShowVerifyStep(true);
-          if (data.data && data.data.user.id) {
-            localStorage.setItem("user_id", data.data.user.id);
-          }
         } else {
           const isVerified = await checkUserVerified(email);
           if (isVerified) {
-            localStorage.setItem("isLoggedIn", "true");
-            if (data.data && data.data.user.id) {
-              localStorage.setItem("user_id", data.data.user.id);
-            }
+            const userProgress = await get_user_progress(data.data.user.id);
+            setCurrentUser({
+              id: data.data.user.id,
+              name: name,
+              email: email,
+              lesson: userProgress?.lesson,
+              level: userProgress?.level,
+            });
+
             navigate("/profile");
           } else {
             alert("Please verify your email before continuing.");

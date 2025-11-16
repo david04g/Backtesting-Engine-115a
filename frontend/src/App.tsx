@@ -5,9 +5,14 @@ import Hero from './components/Hero';
 import { AboutContent } from './pages/about';
 import { ProfileContent } from './pages/profile';
 import { CreatePage } from './pages/create';
-import { Level0Content } from './pages/learn';
+import { useState } from 'react';
+import { UserProps } from './types';
+import PageContent from './pages/learn/[level]/[pageContent]';
+
+
 
 const App: React.FC = () => {
+  const [user, setUser] = useState<UserProps | null>(null);
   return (
     <Router>
       <Routes>
@@ -35,10 +40,10 @@ const App: React.FC = () => {
             <CreatePage />
           </div>
         } />
-        <Route path="/learn/level0" element={
+        <Route path="/[user?.lesson]/[user?.level]" element={
           <>
             <Navigation />
-            <Level0Content />
+            <PageContent />
           </>
         } />
       </Routes>

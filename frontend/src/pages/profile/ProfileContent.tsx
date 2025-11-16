@@ -1,6 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import { useNavigate } from 'react-router-dom';
 import SidebarSimple from '../../components/SidebarSimple';
+import { UserProps } from '../../types';
 
 const Card: React.FC<{ title?: string; children?: React.ReactNode; bg?: string; className?: string }> = ({ title, children, bg = '#D9F2A6', className }) => (
   <div className={`rounded-md p-6 border border-black/10 ${className || ''}`} style={{ backgroundColor: bg }}>
@@ -9,27 +10,24 @@ const Card: React.FC<{ title?: string; children?: React.ReactNode; bg?: string; 
   </div>
 );
 
-interface User {
-  id: string;
-  username: string;
-  email: string;
-}
+
 
 export const ProfileContent: React.FC = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserProps | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchUser() {
       try {
-        const userId = localStorage.getItem("user_id");
-        if (!userId || userId === "null" || userId === "undefined") {
+        // const userId = localStorage.getItem("user_id");
+
+        if (!user?.id ) {
           console.log("no valid user id, redirecting");
           navigate("/");
           return;
         }
-        const res = await fetch(`http://localhost:8000/api/user/${userId}`);
+        const res = await fetch(`http://localhost:8000/api/user/${user?.id}`);
         const json = await res.json();
         if (json.status === "success" && json.data) {
           setUser(json.data);
@@ -45,10 +43,10 @@ export const ProfileContent: React.FC = () => {
       }
     }
     fetchUser();
-  }, [navigate]);
+  }, [navigate, user?.id]);
   
   const handleLearnClick = () => {
-    navigate('/learn/level0?slide=what-is-a-market');
+    navigate(`/learn/${user?.level}/${user?.lesson}`);
   };
   
   return (
@@ -63,7 +61,7 @@ export const ProfileContent: React.FC = () => {
             <div className="mt-8 flex items-center gap-8">
               <div className="rounded-full" style={{ width: 110, height: 110, backgroundColor: '#D9F2A6' }} />
               <div className="flex-1">
-                <div className="font-semibold text-lg">{user.username}</div>
+                <div className="font-semibold text-lg">{user.name}</div>
                 <div className="text-sm text-gray-700">{user.email}</div>
               </div>
               <button className="px-6 py-3 rounded-full bg-black text-white text-sm">Edit</button>

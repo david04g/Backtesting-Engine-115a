@@ -8,7 +8,7 @@ interface User {
 }
 
 type SidebarSimpleProps = {
-  active: 'profile' | 'strategies';
+  active: 'profile' | 'strategies' | 'learn';
 };
 
 const IconDot: React.FC = () => (
@@ -78,6 +78,7 @@ export const SidebarSimple: React.FC<SidebarSimpleProps> = ({ active }) => {
             <IconList />
             <span className="font-semibold">Strategies</span>
           </button>
+          
         </nav>
       </div>
       <div className="px-6 pb-6 text-xs">
