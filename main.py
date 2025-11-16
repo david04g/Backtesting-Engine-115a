@@ -80,6 +80,12 @@ async def add_user_root(request: Request):
 async def login_user_root(request: Request):
     data = await request.json()
     result = login_user(data["email"], data["password_hash"])
+    if not result.get("success"):
+        message = result.get("message", "Login failed")
+        if message.lower() == "invalid password":
+            message = "Incorrect password, please try again."
+        return {"status": "error", "message": message}
+
     return {"status": "success", "data": result}
 
 

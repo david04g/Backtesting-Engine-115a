@@ -111,41 +111,44 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
       const data = await res.json();
       console.log("isLoginMode:", isLoginMode);
-      console.log("data.status:", data.status);
-      console.log("data.data:", data.data.user.id);
+      console.log("response data:", data);
 
-      if (data.status === "success") {
-        if (!isLoginMode) {
-          const uid = data.data.user.id;
-          if (uid) {
-            const progressRes = await fetch(`http://localhost:8000/api/add_learning_user`, {
-              method: "POST",
-              headers: {"Content-Type": "application/json"},
-              body: JSON.stringify({
-                uid,
-                starting_level_progress: 0,
-                starting_lesson_progress: 0,
-              }),
-            });
-            const progressData = await progressRes.json();
-            console.log("progress initialization result: ", progressData);
-          }
-          await sendVerificationEmail();
-          setShowVerifyStep(true);
-        } else {
-          const isVerified = await checkUserVerified(email);
-          if (isVerified) {
-            localStorage.setItem("isLoggedIn", "true");
-            if (data.data && data.data.user.id) {
-              localStorage.setItem("user_id", data.data.user.id);
-            }
-            navigate("/profile");
-          } else {
-            alert("Please verify your email before continuing.");
-          }
-        }
-      } else {
+      if (data.status !== "success") {
         alert(`Error: ${data.message || "Something went wrong"}`);
+        return;
+      }
+
+      const userData = data.data?.user;
+
+      if (!isLoginMode) {
+        const uid = userData?.id;
+        if (uid) {
+          const progressRes = await fetch(`http://localhost:8000/api/add_learning_user`, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+              uid,
+              starting_level_progress: 0,
+              starting_lesson_progress: 0,
+            }),
+          });
+          const progressData = await progressRes.json();
+          console.log("progress initialization result: ", progressData);
+        }
+        await sendVerificationEmail();
+        setShowVerifyStep(true);
+        return;
+      }
+
+      const isVerified = await checkUserVerified(email);
+      if (isVerified) {
+        localStorage.setItem("isLoggedIn", "true");
+        if (userData?.id) {
+          localStorage.setItem("user_id", userData.id);
+        }
+        navigate("/profile");
+      } else {
+        alert("Please verify your email before continuing.");
       }
     } catch (err) {
       console.error("Error submitting form:", err);
