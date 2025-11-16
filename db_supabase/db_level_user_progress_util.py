@@ -26,7 +26,7 @@ def add_learning_user(uid: str):
         response = supabase.table("user_progress").insert({
             "id": uid,
             "level_progress": 0,
-            "lesson_progress": 0,
+            "lesson_progress": 1,
             "last_updated": get_current_timestamp(),
         }).execute()
         if response.data:

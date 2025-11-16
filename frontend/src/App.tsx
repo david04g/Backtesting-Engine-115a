@@ -7,7 +7,7 @@ import { ProfileContent } from './pages/profile';
 import { CreatePage } from './pages/create';
 import { useState } from 'react';
 import { UserProps } from './types';
-import PageContent from './pages/learn/[level]/[pageContent]';
+import PageContent from './pages/learn/[Level]/[PageContent]';
 
 
 
@@ -40,7 +40,7 @@ const App: React.FC = () => {
             <CreatePage />
           </div>
         } />
-        <Route path="/[user?.lesson]/[user?.level]" element={
+        <Route path="/learn/:level/:lesson" element={
           <>
             <Navigation />
             <PageContent />

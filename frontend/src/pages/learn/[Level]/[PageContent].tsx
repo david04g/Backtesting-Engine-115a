@@ -1,9 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { ProgressBar } from "../../../components/lessons/ProgressBar";
-import { NavigationButtons } from "../../../components/lessons/NavigationButtons";
-import { UserProps } from "../../../types";
-
+import { useParams } from "react-router-dom";
 import { get_lesson } from "../../../components/apiServices/userApi";
 
 interface currentLesson {
@@ -18,21 +14,23 @@ interface currentLesson {
 }
 
 const PageContent = () => {
-  const [user, setUser] = useState<UserProps | null>(null);
-  const [lesson, setLesson] = useState<currentLesson | null>(null);
+  const { level, lesson } = useParams();
+  const [lessonData, setLessonData] = useState<currentLesson | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchLesson = async () => {
-      if (user?.level !== undefined && user?.lesson !== undefined) {
+      const levelNum = Number(level);
+      const lessonNum = Number(lesson);
+      if (!Number.isNaN(levelNum) && !Number.isNaN(lessonNum)) {
         setLoading(true);
 
-        const fetchedLesson = await get_lesson(user.level, user.lesson);
+        const fetchedLesson = await get_lesson(levelNum, lessonNum);
 
         console.log("Fetched lesson:", fetchedLesson);
 
         if (fetchedLesson) {
-          setLesson(fetchedLesson);
+          setLessonData(fetchedLesson);
         } else {
           console.error("No lesson data received");
         }
@@ -42,35 +40,31 @@ const PageContent = () => {
     };
 
     fetchLesson();
-  }, [user?.level, user?.lesson]);
-
-  if (!user) {
-    return <div>Please log in</div>;
-  }
+  }, [level, lesson]);
 
   if (loading) {
     return <div>Loading lesson...</div>;
   }
 
-  if (!lesson) {
+  if (!lessonData) {
     return <div>Lesson not found</div>;
   }
 
   // Now you can access all lesson properties
   return (
     <div>
-      <h1>{lesson.lesson_title}</h1>
+      <h1>{lessonData.lesson_title}</h1>
       <h2>
-        Level {lesson.level} - Page {lesson.page_number}
+        Level {lessonData.level} - Page {lessonData.page_number}
       </h2>
-      <h3>{lesson.page_title}</h3>
-      <p>{lesson.page_def}</p>
+      <h3>{lessonData.page_title}</h3>
+      <p>{lessonData.page_def}</p>
 
-      {lesson.image_url && (
-        <img src={lesson.image_url} alt={lesson.page_title} />
+      {lessonData.image_url && (
+        <img src={lessonData.image_url} alt={lessonData.page_title} />
       )}
 
-      <p>Content Type: {lesson.content_type}</p>
+      <p>Content Type: {lessonData.content_type}</p>
     </div>
   );
 };

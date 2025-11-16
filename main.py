@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from db_supabase.db_util import (
     add_user,
     login_user,
+    get_user_by_email as get_user_by_email_service,
     send_verification_email as send_verification_email_service,
     verify_email as verify_email_service,
     is_user_verified as user_verified,
@@ -45,12 +46,32 @@ app.add_middleware(
 @app.post ("/api/get_user_learning_progress")
 async def get_user_learning_progress_root(request: Request):
     data = await request.json()
-    id = data.get("id")
-    if not id:
+    # Support both keys for compatibility with existing frontend
+    uid = data.get("uid") or data.get("id")
+    if not uid:
         return {"status": "error", "message": "No User"}
     try:
-        result = get_user_learning_progress(id)
-        return {"status": "success", "data": result}
+        # Ensure user exists
+        user = get_user(uid)
+        if not user:
+            return {"status": "error", "message": "User not found"}
+
+        # Fetch progress; initialize if missing
+        progress = get_user_learning_progress(uid)
+        if not progress:
+            init = add_learning_user(uid)
+            if not init or not init.get("success"):
+                return {"status": "error", "message": "Unable to initialize learning progress"}
+            progress = init["user"]
+
+        # Normalize response to what frontend expects
+        response_data = {
+            "user": user,
+            "level_progress": progress.get("level_progress", 0),
+            "lesson_progress": progress.get("lesson_progress", 0),
+            "current_lesson_id": progress.get("current_lesson_id"),
+        }
+        return {"status": "success", "data": response_data}
     except Exception as e:
         print("Error receiving user's learning progress", e)
         return {"status": "error", "message": str(e)}
@@ -62,13 +83,16 @@ async def get_lesson_root(request: Request):
     data = await request.json()
     level = data.get("level")
     lesson = data.get("lesson")
-    if not level or not lesson:
+    # Allow level/lesson to be 0; only reject when missing (None)
+    if level is None or lesson is None:
         return {"status": "error", "message": "No level or lesson_number"}
     try:
         result = get_lesson(level, lesson)
         if not result:
             return {"status": "error", "message": "Lesson not found"}
-        return {"status": "success", "data": result}
+        # db_lessons.get_lesson returns a list; return the first matching row
+        first = result[0] if isinstance(result, list) else result
+        return {"status": "success", "data": first}
     
     except Exception as e:
         print("Error receiving lesson", e)
@@ -113,10 +137,21 @@ async def add_user_root(request: Request):
 @app.post("/api/add_learning_user")
 async def add_learning_user_root(request: Request):
     data = await request.json()
-    result = add_learning_user(
-        data["uid"]
-    )
-    return {"status": "success", "data": result}
+    uid = data.get("uid")
+    if not uid:
+        return {"status": "error", "message": "Missing uid"}
+    result = add_learning_user(uid)
+    if result and result.get("success"):
+        user_progress = result.get("user", {})
+        response_data = {
+            "user": {"id": user_progress.get("id")},
+            "level_progress": user_progress.get("level_progress", 0),
+            "lesson_progress": user_progress.get("lesson_progress", 0),
+            "last_updated": user_progress.get("last_updated"),
+        }
+        # Include both keys for compatibility with varying frontend checks
+        return {"status": "success", "success": "success", "data": response_data}
+    return {"status": "error", "message": result.get("message") if isinstance(result, dict) else "Failed to add learning user"}
 
 @app.post("/api/login_user")
 async def login_user_root(request: Request):
@@ -132,6 +167,16 @@ async def get_user_root(user_id: str):
         return {"status": "error", "message": "user not found"}
     return {"status": "success", "data": result}
 
+@app.post("/api/get_user_id")
+async def get_user_id_root(request: Request):
+    data = await request.json()
+    email = (data.get("email") or "").strip().lower()
+    if not email:
+        return {"status": "error", "message": "Missing email"}
+    user = get_user_by_email_service(email)
+    if not user:
+        return {"status": "error", "message": "User not found"}
+    return {"status": "success", "data": {"id": user["id"]}}
 
 
 @app.post("/api/strategies/buy_hold")

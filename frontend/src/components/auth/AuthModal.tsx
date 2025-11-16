@@ -80,14 +80,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       console.log("Verification result:", data);
 
       if (data.success || data.status === "success") {
-        const userProgress = await get_user_progress(data.data.user.id);
-        //add_learning
+        const uid = data.data.user.id;
+        const userProgress = await get_user_progress(uid);
+        // persist session
+        try { localStorage.setItem("user_id", uid); } catch {}
         setCurrentUser({
-          id: data.data.user.id,
+          id: uid,
           name: name,
           email: email,
-          level: userProgress?.level,
-          lesson: userProgress?.lesson,
+          level: userProgress?.level ?? 0,
+          lesson: userProgress?.lesson ?? 1,
         });
 
         navigate("/profile");
@@ -130,13 +132,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         } else {
           const isVerified = await checkUserVerified(email);
           if (isVerified) {
-            const userProgress = await get_user_progress(data.data.user.id);
+            const uid = data.data.user?.id;
+            if (uid) {
+              try { localStorage.setItem("user_id", uid); } catch {}
+            }
+            const userProgress = uid ? await get_user_progress(uid) : null;
             setCurrentUser({
-              id: data.data.user.id,
+              id: uid,
               name: name,
               email: email,
-              lesson: userProgress?.lesson,
-              level: userProgress?.level,
+              lesson: userProgress?.lesson ?? 1,
+              level: userProgress?.level ?? 0,
             });
 
             navigate("/profile");
