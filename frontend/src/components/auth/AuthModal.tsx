@@ -98,7 +98,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           lesson: userProgress?.lesson ?? 1,
         });
 
-        navigate(`/learn/${userProgress?.level ?? 0}/${userProgress?.lesson ?? 1}`);
+        navigate("/profile");
       } else {
         alert("Invalid verification code. Try again.");
       }
@@ -162,7 +162,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               window.dispatchEvent(new Event("auth-changed"));
             } catch {}
 
-            navigate(`/learn/${userProgress?.level ?? 0}/${userProgress?.lesson ?? 1}`);
+            navigate("/profile");
           } else {
             alert("Please verify your email before continuing.");
           }
