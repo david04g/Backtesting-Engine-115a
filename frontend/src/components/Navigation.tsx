@@ -8,12 +8,6 @@ const Navigation: React.FC = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  // const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
-  //   if (typeof window === "undefined") {
-  //     return false;
-  //   }
-  //   return localStorage.getItem("isLoggedIn") === "true";
-  // });
 
   useEffect(() => {
     const syncAuth = () => {
@@ -62,6 +56,15 @@ const Navigation: React.FC = () => {
             }`}
           >
             Home
+          </Link>
+          <Link to="/profile"
+            className={`px-6 py-3 rounded-full font-medium transition-colors ${
+              location.pathname === "/profile"
+                ? "bg-lime-300 hover:bg-lime-400 text-gray-800"
+                : "text-gray-700 hover:text-gray-900"
+            }`}
+          >
+            Profile
           </Link>
           <Link
             to="/learn/0/1"
