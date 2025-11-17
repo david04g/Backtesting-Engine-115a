@@ -30,8 +30,7 @@ def add_learning_user(uid: str):
             "id": uid,
             "level_progress": 0,
             "lesson_progress": 1,
-            "last_updated": get_current_timestamp(),
-            "completed_lessons": [],
+            "last_updated": get_current_timestamp()
         }).execute()
         if response.data:
             return {"success": True, "user": response.data[0]}

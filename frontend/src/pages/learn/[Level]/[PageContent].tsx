@@ -279,6 +279,12 @@ const PageContent = () => {
           nextLevelInfo.level,
           nextLevelInfo.firstLesson
         );
+        localStorage.setItem("level", String(nextLevelInfo.level));
+        localStorage.setItem("lesson", String(nextLevelInfo.firstLesson));
+        setUserProgress({
+          level: nextLevelInfo.level,
+          lesson: nextLevelInfo.firstLesson
+        });
         setShowLevelCompletionPopup(true);
       } catch (err) {
         console.error("Error incrementing level:", err);

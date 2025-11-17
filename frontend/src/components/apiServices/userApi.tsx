@@ -65,19 +65,34 @@ export const get_user_progress = async (uuid: string) => {
     const data = await res.json();
     console.log("user progress:", data);
 
+    if (data.status === "error") {
+      console.error("no progress found, creating new progress record");
+      const newProgress = await add_learning_user(uuid);
+      if (newProgress) {
+        return {
+          userId: uuid,
+          lesson: newProgress.lesson_progress,
+          level: newProgress.level_progress,
+          currentLessonId: 1,
+          completedLessons: [],
+        };
+      }
+      return null;
+    }
+
     if (data.status === "success" && data.data) {
-      const rawCompleted = Array.isArray(data.data.completed_lessons)
+      // Initialize completedLessons as empty array if not present
+      const completedLessons = data.data.completed_lessons && Array.isArray(data.data.completed_lessons)
         ? data.data.completed_lessons
+            .map((value: unknown) => Number(value))
+            .filter((value: number) => !Number.isNaN(value))
         : [];
-      const completedLessons = rawCompleted
-        .map((value: unknown) => Number(value))
-        .filter((value: number) => !Number.isNaN(value));
 
       return {
-        userId: data.data.user.id,
-        lesson: data.data.lesson_progress,
-        level: data.data.level_progress,
-        currentLessonId: data.data.current_lesson_id,
+        userId: data.data.user?.id || data.data.id, // Fallback to data.data.id if user object is not present
+        lesson: data.data.lesson_progress || 1,
+        level: data.data.level_progress || 0,
+        currentLessonId: data.data.current_lesson_id || 1,
         completedLessons,
       };
     } else {
