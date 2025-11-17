@@ -136,6 +136,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           await sendVerificationEmail();
           setShowVerifyStep(true);
         } else {
+          if (!data.data || !data.data.user || !data.data.user.id) {
+            alert("Invalid email or password.");
+            return;
+          }
           const isVerified = await checkUserVerified(email);
           if (isVerified) {
             const uid = data.data.user?.id;
