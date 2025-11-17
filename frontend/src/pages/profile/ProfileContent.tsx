@@ -19,6 +19,7 @@ export const ProfileContent: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [level, setLevel] = useState<number>(0);
   const [lesson, setLesson] = useState<number>(0);
+  const [showCreateLockedPopup, setShowCreateLockedPopup] = useState(false);
 
   useEffect(() => {
     async function fetchUser() {
@@ -63,6 +64,15 @@ export const ProfileContent: React.FC = () => {
     const safeLesson = lesson && lesson > 0 ? lesson : 1;
     navigate(`/learn/${safeLevel}/${safeLesson}`);
   };
+
+  const handleCreateClick = () => {
+    const safeLevel = typeof level === 'number' ? level : 0;
+    if (safeLevel < 1) {
+      setShowCreateLockedPopup(true);
+      return;
+    }
+    navigate('/create');
+  };
   
   return (
     <div className="w-full h-[calc(100vh-72px)] bg-white flex">
@@ -101,7 +111,7 @@ export const ProfileContent: React.FC = () => {
             <div className="mt-6">
               <Card title="Create">
                 <button 
-                  onClick={() => navigate('/create')} 
+                  onClick={handleCreateClick} 
                   className="mt-4 w-full flex items-center gap-4 rounded-md px-6 py-4 transition-all hover:opacity-90 active:scale-[0.98] cursor-pointer" 
                   style={{ backgroundColor: '#E8B6B6' }}
                 >
@@ -124,6 +134,28 @@ export const ProfileContent: React.FC = () => {
           </div>
         </div>
       </div>
+      {showCreateLockedPopup && (
+        <div className="fixed bottom-6 right-6 z-50" role="status" aria-live="polite">
+          <div
+            className="relative rounded-3xl border border-black/20 px-6 py-5 shadow-lg"
+            style={{ backgroundColor: '#D9F2A6', minWidth: '320px' }}
+          >
+            <button
+              onClick={() => setShowCreateLockedPopup(false)}
+              aria-label="Close create strategy lock message"
+              className="absolute right-4 top-3 text-black/70 transition-colors hover:text-black"
+            >
+              ×
+            </button>
+            <div
+              className="rounded-2xl px-4 py-4 text-center font-semibold text-black"
+              style={{ backgroundColor: '#E8B6B6' }}
+            >
+              Creating a strategy will be unlocked after completing Level 0. With each level completed, another strategy can be unlocked!
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

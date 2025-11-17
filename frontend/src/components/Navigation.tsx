@@ -82,6 +82,16 @@ const Navigation: React.FC = () => {
           >
             Logout
           </button>
+          <Link
+            to="/about"
+            className={`px-6 py-3 rounded-full font-medium transition-colors ${
+              location.pathname === "/about"
+                ? "bg-lime-300 hover:bg-lime-400 text-gray-800"
+                : "text-gray-700 hover:text-gray-900"
+            }`}
+          >
+            About
+          </Link>
         </div>
       ) : (
         <div className="flex items-center gap-6">
@@ -95,17 +105,19 @@ const Navigation: React.FC = () => {
           >
             Home
           </Link>
-
           <button
             onClick={handleLoginClick}
             className="px-6 py-3 rounded-full font-medium hover:bg-gray-100 transition-colors"
           >
             Login
           </button>
-
           <Link
             to="/about"
-            className="px-6 py-3 rounded-full font-medium text-gray-700 hover:text-gray-900 transition-colors"
+            className={`px-6 py-3 rounded-full font-medium transition-colors ${
+              location.pathname === "/about"
+                ? "bg-lime-300 hover:bg-lime-400 text-gray-800"
+                : "text-gray-700 hover:text-gray-900"
+            }`}
           >
             About
           </Link>
