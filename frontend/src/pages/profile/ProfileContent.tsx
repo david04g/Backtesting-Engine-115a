@@ -33,7 +33,11 @@ export const ProfileContent: React.FC = () => {
         const res = await fetch(`http://localhost:8000/api/user/${userId}`);
         const json = await res.json();
         if (json.status === "success" && json.data) {
-          setUser(json.data);
+          console.log("data:", json.data);
+          setUser({
+            ...json.data,
+            name: json.data.username
+          });
           // also fetch progress
           const progress = await get_user_progress(userId);
           if (progress) {
@@ -114,7 +118,7 @@ export const ProfileContent: React.FC = () => {
                 <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full" style={{ backgroundColor: '#D9F2A6' }}>
                   <span className="text-3xl">⤴</span>
                 </div>
-                <div className="font-extrabold">Level 0</div>
+                <div className="font-extrabold">Level {typeof level === 'number' ? level : 0}</div>
               </div>
             </Card>
           </div>
