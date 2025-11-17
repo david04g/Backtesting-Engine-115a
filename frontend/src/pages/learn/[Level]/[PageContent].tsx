@@ -11,7 +11,12 @@ import {
   Slide,
 } from "../../../components/lessons/ProgressBar";
 import { NavigationButtons } from "../../../components/lessons/NavigationButtons";
-import { DragAndDropQuiz, Category } from "../../../components/quiz";
+import {
+  DragAndDropQuiz,
+  Category,
+  MultipleChoiceQuiz,
+  MultipleChoiceOption,
+} from "../../../components/quiz";
 
 interface LessonRecord {
   id: number;
@@ -67,6 +72,110 @@ const DRAG_AND_DROP_CONFIG: Record<
         correctAnswers: ["Gym Membership", "Coffee Mug", "Gift Card"],
       },
     ],
+  },
+};
+
+const MULTIPLE_CHOICE_CONFIG: Record<
+  number,
+  {
+    question: string;
+    helperText?: string;
+    options: MultipleChoiceOption[];
+    correctOptionId: string;
+  }
+> = {
+  4: {
+    question: "What best describes a trading strategy?",
+    helperText: "Think about how you would decide when to buy or sell.",
+    options: [
+      {
+        id: "rules",
+        label: "A set of rules for buying and selling.",
+      },
+      {
+        id: "favorites",
+        label: "A list of favorite stocks picked at random.",
+      },
+      {
+        id: "crystal-ball",
+        label: "A guaranteed prediction of future prices.",
+      },
+    ],
+    correctOptionId: "rules",
+  },
+  5: {
+    question: "What does a backtest show you?",
+    helperText: "Consider what data you can actually measure.",
+    options: [
+      {
+        id: "past-performance",
+        label: "How rules would have performed on past data.",
+      },
+      {
+        id: "future-profits",
+        label: "Exactly how much money you will make next year.",
+      },
+      {
+        id: "market-rumors",
+        label: "Popular opinions from social media.",
+      },
+    ],
+    correctOptionId: "past-performance",
+  },
+  6: {
+    question: "Which information do we analyze to measure strategy performance?",
+    options: [
+      {
+        id: "price",
+        label: "Price",
+      },
+      {
+        id: "weather",
+        label: "Daily weather patterns.",
+      },
+      {
+        id: "calendar",
+        label: "Random calendar dates.",
+      },
+    ],
+    correctOptionId: "price",
+  },
+  7: {
+    question: "When reviewing backtest results, which kind of return are we hoping to see?",
+    options: [
+      {
+        id: "positive",
+        label: "Positive",
+      },
+      {
+        id: "negative",
+        label: "Negative",
+      },
+      {
+        id: "zero",
+        label: "Exactly zero",
+      },
+    ],
+    correctOptionId: "positive",
+  },
+  8: {
+    question: "How does a buy-and-hold strategy enter the market?",
+    helperText: "Focus on the timing of the initial purchase.",
+    options: [
+      {
+        id: "buy-once",
+        label: "Buy one time at the beginning.",
+      },
+      {
+        id: "every-day",
+        label: "Buy shares every single day.",
+      },
+      {
+        id: "after-rise",
+        label: "Only buy after prices rise a lot.",
+      },
+    ],
+    correctOptionId: "buy-once",
   },
 };
 
@@ -269,11 +378,17 @@ const PageContent = () => {
     ? rawImageUrl
     : null;
   const dragAndDropConfig = DRAG_AND_DROP_CONFIG[lessonData.page_number];
+  const multipleChoiceConfig = MULTIPLE_CHOICE_CONFIG[lessonData.page_number];
+
   const isDragAndDrop = lessonData.content_type === "drag_and_drop" && dragAndDropConfig;
+  const isMultipleChoice =
+    !!multipleChoiceConfig &&
+    (lessonData.content_type === "multiple_choice" || lessonData.content_type === "mcq" || !lessonData.content_type);
   const hasPersistedCompletion = lessonData.id ? !!quizCompletionState[lessonData.id] : false;
   const isLessonComplete = isQuizComplete || hasPersistedCompletion;
   const isLastLesson = currentIndex >= 0 && currentIndex === lessons.length - 1;
-  const baseCanAdvance = !isDragAndDrop || isLessonComplete;
+  const requiresQuiz = isDragAndDrop || isMultipleChoice;
+  const baseCanAdvance = !requiresQuiz || isLessonComplete;
   const canAdvanceWithinLevel = currentIndex >= 0 && currentIndex < lessons.length - 1 && baseCanAdvance;
   const canStartNextLevel = currentIndex >= 0 && isLastLesson && !!nextLevelInfo && baseCanAdvance;
   const canGoNext = canAdvanceWithinLevel || canStartNextLevel;
@@ -357,6 +472,29 @@ const PageContent = () => {
                       )}
                     </div>
                   )}
+                  {isMultipleChoice && multipleChoiceConfig && (
+                    <div className="flex flex-col gap-4">
+                      <MultipleChoiceQuiz
+                        question={multipleChoiceConfig.question}
+                        helperText={multipleChoiceConfig.helperText}
+                        options={multipleChoiceConfig.options}
+                        correctOptionId={multipleChoiceConfig.correctOptionId}
+                        onQuizComplete={handleQuizCompletion}
+                        isComplete={isLessonComplete}
+                      />
+                      {!isLessonComplete && (
+                        <p className="text-sm text-rose-700 font-medium text-center">
+                          Select the correct answer and click “Check Answer” to continue.
+                        </p>
+                      )}
+                      {isLessonComplete && (
+                        <p className="text-sm text-green-700 font-medium text-center">
+                          Great job! You can move to the next lesson.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  {!requiresQuiz && <div />}
                 </div>
               </div>
               </div>
