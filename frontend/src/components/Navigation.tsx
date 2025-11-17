@@ -7,7 +7,13 @@ const Navigation: React.FC = () => {
   const location = useLocation();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  // const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+    return localStorage.getItem("isLoggedIn") === "true";
+  });
 
   useEffect(() => {
     const syncAuth = () => {
@@ -26,13 +32,15 @@ const Navigation: React.FC = () => {
   };
 
   const handleLogout = () => {
-    localStorage.clear();
+    // localStorage.clear();
+    localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("user_id");
     setIsLoggedIn(false);
     navigate("/");
   };
 
 
-  const isPublicPage = location.pathname === "/";
+  // const isPublicPage = location.pathname === "/";
 
   return (
     <nav className="flex items-center justify-between px-12 py-4 bg-white shadow-sm">
