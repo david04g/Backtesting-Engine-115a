@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { TrendingUp } from "lucide-react";
 import { AuthModalProps, UserProps } from "../../types";
 import { useNavigate } from "react-router-dom";
-import { get_user_progress } from "../apiServices/userApi";
+import { get_user_id, get_user_progress } from "../apiServices/userApi";
 
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
@@ -80,7 +80,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       console.log("Verification result:", data);
 
       if (data.success || data.status === "success") {
-        const uid = data.data.user.id;
+        const uid = await get_user_id(email);
         const userProgress = await get_user_progress(uid);
         // persist session
         try {
