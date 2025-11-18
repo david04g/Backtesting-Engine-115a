@@ -65,11 +65,29 @@ export const ProfileContent: React.FC = () => {
     navigate(`/learn/${safeLevel}/${safeLesson}`);
   };
 
+  const shakeAnimation = `
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+      20%, 40%, 60%, 80% { transform: translateX(2px); }
+    }
+    .shake {
+      animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    }
+  `;
+
+  const [isShaking, setIsShaking] = useState(false);
+
   const handleCreateClick = () => {
     const safeLevel = typeof level === 'number' ? level : 0;
     if (safeLevel < 1) {
+      setIsShaking(true);
       setShowCreateLockedPopup(true);
-      return;
+      const timer = setTimeout(() => {
+        setIsShaking(false);
+        setShowCreateLockedPopup(false);
+      }, 3000);
+      return () => clearTimeout(timer);
     }
     navigate('/create');
   };
@@ -112,10 +130,14 @@ export const ProfileContent: React.FC = () => {
               <Card title="Create">
                 <button 
                   onClick={handleCreateClick} 
-                  className="mt-4 w-full flex items-center gap-4 rounded-md px-6 py-4 transition-all hover:opacity-90 active:scale-[0.98] cursor-pointer" 
+                  className={`mt-4 w-full flex items-center gap-4 rounded-md px-6 py-4 transition-all hover:opacity-90 active:scale-[0.98] cursor-pointer relative ${
+                    isShaking ? 'animate-shake' : ''
+                  }`} 
                   style={{ backgroundColor: '#E8B6B6' }}
                 >
-                  <span className="inline-flex h-8 w-8 items-center justify-center rounded bg-white text-black font-bold">＋</span>
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded bg-white text-black font-bold">
+                    {level < 1 ? '🔒' : '＋'}
+                  </span>
                   <span className="text-base font-semibold">Create new strategy</span>
                 </button>
               </Card>
@@ -135,6 +157,15 @@ export const ProfileContent: React.FC = () => {
         </div>
       </div>
       {showCreateLockedPopup && (
+        <div className="fixed bottom-6 right-6 transform z-50">
+          <div 
+            className="px-6 py-3 rounded-full bg-gray-800 text-white text-sm font-medium shadow-lg transition-opacity duration-500"
+          >
+            Complete Level 0 in the learn page to unlock this feature
+          </div>
+        </div>
+      )}
+      {/* {showCreateLockedPopup && (
         <div className="fixed bottom-6 right-6 z-50" role="status" aria-live="polite">
           <div
             className="relative rounded-3xl border border-black/20 px-6 py-5 shadow-lg"
@@ -155,7 +186,7 @@ export const ProfileContent: React.FC = () => {
             </div>
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 };
