@@ -273,3 +273,26 @@ def is_user_verified(email: str) -> bool:
     except Exception as e:
         print(f"Error checking verification status for {email}: {e}")
         return False
+
+#NO VERIFICATION FOR THIS FUNCTION
+def change_email_by_uid(new_user_email: str, uid: str):
+    try:
+        existing = (
+            supabase.table("users")
+            .select("id")
+            .eq("email", new_user_email)
+            .execute()
+        )
+
+        if existing.data:
+            return {"success": False, "message": "Email is already in use."}
+
+        response = (supabase.table("users").update({"email": new_user_email}).eq("id", uid).execute())
+
+        if not response.data:
+            return {"success": False, "message": "Failed to update email."}
+
+        return True
+
+    except Exception as e:
+        return {"success": False, "message": f"Error updating email: {e}"}
