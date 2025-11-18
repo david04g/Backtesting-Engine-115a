@@ -120,43 +120,110 @@ def is_image_file(path: str):
     else:
         return False
 
+# def upload_profile_picture_by_user_id(uid: str, file_path: str):
+#     bucket = "profile-pictures"
+#     file_name = f"user_{uid}.png"
+    
+#     if not os.path.exists(file_path):
+#         print(f"File not found: {file_path}")
+#         return None
+    
+#     if not is_image_file(file_path):
+#         print("Invalid file type. Only image files (jpg/png) are allowed.")
+#         return None
+
+#     mime_type, dummy = mimetypes.guess_type(file_path)
+#     if mime_type is None:
+#         mime_type = "image/png" #fallback if fails, not sure if this is the best idea
+
+#     with open(file_path, "rb") as f:
+#         #if user_{uid}.png already exists, it will replace the user_{uid}.png photo. otherwise it will upload the db to storage
+#         res = supabase.storage.from_(bucket).upload(file_name, f, {"upsert": "true", "content-type": mime_type})
+
+#     """
+#     if res:
+#         print("Profile picture upload failed: ", res)
+#         return None
+#     """
+#     #note: as of now, there is no error handling. will be added in future
+#     if not res.data:
+#         print("something went wrong uploading user profile picture")
+#         return None
+
+#     #build public url
+#     public_url = f"{os.getenv('SUPABASE_URL')}/storage/v1/object/public/{bucket}/{file_name}"
+
+#     #updates the db
+#     supabase.table("users").update({"profile_image": public_url}).eq("id", uid).execute()
+
+#     return public_url
+
 def upload_profile_picture_by_user_id(uid: str, file_path: str):
-    bucket = "profile-pictures"
-    file_name = f"user_{uid}.png"
-    
-    if not os.path.exists(file_path):
-        print(f"File not found: {file_path}")
+    try:
+        bucket = "profile-pictures"
+        file_name = f"user_{uid}.png"  # Always use .png for consistency
+        
+        print(f"Starting upload for user {uid}, file: {file_path}")
+        
+        if not os.path.exists(file_path):
+            error_msg = f"File not found: {file_path}"
+            print(error_msg)
+            return None
+        
+        if not is_image_file(file_path):
+            error_msg = "Invalid file type. Only image files (jpg/png) are allowed."
+            print(error_msg)
+            return None
+
+        # Read the file content
+        with open(file_path, "rb") as f:
+            file_content = f.read()
+            print(f"Read {len(file_content)} bytes from {file_path}")
+
+        # First, try to remove existing file if it exists
+        try:
+            print(f"Attempting to remove existing file: {file_name}")
+            supabase.storage.from_(bucket).remove([file_name])
+            print("Existing file removed successfully")
+        except Exception as e:
+            print(f"Note: Could not remove existing file (might not exist): {str(e)}")
+
+        # Upload the new file
+        try:
+            print(f"Uploading new file: {file_name}")
+            res = supabase.storage.from_(bucket).upload(
+                file_name,
+                file_content,
+                {"content-type": "image/png", "upsert": "true"}
+            )
+            print(f"Upload response: {res}")
+            
+            # Build the public URL
+            public_url = f"{os.getenv('SUPABASE_URL')}/storage/v1/object/public/{bucket}/{file_name}"
+            print(f"Public URL: {public_url}")
+            
+            # Update the users table with the new URL
+            response = supabase.table("users").update(
+                {"profile_image": public_url}
+            ).eq("id", uid).execute()
+
+            if hasattr(response, 'error') and response.error:
+                print(f"Error updating profile image URL: {response.error}")
+                return None
+
+            print("Profile picture updated successfully")
+            return public_url
+
+        except Exception as upload_error:
+            print(f"Error during upload: {str(upload_error)}")
+            return None
+
+    except Exception as e:
+        print(f"Unexpected error in upload_profile_picture_by_user_id: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return None
-    
-    if not is_image_file(file_path):
-        print("Invalid file type. Only image files (jpg/png) are allowed.")
-        return None
 
-    mime_type, dummy = mimetypes.guess_type(file_path)
-    if mime_type is None:
-        mime_type = "image/png" #fallback if fails, not sure if this is the best idea
-
-    with open(file_path, "rb") as f:
-        #if user_{uid}.png already exists, it will replace the user_{uid}.png photo. otherwise it will upload the db to storage
-        res = supabase.storage.from_(bucket).upload(file_name, f, {"upsert": "true", "content-type": mime_type})
-
-    """
-    if res:
-        print("Profile picture upload failed: ", res)
-        return None
-    """
-    #note: as of now, there is no error handling. will be added in future
-    if not res.data:
-        print("something went wrong uploading user profile picture")
-        return None
-
-    #build public url
-    public_url = f"{os.getenv('SUPABASE_URL')}/storage/v1/object/public/{bucket}/{file_name}"
-
-    #updates the db
-    supabase.table("users").update({"profile_image": public_url}).eq("id", uid).execute()
-
-    return public_url
 
 def get_user_id_by_username(username: str):
     result = get_user_by_username(username)
@@ -274,6 +341,68 @@ def is_user_verified(email: str) -> bool:
         print(f"Error checking verification status for {email}: {e}")
         return False
 
+# def update_user_profile(uid: str, updates: dict):
+#     try:
+#         if not uid:
+#             return {"success": False, "message": "User ID is required"}
+            
+#         if not updates:
+#             return {"success": False, "message": "No updates provided"}
+            
+#         # Handle profile image separately if it's a base64 string
+#         profile_image = updates.pop('profile_image', None)
+        
+#         # Update other user fields if any
+#         if updates:
+#             response = supabase.table("users").update(updates).eq("id", uid).execute()
+#             if hasattr(response, 'error') and response.error:
+#                 return {"success": False, "message": f"Database update failed: {response.error.message}"}
+        
+#         # If there was a profile image to upload
+#         if profile_image and isinstance(profile_image, str) and profile_image.startswith('data:image'):
+#             import base64
+#             import tempfile
+            
+#             # Extract image data from base64 string
+#             format, imgstr = profile_image.split(';base64,')
+#             ext = format.split('/')[-1]
+            
+#             # Create a temporary file to store the image
+#             with tempfile.NamedTemporaryFile(delete=False, suffix=f'.{ext}') as f:
+#                 f.write(base64.b64decode(imgstr))
+#                 temp_path = f.name
+            
+#             try:
+#                 # Upload the profile picture using the existing function
+#                 public_url = upload_profile_picture_by_user_id(uid, temp_path)
+#                 if not public_url:  # Check if the upload was successful
+#                     return {"success": False, "message": "Failed to upload profile image"}
+#                 # Update the profile_image in the updates to be returned
+#                 updates['profile_image'] = public_url
+#             finally:
+#                 # Clean up the temporary file
+#                 if os.path.exists(temp_path):
+#                     os.unlink(temp_path)
+        
+#         # Fetch the updated user data
+#         user_data = get_user_by_id(uid)
+#         if not user_data:
+#             return {"success": False, "message": "Failed to fetch updated user data"}
+            
+#         return {
+#             "success": True,
+#             "data": {
+#                 "id": user_data["id"],
+#                 "username": user_data.get("username", ""),
+#                 "profile_image": user_data.get("profile_image", ""),
+#                 "email": user_data.get("email", "")
+#             }
+#         }
+        
+#     except Exception as e:
+#         print(f"Error updating user profile: {str(e)}")
+#         return {"success": False, "message": f"An error occurred while updating profile: {str(e)}"}
+
 def update_user_profile(uid: str, updates: dict):
     try:
         if not uid:
@@ -285,37 +414,48 @@ def update_user_profile(uid: str, updates: dict):
         # Handle profile image separately if it's a base64 string
         profile_image = updates.pop('profile_image', None)
         
-        # Update other user fields if any
+        # First, update other user fields if any
         if updates:
             response = supabase.table("users").update(updates).eq("id", uid).execute()
             if hasattr(response, 'error') and response.error:
                 return {"success": False, "message": f"Database update failed: {response.error.message}"}
         
-        # If there was a profile image to upload
-        if profile_image and isinstance(profile_image, str) and profile_image.startswith('data:image'):
-            import base64
-            import tempfile
-            
-            # Extract image data from base64 string
-            format, imgstr = profile_image.split(';base64,')
-            ext = format.split('/')[-1]
-            
-            # Create a temporary file to store the image
-            with tempfile.NamedTemporaryFile(delete=False, suffix=f'.{ext}') as f:
-                f.write(base64.b64decode(imgstr))
-                temp_path = f.name
-            
-            try:
-                # Upload the profile picture using the existing function
-                public_url = upload_profile_picture_by_user_id(uid, temp_path)
-                if not public_url:
-                    return {"success": False, "message": "Failed to upload profile image"}
-                # Update the profile_image in the updates to be returned
-                updates['profile_image'] = public_url
-            finally:
-                # Clean up the temporary file
-                if os.path.exists(temp_path):
-                    os.unlink(temp_path)
+        # If there was a profile image to handle
+        if profile_image:
+            if isinstance(profile_image, str) and profile_image.startswith('http'):
+                # If it's already a URL, just update the database
+                updates['profile_image'] = profile_image
+            elif isinstance(profile_image, str) and profile_image.startswith('data:image'):
+                # It's a base64 image, try to upload it
+                try:
+                    import base64
+                    import tempfile
+                    import uuid
+                    
+                    # Extract image data from base64 string
+                    format, imgstr = profile_image.split(';base64,')
+                    ext = format.split('/')[-1]
+                    
+                    # Create a temporary file with a unique name
+                    temp_file = f"temp_{uuid.uuid4()}.{ext}"
+                    with open(temp_file, "wb") as f:
+                        f.write(base64.b64decode(imgstr))
+                    
+                    # Upload the file
+                    public_url = upload_profile_picture_by_user_id(uid, temp_file)
+                    
+                    # Clean up the temporary file
+                    if os.path.exists(temp_file):
+                        os.unlink(temp_file)
+                        
+                    if not public_url:
+                        return {"success": False, "message": "Failed to upload profile image"}
+                        
+                    updates['profile_image'] = public_url
+                    
+                except Exception as e:
+                    print(f"Error processing profile image: {str(e)}")
+                    return {"success": False, "message": f"Error processing profile image: {str(e)}"}
         
         # Fetch the updated user data
         user_data = get_user_by_id(uid)
@@ -334,4 +474,6 @@ def update_user_profile(uid: str, updates: dict):
         
     except Exception as e:
         print(f"Error updating user profile: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return {"success": False, "message": f"An error occurred while updating profile: {str(e)}"}

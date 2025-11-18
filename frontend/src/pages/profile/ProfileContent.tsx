@@ -39,7 +39,8 @@ export const ProfileContent: React.FC = () => {
           console.log("data:", json.data);
           setUser({
             ...json.data,
-            name: json.data.username
+            name: json.data.username,
+            profileImage: json.data.profile_image
           });
           // also fetch progress
           const progress = await get_user_progress(userId);
@@ -137,7 +138,18 @@ export const ProfileContent: React.FC = () => {
             <div className="mt-8 text-center text-gray-500">Loading profile...</div>
           ) : user ? (
             <div className="mt-8 flex items-center gap-8">
-              <div className="rounded-full" style={{ width: 110, height: 110, backgroundColor: '#D9F2A6' }} />
+              {user.profileImage ? (
+                <img 
+                  src={`${user.profileImage}?t=${new Date().getTime()}`}
+                  alt="Profile"
+                  className="w-[110px] h-[110px] rounded-full object-cover"
+                />
+              ) : (
+                <div 
+                  className="rounded-full" 
+                  style={{ width: 110, height: 110, backgroundColor: '#D9F2A6' }} 
+                />
+              )}
               <div className="flex-1">
                 <div className="font-semibold text-lg">{user.name}</div>
                 <div className="text-sm text-gray-700">{user.email}</div>

@@ -1,4 +1,3 @@
-// frontend/src/components/auth/EditProfileModal.tsx
 import React, { useState, useRef, useEffect } from 'react';
 import { UserProps } from '../../types';
 
