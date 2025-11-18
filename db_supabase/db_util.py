@@ -275,16 +275,6 @@ def is_user_verified(email: str) -> bool:
         return False
 
 def update_user_profile(uid: str, updates: dict):
-    """
-    Update user profile information in the database.
-    
-    Args:
-        uid (str): The user's unique ID
-        updates (dict): Dictionary containing fields to update (e.g., {'username': 'new_username'})
-        
-    Returns:
-        dict: Dictionary with success status and updated user data or error message
-    """
     try:
         if not uid:
             return {"success": False, "message": "User ID is required"}
