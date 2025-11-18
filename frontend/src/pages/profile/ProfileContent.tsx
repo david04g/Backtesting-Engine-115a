@@ -161,7 +161,7 @@ export const ProfileContent: React.FC = () => {
           <div 
             className="px-6 py-3 rounded-full bg-gray-800 text-white text-sm font-medium shadow-lg transition-opacity duration-500"
           >
-            Complete Level 0 in the learn page to unlock this feature
+            Creating a strategy will be unlocked after completing Level 0. With each level completed, another strategy can be unlocked!
           </div>
         </div>
       )}
