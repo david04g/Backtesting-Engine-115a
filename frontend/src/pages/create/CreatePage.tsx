@@ -5,6 +5,11 @@ interface StrategyResult {
   sell_price: number;
   final_value: number;
   total_return_pct: number;
+  short_window?: number;
+  long_window?: number;
+  contribution?: number;
+  total_contributed?: number;
+  frequency?: string;
   series: { date: string; value: number; price: number }[];
 }
 
@@ -18,6 +23,11 @@ const strategies = [
     id: 'simple_moving_average_crossover',
     name: 'Simple Moving Average Crossover',
     description: 'Trade based on short vs. long moving average crossovers.',
+  },
+  {
+    id: 'dca',
+    name: 'Dollar-Cost Averaging (DCA)',
+    description: 'Invest a fixed amount at regular intervals.',
   },
 ];
 
@@ -99,8 +109,13 @@ const CreatePage: React.FC = () => {
   const [sellDate, setSellDate] = useState('2025-07-08');
   const [capital, setCapital] = useState('1000');
   const [loading, setLoading] = useState(false);
+
   const [shortWindow, setShortWindow] = useState('100');
   const [longWindow, setLongWindow] = useState('250');
+
+  const [frequency, setFrequency] = useState('monthly');
+  const [contribution, setContribution] = useState('');
+
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<StrategyResult | null>(null);
 
@@ -120,13 +135,13 @@ const CreatePage: React.FC = () => {
     }));
   }, [result]);
 
-
   const summary = useMemo(() => {
     if (!result) return null;
     const base = {
       totalReturn: `${result.total_return_pct.toFixed(2)}%`,
       finalValue: `$${result.final_value.toFixed(2)}`,
     };
+
     if (selectedStrategy === 'buy_hold') {
       return {
         ...base,
@@ -139,7 +154,15 @@ const CreatePage: React.FC = () => {
         shortWindow: result.short_window,
         longWindow: result.long_window,
       };
+    } else if (selectedStrategy === 'dca') {
+      return {
+        ...base,
+        frequency: result.frequency,
+        contribution: `$${result.contribution?.toFixed(2)}`,
+        totalContrib: `$${result.total_contributed?.toFixed(2)}`,
+      };
     }
+
     return base;
   }, [result, selectedStrategy]);
 
@@ -163,6 +186,14 @@ const CreatePage: React.FC = () => {
         body.short_window = parseInt(shortWindow, 10);
         body.long_window = parseInt(longWindow, 10);
       }
+
+      if (selectedStrategy === 'dca') {
+        body.frequency = frequency;
+        if (contribution.trim() !== '') {
+          body.contribution = parseFloat(contribution);
+        }
+      }
+
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -240,7 +271,9 @@ const CreatePage: React.FC = () => {
           <h1 className="text-3xl font-semibold text-gray-800">
             Lookup strategy
           </h1>
-          <p className="mt-2 text-sm text-gray-700">buy and hold (simple)</p>
+          <p className="mt-2 text-sm text-gray-700">
+            {strategies.find(s => s.id === selectedStrategy)?.name}
+          </p>
         </div>
 
         <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(360px,1fr)_minmax(480px,1.25fr)]">
@@ -262,7 +295,6 @@ const CreatePage: React.FC = () => {
                       step={1}
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm text-gray-700">
                       Long Moving Average Window
@@ -278,6 +310,39 @@ const CreatePage: React.FC = () => {
                   </div>
                 </div>
               )}
+              {selectedStrategy === 'dca' && (
+                <>
+                  <div>
+                    <label className="block text-sm text-gray-700">
+                      Buy Frequency
+                    </label>
+                    <select
+                      value={frequency}
+                      onChange={e => setFrequency(e.target.value)}
+                      className="mt-2 w-full rounded-md bg-lime-200 px-4 py-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-lime-400"
+                    >
+                      <option value="weekly">Weekly</option>
+                      <option value="biweekly">Biweekly</option>
+                      <option value="monthly">Monthly</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-700">
+                      Contribution per Buy (optional)
+                    </label>
+                    <input
+                      type="number"
+                      value={contribution}
+                      onChange={e => setContribution(e.target.value)}
+                      placeholder="If empty, capital will be split evenly"
+                      className="mt-2 w-full rounded-md bg-lime-200 px-4 py-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-lime-400"
+                      min={0}
+                      step={10}
+                    />
+                  </div>
+                </>
+              )}
+
               <div>
                 <label className="block text-sm text-gray-700">
                   Ticker (stock of choice)
@@ -353,6 +418,16 @@ const CreatePage: React.FC = () => {
               </div>
             </div>
 
+            {/* Additional summary info */}
+            {summary && selectedStrategy === 'dca' && (
+              <div className="rounded-3xl bg-pink-200 p-6 shadow-sm text-gray-800 text-sm space-y-2">
+                <p>Final Value: {summary.finalValue}</p>
+                <p>Total Contributed: {summary.totalContrib}</p>
+                <p>Contribution Each: {summary.contribution}</p>
+                <p>Frequency: {summary.frequency}</p>
+              </div>
+            )}
+
             <div className="rounded-3xl bg-pink-200 p-6 shadow-sm">
               <Chart data={chartData} />
             </div>
@@ -364,4 +439,3 @@ const CreatePage: React.FC = () => {
 };
 
 export default CreatePage;
-
