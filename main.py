@@ -13,6 +13,8 @@ from db_supabase.db_util import (
     verify_email as verify_email_service,
     is_user_verified as user_verified,
     get_user_by_id as get_user,
+    upload_profile_picture_by_user_id,
+    update_user_profile,
 )
 
 from db_supabase.db_lessons import (
@@ -272,6 +274,50 @@ async def get_user_id_root(request: Request):
     if not user:
         return {"status": "error", "message": "User not found"}
     return {"status": "success", "data": {"id": user["id"]}}
+
+
+# In main.py
+@app.post("/api/update_profile")
+async def update_profile_root(request: Request):
+    try:
+        data = await request.json()
+        uid = data.get("user_id")  # Changed from "uid" to "user_id" to match frontend
+        name = data.get("name")
+        profile_image = data.get("profileImage")  # This will be a base64 string
+        
+        if not uid:
+            return {"status": "error", "message": "User ID is required"}
+
+        # Prepare updates dictionary
+        updates = {}
+        
+        # Add name to updates if provided
+        if name is not None:
+            updates["username"] = name
+            
+        # Add profile image to updates if provided
+        if profile_image:
+            updates["profile_image"] = profile_image
+        
+        # Use the new update_user_profile function to handle the update
+        result = update_user_profile(uid, updates)
+        
+        if not result.get("success"):
+            return {"status": "error", "message": result.get("message", "Failed to update profile")}
+            
+        return {
+            "status": "success", 
+            "data": {
+                "id": result["data"]["id"],
+                "username": result["data"]["username"],
+                "profile_image": result["data"]["profile_image"],
+                "email": result["data"]["email"]
+            }
+        }
+
+    except Exception as e:
+        print(f"Error in update_profile_root: {str(e)}")
+        return {"status": "error", "message": f"An error occurred: {str(e)}"}
 
 
 @app.post("/api/strategies/buy_hold")

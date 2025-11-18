@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import SidebarSimple from '../../components/SidebarSimple';
 import { get_user_progress } from '../../components/apiServices/userApi';
 import { UserProps } from '../../types';
+import EditProfileModal from '../../components/auth/EditProfileModal';
 
 const Card: React.FC<{ title?: string; children?: React.ReactNode; bg?: string; className?: string }> = ({ title, children, bg = '#D9F2A6', className }) => (
   <div className={`rounded-md p-6 border border-black/10 ${className || ''}`} style={{ backgroundColor: bg }}>
@@ -20,6 +21,7 @@ export const ProfileContent: React.FC = () => {
   const [level, setLevel] = useState<number>(0);
   const [lesson, setLesson] = useState<number>(0);
   const [showCreateLockedPopup, setShowCreateLockedPopup] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   useEffect(() => {
     async function fetchUser() {
@@ -91,6 +93,39 @@ export const ProfileContent: React.FC = () => {
     }
     navigate('/create');
   };
+
+  const handleUpdateProfile = async (updates: { name?: string; profileImage?: string }) => {
+    try {
+      const userId = localStorage.getItem("user_id");
+      if (!userId) return;
+
+      const response = await fetch(`http://localhost:8000/api/update_profile`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: userId,
+          name: updates.name,
+          profileImage: updates.profileImage
+        }),
+      });
+
+      const data = await response.json();
+      if (data.status === "success" && data.data) {
+        setUser(prev => prev ? { 
+          ...prev, 
+          name: data.data.username || prev.name,
+          profileImage: data.data.profile_image || prev.profileImage
+        } : null);
+        return data;
+      } else {
+        console.error("Error updating profile:", data.message);
+        throw new Error(data.message || "Failed to update profile");
+      }
+    } catch (err) {
+      console.error("Error updating profile:", err);
+      throw err;
+    }
+  };
   
   return (
     <div className="w-full h-[calc(100vh-72px)] bg-white flex">
@@ -107,7 +142,12 @@ export const ProfileContent: React.FC = () => {
                 <div className="font-semibold text-lg">{user.name}</div>
                 <div className="text-sm text-gray-700">{user.email}</div>
               </div>
-              <button className="px-6 py-3 rounded-full bg-black text-white text-sm">Edit</button>
+              <button 
+                onClick={() => setIsEditModalOpen(true)}
+                className="px-6 py-3 rounded-full bg-black text-white text-sm"
+              >
+                Edit
+              </button>
             </div>
           ) : (
             <div className="mt-8 text-center text-red-500">User not found</div>
@@ -165,6 +205,12 @@ export const ProfileContent: React.FC = () => {
           </div>
         </div>
       )}
+      <EditProfileModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        user={user}
+        onUpdate={handleUpdateProfile}
+      />
       {/* {showCreateLockedPopup && (
         <div className="fixed bottom-6 right-6 z-50" role="status" aria-live="polite">
           <div

@@ -273,3 +273,75 @@ def is_user_verified(email: str) -> bool:
     except Exception as e:
         print(f"Error checking verification status for {email}: {e}")
         return False
+
+def update_user_profile(uid: str, updates: dict):
+    """
+    Update user profile information in the database.
+    
+    Args:
+        uid (str): The user's unique ID
+        updates (dict): Dictionary containing fields to update (e.g., {'username': 'new_username'})
+        
+    Returns:
+        dict: Dictionary with success status and updated user data or error message
+    """
+    try:
+        if not uid:
+            return {"success": False, "message": "User ID is required"}
+            
+        if not updates:
+            return {"success": False, "message": "No updates provided"}
+            
+        # Handle profile image separately if it's a base64 string
+        profile_image = updates.pop('profile_image', None)
+        
+        # Update other user fields if any
+        if updates:
+            response = supabase.table("users").update(updates).eq("id", uid).execute()
+            if hasattr(response, 'error') and response.error:
+                return {"success": False, "message": f"Database update failed: {response.error.message}"}
+        
+        # If there was a profile image to upload
+        if profile_image and isinstance(profile_image, str) and profile_image.startswith('data:image'):
+            import base64
+            import tempfile
+            
+            # Extract image data from base64 string
+            format, imgstr = profile_image.split(';base64,')
+            ext = format.split('/')[-1]
+            
+            # Create a temporary file to store the image
+            with tempfile.NamedTemporaryFile(delete=False, suffix=f'.{ext}') as f:
+                f.write(base64.b64decode(imgstr))
+                temp_path = f.name
+            
+            try:
+                # Upload the profile picture using the existing function
+                public_url = upload_profile_picture_by_user_id(uid, temp_path)
+                if not public_url:
+                    return {"success": False, "message": "Failed to upload profile image"}
+                # Update the profile_image in the updates to be returned
+                updates['profile_image'] = public_url
+            finally:
+                # Clean up the temporary file
+                if os.path.exists(temp_path):
+                    os.unlink(temp_path)
+        
+        # Fetch the updated user data
+        user_data = get_user_by_id(uid)
+        if not user_data:
+            return {"success": False, "message": "Failed to fetch updated user data"}
+            
+        return {
+            "success": True,
+            "data": {
+                "id": user_data["id"],
+                "username": user_data.get("username", ""),
+                "profile_image": user_data.get("profile_image", ""),
+                "email": user_data.get("email", "")
+            }
+        }
+        
+    except Exception as e:
+        print(f"Error updating user profile: {str(e)}")
+        return {"success": False, "message": f"An error occurred while updating profile: {str(e)}"}

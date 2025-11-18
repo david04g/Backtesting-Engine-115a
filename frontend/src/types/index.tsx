@@ -11,6 +11,7 @@ export interface UserProps {
   email?: string;
   level?: number;
   lesson?: number;
+  profileImage?: string;
 }
 
 export interface ButtonProps {
