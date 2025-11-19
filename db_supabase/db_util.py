@@ -477,3 +477,25 @@ def update_user_profile(uid: str, updates: dict):
         import traceback
         traceback.print_exc()
         return {"success": False, "message": f"An error occurred while updating profile: {str(e)}"}
+#NO VERIFICATION FOR THIS FUNCTION
+def change_email_by_uid(new_user_email: str, uid: str):
+    try:
+        existing = (
+            supabase.table("users")
+            .select("id")
+            .eq("email", new_user_email)
+            .execute()
+        )
+
+        if existing.data:
+            return {"success": False, "message": "Email is already in use."}
+
+        response = (supabase.table("users").update({"email": new_user_email}).eq("id", uid).execute())
+
+        if not response.data:
+            return {"success": False, "message": "Failed to update email."}
+
+        return True
+
+    except Exception as e:
+        return {"success": False, "message": f"Error updating email: {e}"}
