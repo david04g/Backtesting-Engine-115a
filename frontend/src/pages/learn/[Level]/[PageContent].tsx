@@ -14,6 +14,7 @@ import { NavigationButtons } from "../../../components/lessons/NavigationButtons
 import {
   DragAndDropQuiz,
   Category,
+  DragAndDropCompletionConfig,
   MultipleChoiceQuiz,
   MultipleChoiceOption,
 } from "../../../components/quiz";
@@ -34,46 +35,88 @@ interface LessonRecord {
 
 const DRAG_AND_DROP_CONFIG: Record<
   number,
-  {
-    instructions: string;
-    helper?: string;
-    items: string[];
-    categories: Category[];
-  }
+  Record<
+    number,
+    {
+      instructions: string;
+      helper?: string;
+      items: string[];
+      categories: Category[];
+      itemsLabel?: string;
+      completionConfig?: DragAndDropCompletionConfig;
+    }
+  >
 > = {
-  4: {
-    instructions:
-      "Drag each item into the column that best describes whether it is an investable asset.",
-    helper:
-      "Investable assets are things you can put money into with the expectation of future value or income.",
-    items: [
-      "AAPL (Company Shares)",
-      "BTC (Crypto Token)",
-      "Gold ETF",
-      "S&P 500 Index Fund",
-      "Gym Membership",
-      "Coffee Mug",
-      "Gift Card",
-      "Crude Oil Futures",
-    ],
-    categories: [
-      {
-        id: "investable",
-        label: "Investable Asset",
-        correctAnswers: [
-          "AAPL (Company Shares)",
-          "BTC (Crypto Token)",
-          "Gold ETF",
-          "S&P 500 Index Fund",
-          "Crude Oil Futures",
-        ],
+  0: {
+    4: {
+      instructions:
+        "Drag each item into the column that best describes whether it is an investable asset.",
+      helper:
+        "Investable assets are things you can put money into with the expectation of future value or income.",
+      items: [
+        "AAPL (Company Shares)",
+        "BTC (Crypto Token)",
+        "Gold ETF",
+        "S&P 500 Index Fund",
+        "Gym Membership",
+        "Coffee Mug",
+        "Gift Card",
+        "Crude Oil Futures",
+      ],
+      categories: [
+        {
+          id: "investable",
+          label: "Investable Asset",
+          correctAnswers: [
+            "AAPL (Company Shares)",
+            "BTC (Crypto Token)",
+            "Gold ETF",
+            "S&P 500 Index Fund",
+            "Crude Oil Futures",
+          ],
+        },
+        {
+          id: "not-investable",
+          label: "Not an Investable Asset",
+          correctAnswers: ["Gym Membership", "Coffee Mug", "Gift Card"],
+        },
+      ],
+    },
+  },
+  1: {
+    1: {
+      instructions: "Drag at least two rule cards into the Strategy Box to build your plan.",
+      helper: "Combine buy and sell rules. You can move cards back if you change your mind.",
+      itemsLabel: "Rule Cards",
+      items: [
+        "Buy once at start",
+        "Buy every month",
+        "Sell at end date",
+        "Sell if price drops 10%",
+      ],
+      categories: [
+        {
+          id: "strategy-box",
+          label: "Strategy Box",
+          placeholder: "Drop rules here..",
+          correctAnswers: [
+            "Buy once at start",
+            "Buy every month",
+            "Sell at end date",
+            "Sell if price drops 10%",
+          ],
+        },
+      ],
+      completionConfig: {
+        requireAllItemsUsed: false,
+        minTotalItemsRequired: 2,
+        skipMissingAnswersValidation: true,
+        autoCheckOnDrop: true,
+        showCheckButton: false,
+        incompleteMessage: "Add at least two cards to the Strategy Box to keep going.",
+        successMessage: "Awesome! Two rules makes a strategy—you can keep moving.",
       },
-      {
-        id: "not-investable",
-        label: "Not an Investable Asset",
-        correctAnswers: ["Gym Membership", "Coffee Mug", "Gift Card"],
-      },
-    ],
+    },
   },
 };
 
@@ -89,7 +132,7 @@ const MULTIPLE_CHOICE_CONFIG: Record<
   >
 > = {
   1: {
-    3: {
+    2: {
       question: "At what point is the price highest?",
       options: [
         { id: "red", label: "Red" },
@@ -97,39 +140,46 @@ const MULTIPLE_CHOICE_CONFIG: Record<
         { id: "yellow", label: "Yellow", isCorrect: true },
       ],
     },
-    4: {
+    3: {
       question: "What is a strategy?",
       options: [
         { id: "rules", label: "A set of rules for buying and selling", isCorrect: true },
         { id: "random", label: "A set of random acts" },
       ],
     },
-    5: {
+    4: {
       question: "Backtesting simulates... ?",
       options: [
         { id: "past", label: "How rules would have performed on past data", isCorrect: true },
         { id: "future", label: "Future guaranteed profits" },
       ],
     },
-    6: {
+    5: {
       question: "On a line chart, the vertical axis shows:",
       options: [
         { id: "price", label: "Price", isCorrect: true },
         { id: "time", label: "Time" },
       ],
     },
-    7: {
+    6: {
       question: "If price at sell is higher than buy, then return is:",
       options: [
         { id: "positive", label: "Positive", isCorrect: true },
         { id: "negative", label: "Negative" },
       ],
     },
-    8: {
+    7: {
       question: "A \"buy once at start\" rule means:",
       options: [
         { id: "buy-once", label: "Buy one time at the beginning", isCorrect: true },
         { id: "buy-daily", label: "Buy every day" },
+      ],
+    },
+    8: {
+      question: "Price trends show the general direction of price movement.",
+      options: [
+        { id: "true", label: "True", isCorrect: true },
+        { id: "false", label: "False" },
       ],
     },
   },
@@ -324,11 +374,13 @@ const PageContent = () => {
   const description = lessonData?.page_def ?? "";
   const rawImageUrl = lessonData?.image_url?.trim();
   const imageUrl = rawImageUrl && rawImageUrl.toLowerCase() !== "none" ? rawImageUrl : null;
-  const dragAndDropConfig = lessonData ? DRAG_AND_DROP_CONFIG[lessonData.page_number] : undefined;
+  const dragAndDropConfig = lessonData
+    ? DRAG_AND_DROP_CONFIG[lessonData.level]?.[lessonData.page_number]
+    : undefined;
   const multipleChoiceConfig = lessonData
     ? MULTIPLE_CHOICE_CONFIG[lessonData.level]?.[lessonData.page_number]
     : undefined;
-  const isDragAndDrop = lessonData?.content_type === "drag_and_drop" && !!dragAndDropConfig;
+  const isDragAndDrop = !!dragAndDropConfig;
   const isMultipleChoice = !!multipleChoiceConfig;
   const hasPersistedCompletion = lessonData?.id ? !!quizCompletionState[lessonData.id] : false;
   const isLessonComplete = isQuizComplete || hasPersistedCompletion;
@@ -431,6 +483,8 @@ const PageContent = () => {
           onQuizComplete={handleQuizCompletion}
           containerClassName="max-h-[28rem]"
           categoryClassName="bg-white"
+          completionConfig={finalDragAndDropConfig.completionConfig}
+          itemsLabel={finalDragAndDropConfig.itemsLabel}
         />
         {!isLessonComplete && hasAttemptedQuiz && (
           <p className="text-sm text-rose-700 font-medium text-center">
