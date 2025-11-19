@@ -8,9 +8,24 @@ from fastapi.responses import JSONResponse
 from db_supabase.db_util import (
     add_user,
     login_user,
+    get_user_by_email as get_user_by_email_service,
     send_verification_email as send_verification_email_service,
     verify_email as verify_email_service,
     is_user_verified as user_verified,
+    get_user_by_id as get_user,
+)
+
+from db_supabase.db_lessons import (
+    get_lesson,
+    get_lessons_by_level,
+)
+
+from db_supabase.db_level_user_progress_util import (
+    get_user_learning_progress,
+    add_learning_user,
+    set_user_learning_progress,
+    set_user_completed_lessons,
+    parse_completed_lessons,
 )
 
 try:
@@ -31,6 +46,166 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.post ("/api/get_user_learning_progress")
+async def get_user_learning_progress_root(request: Request):
+    data = await request.json()
+    # Support both keys for compatibility with existing frontend
+    uid = data.get("uid") or data.get("id")
+    if not uid:
+        return {"status": "error", "message": "No User"}
+    try:
+        # Ensure user exists
+        user = get_user(uid)
+        if not user:
+            return {"status": "error", "message": "User not found"}
+
+        # Fetch progress; initialize if missing
+        progress = get_user_learning_progress(uid)
+        if not progress:
+            init = add_learning_user(uid)
+            if not init or not init.get("success"):
+                return {"status": "error", "message": "Unable to initialize learning progress"}
+            progress = init["user"]
+
+        completed_lessons = parse_completed_lessons(
+            progress.get("completed_lessons")
+        )
+
+        # Normalize response to what frontend expects
+        response_data = {
+            "user": user,
+            "level_progress": progress.get("level_progress", 0),
+            "lesson_progress": progress.get("lesson_progress", 0),
+            "current_lesson_id": progress.get("current_lesson_id"),
+            "completed_lessons": completed_lessons,
+        }
+        return {"status": "success", "data": response_data}
+    except Exception as e:
+        print("Error receiving user's learning progress", e)
+        return {"status": "error", "message": str(e)}
+
+@app.post ("/api/get_lesson")
+async def get_lesson_root(request: Request):
+    data = await request.json()
+    level = data.get("level")
+    lesson = data.get("lesson")
+    # Allow level/lesson to be 0; only reject when missing (None)
+    if level is None or lesson is None:
+        return {"status": "error", "message": "No level or lesson_number"}
+    try:
+        result = get_lesson(level, lesson)
+        if not result:
+            return {"status": "error", "message": "Lesson not found"}
+        # db_lessons.get_lesson returns a list; return the first matching row
+        first = result[0] if isinstance(result, list) else result
+        return {"status": "success", "data": first}
+    
+    except Exception as e:
+        print("Error receiving lesson", e)
+        return {"status": "error", "message": str(e)}
+
+@app.get("/api/lessons/{level}")
+async def get_lessons_for_level(level: int):
+    try:
+        lessons = get_lessons_by_level(level)
+        if not lessons:
+            return {"status": "error", "message": "No lessons found"}
+        lessons_sorted = sorted(lessons, key=lambda row: row.get("page_number", 0))
+        return {"status": "success", "data": lessons_sorted}
+    except Exception as e:
+        print("Error fetching lessons for level", level, e)
+        return {"status": "error", "message": str(e)}
+
+@app.post("/api/add_learning_user")
+async def add_learning_user_root(request: Request):
+    data = await request.json()
+    uid = data.get("uid")
+    if not uid:
+        return {"status": "error", "message": "Missing uid"}
+    result = add_learning_user(uid)
+    if result and result.get("success"):
+        user_progress = result.get("user", {})
+        response_data = {
+            "user": {"id": user_progress.get("id")},
+            "level_progress": user_progress.get("level_progress", 0),
+            "lesson_progress": user_progress.get("lesson_progress", 0),
+            "last_updated": user_progress.get("last_updated"),
+            "completed_lessons": parse_completed_lessons(
+                user_progress.get("completed_lessons", [])
+            ),
+        }
+        # Include both keys for compatibility with varying frontend checks
+        return {"status": "success", "success": "success", "data": response_data}
+    return {"status": "error", "message": result.get("message") if isinstance(result, dict) else "Failed to add learning user"}
+
+
+@app.post("/api/set_user_learning_progress")
+async def set_user_learning_progress_root(request: Request):
+    data = await request.json()
+    uid = data.get("uid")
+    level_progress = data.get("level_progress")
+    lesson_progress = data.get("lesson_progress")
+    completed_lessons_raw = data.get("completed_lessons")
+
+    if not uid:
+        return {"status": "error", "message": "Missing uid"}
+    if level_progress is None or lesson_progress is None:
+        return {"status": "error", "message": "Missing level or lesson progress"}
+
+    try:
+        completed_lessons = None
+        if completed_lessons_raw is not None:
+            completed_lessons = parse_completed_lessons(completed_lessons_raw)
+
+        updated = set_user_learning_progress(
+            uid,
+            int(level_progress),
+            int(lesson_progress),
+            completed_lessons,
+        )
+        if not updated:
+            return {"status": "error", "message": "Unable to update learning progress"}
+        return {
+            "status": "success",
+            "data": {
+                **updated,
+                "completed_lessons": parse_completed_lessons(
+                    updated.get("completed_lessons")
+                ),
+            },
+        }
+    except Exception as e:
+        print("Error updating user learning progress", e)
+        return {"status": "error", "message": str(e)}
+
+
+@app.post("/api/set_user_completed_lessons")
+async def set_user_completed_lessons_root(request: Request):
+    data = await request.json()
+    uid = data.get("uid")
+    completed_lessons_raw = data.get("completed_lessons")
+
+    if not uid:
+        return {"status": "error", "message": "Missing uid"}
+
+    completed_lessons = parse_completed_lessons(completed_lessons_raw)
+
+    try:
+        updated = set_user_completed_lessons(uid, completed_lessons)
+        if not updated:
+            return {"status": "error", "message": "Unable to update completed lessons"}
+        return {
+            "status": "success",
+            "data": {
+                **updated,
+                "completed_lessons": parse_completed_lessons(
+                    updated.get("completed_lessons")
+                ),
+            },
+        }
+    except Exception as e:
+        print("Error updating user completed lessons", e)
+        return {"status": "error", "message": str(e)}
 
 @app.post("/api/send_verification_email")
 async def send_verification_email_root(request: Request):
@@ -74,6 +249,23 @@ async def login_user_root(request: Request):
     result = login_user(data["email"], data["password_hash"])
     return {"status": "success", "data": result}
 
+@app.get("/api/user/{user_id}")
+async def get_user_root(user_id: str):
+    result = get_user(user_id)
+    if not result:
+        return {"status": "error", "message": "user not found"}
+    return {"status": "success", "data": result}
+
+@app.post("/api/get_user_id")
+async def get_user_id_root(request: Request):
+    data = await request.json()
+    email = (data.get("email") or "").strip().lower()
+    if not email:
+        return {"status": "error", "message": "Missing email"}
+    user = get_user_by_email_service(email)
+    if not user:
+        return {"status": "error", "message": "User not found"}
+    return {"status": "success", "data": {"id": user["id"]}}
 
 @app.post("/api/strategies/buy_hold")
 async def run_buy_and_hold(request: Request):
