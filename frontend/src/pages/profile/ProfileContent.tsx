@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import SidebarSimple from '../../components/SidebarSimple';
 import { get_user_progress } from '../../components/apiServices/userApi';
 import { UserProps } from '../../types';
+import EditProfileModal from '../../components/auth/EditProfileModal';
 
 const Card: React.FC<{ title?: string; children?: React.ReactNode; bg?: string; className?: string }> = ({ title, children, bg = '#D9F2A6', className }) => (
   <div className={`rounded-md p-6 border border-black/10 ${className || ''}`} style={{ backgroundColor: bg }}>
@@ -19,6 +20,8 @@ export const ProfileContent: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [level, setLevel] = useState<number>(0);
   const [lesson, setLesson] = useState<number>(0);
+  const [showCreateLockedPopup, setShowCreateLockedPopup] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   useEffect(() => {
     async function fetchUser() {
@@ -36,7 +39,8 @@ export const ProfileContent: React.FC = () => {
           console.log("data:", json.data);
           setUser({
             ...json.data,
-            name: json.data.username
+            name: json.data.username,
+            profileImage: json.data.profile_image
           });
           // also fetch progress
           const progress = await get_user_progress(userId);
@@ -63,6 +67,66 @@ export const ProfileContent: React.FC = () => {
     const safeLesson = lesson && lesson > 0 ? lesson : 1;
     navigate(`/learn/${safeLevel}/${safeLesson}`);
   };
+
+  const shakeAnimation = `
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+      20%, 40%, 60%, 80% { transform: translateX(2px); }
+    }
+    .shake {
+      animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    }
+  `;
+
+  const [isShaking, setIsShaking] = useState(false);
+
+  const handleCreateClick = () => {
+    const safeLevel = typeof level === 'number' ? level : 0;
+    if (safeLevel < 1) {
+      setIsShaking(true);
+      setShowCreateLockedPopup(true);
+      const timer = setTimeout(() => {
+        setIsShaking(false);
+        setShowCreateLockedPopup(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+    navigate('/create');
+  };
+
+  const handleUpdateProfile = async (updates: { name?: string; profileImage?: string }) => {
+    try {
+      const userId = localStorage.getItem("user_id");
+      if (!userId) return;
+
+      const response = await fetch(`http://localhost:8000/api/update_profile`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: userId,
+          name: updates.name,
+          profileImage: updates.profileImage
+        }),
+      });
+
+      const data = await response.json();
+      if (data.status === "success" && data.data) {
+        setUser(prev => prev ? { 
+          ...prev, 
+          name: data.data.username || prev.name,
+          profileImage: data.data.profile_image || prev.profileImage
+        } : null);
+        return data;
+      } else {
+        console.error("Error updating profile:", data.message);
+        throw new Error(data.message || "Failed to update profile");
+      }
+    } catch (err) {
+      console.error("Error updating profile:", err);
+      throw err;
+    }
+  };
   
   return (
     <div className="w-full h-[calc(100vh-72px)] bg-white flex">
@@ -74,12 +138,28 @@ export const ProfileContent: React.FC = () => {
             <div className="mt-8 text-center text-gray-500">Loading profile...</div>
           ) : user ? (
             <div className="mt-8 flex items-center gap-8">
-              <div className="rounded-full" style={{ width: 110, height: 110, backgroundColor: '#D9F2A6' }} />
+              {user.profileImage ? (
+                <img 
+                  src={`${user.profileImage}?t=${new Date().getTime()}`}
+                  alt="Profile"
+                  className="w-[110px] h-[110px] rounded-full object-cover"
+                />
+              ) : (
+                <div 
+                  className="rounded-full" 
+                  style={{ width: 110, height: 110, backgroundColor: '#D9F2A6' }} 
+                />
+              )}
               <div className="flex-1">
                 <div className="font-semibold text-lg">{user.name}</div>
                 <div className="text-sm text-gray-700">{user.email}</div>
               </div>
-              <button className="px-6 py-3 rounded-full bg-black text-white text-sm">Edit</button>
+              <button 
+                onClick={() => setIsEditModalOpen(true)}
+                className="px-6 py-3 rounded-full bg-black text-white text-sm"
+              >
+                Edit
+              </button>
             </div>
           ) : (
             <div className="mt-8 text-center text-red-500">User not found</div>
@@ -101,11 +181,15 @@ export const ProfileContent: React.FC = () => {
             <div className="mt-6">
               <Card title="Create">
                 <button 
-                  onClick={() => navigate('/create')} 
-                  className="mt-4 w-full flex items-center gap-4 rounded-md px-6 py-4 transition-all hover:opacity-90 active:scale-[0.98] cursor-pointer" 
+                  onClick={handleCreateClick} 
+                  className={`mt-4 w-full flex items-center gap-4 rounded-md px-6 py-4 transition-all hover:opacity-90 active:scale-[0.98] cursor-pointer relative ${
+                    isShaking ? 'animate-shake' : ''
+                  }`} 
                   style={{ backgroundColor: '#E8B6B6' }}
                 >
-                  <span className="inline-flex h-8 w-8 items-center justify-center rounded bg-white text-black font-bold">＋</span>
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded bg-white text-black font-bold">
+                    {level < 1 ? '🔒' : '＋'}
+                  </span>
                   <span className="text-base font-semibold">Create new strategy</span>
                 </button>
               </Card>
@@ -124,6 +208,43 @@ export const ProfileContent: React.FC = () => {
           </div>
         </div>
       </div>
+      {showCreateLockedPopup && (
+        <div className="fixed bottom-6 right-6 transform z-50">
+          <div 
+            className="px-6 py-3 rounded-full bg-gray-800 text-white text-sm font-medium shadow-lg transition-opacity duration-500"
+          >
+            Creating a strategy will be unlocked after completing Level 0. With each level completed, another strategy can be unlocked!
+          </div>
+        </div>
+      )}
+      <EditProfileModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        user={user}
+        onUpdate={handleUpdateProfile}
+      />
+      {/* {showCreateLockedPopup && (
+        <div className="fixed bottom-6 right-6 z-50" role="status" aria-live="polite">
+          <div
+            className="relative rounded-3xl border border-black/20 px-6 py-5 shadow-lg"
+            style={{ backgroundColor: '#D9F2A6', minWidth: '320px' }}
+          >
+            <button
+              onClick={() => setShowCreateLockedPopup(false)}
+              aria-label="Close create strategy lock message"
+              className="absolute right-4 top-3 text-black/70 transition-colors hover:text-black"
+            >
+              ×
+            </button>
+            <div
+              className="rounded-2xl px-4 py-4 text-center font-semibold text-black"
+              style={{ backgroundColor: '#E8B6B6' }}
+            >
+              Creating a strategy will be unlocked after completing Level 0. With each level completed, another strategy can be unlocked!
+            </div>
+          </div>
+        </div>
+      )} */}
     </div>
   );
 };
