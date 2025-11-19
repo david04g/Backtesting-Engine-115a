@@ -11,7 +11,12 @@ import {
   Slide,
 } from "../../../components/lessons/ProgressBar";
 import { NavigationButtons } from "../../../components/lessons/NavigationButtons";
-import { DragAndDropQuiz, Category } from "../../../components/quiz";
+import {
+  DragAndDropQuiz,
+  Category,
+  MultipleChoiceQuiz,
+  MultipleChoiceOption,
+} from "../../../components/quiz";
 
 import { LevelCompletionPopup } from "../../../components/LevelCompletionPopup";
 
@@ -72,6 +77,64 @@ const DRAG_AND_DROP_CONFIG: Record<
   },
 };
 
+const MULTIPLE_CHOICE_CONFIG: Record<
+  number,
+  Record<
+    number,
+    {
+      question: string;
+      helperText?: string;
+      options: MultipleChoiceOption[];
+    }
+  >
+> = {
+  1: {
+    3: {
+      question: "At what point is the price highest?",
+      options: [
+        { id: "red", label: "Red" },
+        { id: "blue", label: "Blue" },
+        { id: "yellow", label: "Yellow", isCorrect: true },
+      ],
+    },
+    4: {
+      question: "What is a strategy?",
+      options: [
+        { id: "rules", label: "A set of rules for buying and selling", isCorrect: true },
+        { id: "random", label: "A set of random acts" },
+      ],
+    },
+    5: {
+      question: "Backtesting simulates... ?",
+      options: [
+        { id: "past", label: "How rules would have performed on past data", isCorrect: true },
+        { id: "future", label: "Future guaranteed profits" },
+      ],
+    },
+    6: {
+      question: "On a line chart, the vertical axis shows:",
+      options: [
+        { id: "price", label: "Price", isCorrect: true },
+        { id: "time", label: "Time" },
+      ],
+    },
+    7: {
+      question: "If price at sell is higher than buy, then return is:",
+      options: [
+        { id: "positive", label: "Positive", isCorrect: true },
+        { id: "negative", label: "Negative" },
+      ],
+    },
+    8: {
+      question: "A \"buy once at start\" rule means:",
+      options: [
+        { id: "buy-once", label: "Buy one time at the beginning", isCorrect: true },
+        { id: "buy-daily", label: "Buy every day" },
+      ],
+    },
+  },
+};
+
 const PageContent = () => {
   const navigate = useNavigate();
   const { level, lesson } = useParams();
@@ -79,6 +142,7 @@ const PageContent = () => {
   const [lessons, setLessons] = useState<LessonRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [isQuizComplete, setIsQuizComplete] = useState(false);
+  const [hasAttemptedQuiz, setHasAttemptedQuiz] = useState(false);
   const [quizCompletionState, setQuizCompletionState] = useState<Record<number, boolean>>({});
   const [userId, setUserId] = useState<string | null>(null);
   const [userProgress, setUserProgress] = useState<{ level: number; lesson: number } | null>(null);
@@ -164,6 +228,7 @@ const PageContent = () => {
   }, [levelNum, lessonNum, navigate]);
 
   useEffect(() => {
+    setHasAttemptedQuiz(false);
     if (!lessonData?.id) {
       setIsQuizComplete(false);
       return;
@@ -195,6 +260,7 @@ const PageContent = () => {
       const lessonId = lessonData?.id;
       if (!lessonId) {
         setIsQuizComplete(complete);
+        setHasAttemptedQuiz(complete);
         return;
       }
 
@@ -203,8 +269,10 @@ const PageContent = () => {
           prev[lessonId] ? prev : { ...prev, [lessonId]: true }
         );
         setIsQuizComplete(true);
+        setHasAttemptedQuiz(true);
       } else if (!quizCompletionState[lessonId]) {
         setIsQuizComplete(false);
+        setHasAttemptedQuiz(true);
       }
     },
     [lessonData?.id, quizCompletionState]
@@ -257,11 +325,16 @@ const PageContent = () => {
   const rawImageUrl = lessonData?.image_url?.trim();
   const imageUrl = rawImageUrl && rawImageUrl.toLowerCase() !== "none" ? rawImageUrl : null;
   const dragAndDropConfig = lessonData ? DRAG_AND_DROP_CONFIG[lessonData.page_number] : undefined;
+  const multipleChoiceConfig = lessonData
+    ? MULTIPLE_CHOICE_CONFIG[lessonData.level]?.[lessonData.page_number]
+    : undefined;
   const isDragAndDrop = lessonData?.content_type === "drag_and_drop" && !!dragAndDropConfig;
+  const isMultipleChoice = !!multipleChoiceConfig;
   const hasPersistedCompletion = lessonData?.id ? !!quizCompletionState[lessonData.id] : false;
   const isLessonComplete = isQuizComplete || hasPersistedCompletion;
   const isLastLesson = currentIndex >= 0 && currentIndex === lessons.length - 1;
-  const baseCanAdvance = !isDragAndDrop || isLessonComplete;
+  const requiresQuiz = isDragAndDrop || isMultipleChoice;
+  const baseCanAdvance = !requiresQuiz || isLessonComplete;
   const canAdvanceWithinLevel = currentIndex >= 0 && currentIndex < lessons.length - 1 && baseCanAdvance;
   const canStartNextLevel = currentIndex >= 0 && isLastLesson && !!nextLevelInfo && baseCanAdvance;
   const canGoNext = canAdvanceWithinLevel || canStartNextLevel;
@@ -293,7 +366,17 @@ const PageContent = () => {
 
     setLevelUpComplete(true);
     doIncrement();
-  }, [isLastLesson, baseCanAdvance, userId, levelUpComplete]);
+  }, [isLastLesson, baseCanAdvance, userId, levelUpComplete, nextLevelInfo]);
+
+  useEffect(() => {
+    setLevelUpComplete(false);
+  }, [levelNum, lessonNum]);
+
+  useEffect(() => {
+    if (!isLastLesson && showLevelCompletionPopup) {
+      setShowLevelCompletionPopup(false);
+    }
+  }, [isLastLesson, showLevelCompletionPopup]);
 
   if (loading) {
     return (
@@ -316,6 +399,67 @@ const PageContent = () => {
   const finalDescription = description;
   const finalImageUrl = imageUrl;
   const finalDragAndDropConfig = dragAndDropConfig;
+  const shouldPairImageWithQuiz =
+    lessonData.level === 1 && lessonData.page_number === 3 && !!finalImageUrl && isMultipleChoice;
+
+  const imageElement = finalImageUrl ? (
+    <div className="flex justify-center">
+      <img
+        src={finalImageUrl}
+        alt={finalSupportingTitle}
+        className="max-h-96 w-full max-w-md rounded-lg border border-black/10 shadow"
+      />
+    </div>
+  ) : null;
+
+  const dragAndDropSection =
+    isDragAndDrop && finalDragAndDropConfig ? (
+      <div className="flex flex-col gap-4">
+        <div className="rounded-lg border border-black/10 bg-white p-4 shadow-sm">
+          <p className="font-semibold text-gray-900 text-base">
+            {finalDragAndDropConfig.instructions}
+          </p>
+          {finalDragAndDropConfig.helper && (
+            <p className="text-sm text-gray-700 mt-1">
+              {finalDragAndDropConfig.helper}
+            </p>
+          )}
+        </div>
+        <DragAndDropQuiz
+          items={finalDragAndDropConfig.items}
+          categories={finalDragAndDropConfig.categories}
+          onQuizComplete={handleQuizCompletion}
+          containerClassName="max-h-[28rem]"
+          categoryClassName="bg-white"
+        />
+        {!isLessonComplete && hasAttemptedQuiz && (
+          <p className="text-sm text-rose-700 font-medium text-center">
+            Complete the quiz and click “Check Answers” to continue.
+          </p>
+        )}
+        {isLessonComplete && hasAttemptedQuiz && (
+          <p className="text-sm text-green-700 font-medium text-center">
+            Great job! You can move to the next lesson.
+          </p>
+        )}
+      </div>
+    ) : null;
+
+  const multipleChoiceSection =
+    isMultipleChoice && multipleChoiceConfig ? (
+      <div className="flex flex-col gap-4">
+        <MultipleChoiceQuiz
+          question={multipleChoiceConfig.question}
+          options={multipleChoiceConfig.options}
+          onQuizComplete={handleQuizCompletion}
+        />
+        {!isLessonComplete && hasAttemptedQuiz && (
+          <p className="text-sm text-rose-700 font-medium text-center">
+            Select the correct answer and click “Check Answer” to continue.
+          </p>
+        )}
+      </div>
+    ) : null;
 
   return (
     <div className="min-h-screen bg-white">
@@ -354,46 +498,18 @@ const PageContent = () => {
                   </div>
                   <div className="p-6 flex flex-col gap-6">
                     <p className="text-lg leading-relaxed text-gray-800">{finalDescription}</p>
-                    {finalImageUrl && (
-                      <div className="flex justify-center">
-                        <img
-                          src={finalImageUrl}
-                          alt={finalSupportingTitle}
-                          className="max-h-96 w-auto rounded-lg border border-black/10 shadow"
-                        />
+                    {shouldPairImageWithQuiz ? (
+                      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-start">
+                        {imageElement}
+                        {multipleChoiceSection}
                       </div>
+                    ) : (
+                      <>
+                        {imageElement}
+                        {multipleChoiceSection}
+                      </>
                     )}
-                    {isDragAndDrop && finalDragAndDropConfig && (
-                      <div className="flex flex-col gap-4">
-                        <div className="rounded-lg border border-black/10 bg-white p-4 shadow-sm">
-                          <p className="font-semibold text-gray-900 text-base">
-                            {finalDragAndDropConfig.instructions}
-                          </p>
-                          {finalDragAndDropConfig.helper && (
-                            <p className="text-sm text-gray-700 mt-1">
-                              {finalDragAndDropConfig.helper}
-                            </p>
-                          )}
-                        </div>
-                        <DragAndDropQuiz
-                          items={finalDragAndDropConfig.items}
-                          categories={finalDragAndDropConfig.categories}
-                          onQuizComplete={handleQuizCompletion}
-                          containerClassName="max-h-[28rem]"
-                          categoryClassName="bg-white"
-                        />
-                        {!isLessonComplete && (
-                          <p className="text-sm text-rose-700 font-medium text-center">
-                            Complete the quiz and click “Check Answers” to continue.
-                          </p>
-                        )}
-                        {isLessonComplete && (
-                          <p className="text-sm text-green-700 font-medium text-center">
-                            Great job! You can move to the next lesson.
-                          </p>
-                        )}
-                      </div>
-                    )}
+                    {dragAndDropSection}
                   </div>
                 </div>
               </div>
@@ -408,6 +524,9 @@ const PageContent = () => {
                   }
 
                   if (isLastLesson) {
+                    if (nextLevelInfo) {
+                      navigate(`/learn/${nextLevelInfo.level}/${nextLevelInfo.firstLesson}`);
+                    }
                     return;
                   }
 
