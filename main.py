@@ -36,13 +36,25 @@ except Exception:
     yf = None
 
 import pandas as pd
-
+import os
 
 app = FastAPI()
 
+# Configure CORS based on environment
+# In production, set ALLOWED_ORIGINS to your frontend URL(s), comma-separated
+# Example: ALLOWED_ORIGINS=https://your-app.vercel.app,https://your-app.railway.app
+# For development, defaults to "*" to allow all origins
+allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "")
+if allowed_origins_env:
+    allowed_origins = [origin.strip() for origin in allowed_origins_env.split(",")]
+else:
+    # Default to allow all origins (useful for local development)
+    # In production, set ALLOWED_ORIGINS env var to restrict origins
+    allowed_origins = ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Use "*" for local testing only
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -737,4 +749,10 @@ async def run_dollar_cost_average(request: Request):
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    # Use PORT environment variable for deployment (Railway, Vercel, etc.)
+    # Default to 8000 for local development
+    port = int(os.getenv("PORT", 8000))
+    # Only use reload in development
+    reload = os.getenv("ENVIRONMENT") == "development"
+    
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=reload)

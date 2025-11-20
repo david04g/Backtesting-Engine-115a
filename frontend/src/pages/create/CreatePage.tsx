@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { API_BASE } from '../../config/api';
 
 interface StrategyResult {
   buy_price: number;
@@ -31,7 +32,6 @@ const strategies = [
   },
 ];
 
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:8000';
 
 const Chart: React.FC<{ data: { date: string; value: number }[] }> = ({
   data,

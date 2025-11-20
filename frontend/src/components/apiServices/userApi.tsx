@@ -1,5 +1,7 @@
+import { getApiUrl } from '../../config/api';
+
 export const get_user_id = async (email:string) => {
-  const endpoint = "http://localhost:8000/api/get_user_id";
+  const endpoint = getApiUrl("api/get_user_id");
   const payload = { email };
   try {
     const res = await fetch(endpoint, {
@@ -25,7 +27,7 @@ export const get_user_id = async (email:string) => {
 };
 
 export const add_learning_user = async (uuid: string) => {
-  const endpoint = `http://localhost:8000/api/add_learning_user`;
+  const endpoint = getApiUrl("api/add_learning_user");
   const payload = {uid: uuid};
   try {
     const res = await fetch(endpoint, {
@@ -52,7 +54,7 @@ export const add_learning_user = async (uuid: string) => {
 
 
 export const get_user_progress = async (uuid: string) => {
-  const endpoint = "http://localhost:8000/api/get_user_learning_progress";
+  const endpoint = getApiUrl("api/get_user_learning_progress");
   const payload = { uid: uuid };
 
   try {
@@ -111,7 +113,7 @@ export const set_user_learning_progress = async (
   lesson: number,
   completedLessons?: number[]
 ) => {
-  const endpoint = "http://localhost:8000/api/set_user_learning_progress";
+  const endpoint = getApiUrl("api/set_user_learning_progress");
   const payload: Record<string, unknown> = {
     uid: uuid,
     level_progress: level,
@@ -147,7 +149,7 @@ export const set_user_completed_lessons = async (
   uuid: string,
   completedLessons: number[],
 ) => {
-  const endpoint = "http://localhost:8000/api/set_user_completed_lessons";
+  const endpoint = getApiUrl("api/set_user_completed_lessons");
   const payload = {
     uid: uuid,
     completed_lessons: completedLessons,
@@ -175,7 +177,7 @@ export const set_user_completed_lessons = async (
 };
 
 export const get_lessons_by_level = async (level: number) => {
-  const endpoint = `http://localhost:8000/api/lessons/${level}`;
+  const endpoint = getApiUrl(`api/lessons/${level}`);
 
   try {
     const res = await fetch(endpoint);
@@ -194,7 +196,7 @@ export const get_lessons_by_level = async (level: number) => {
 };
 
 export const get_lesson = async (level: number, lesson: number) => {
-  const endpoint = "http://localhost:8000/api/get_lesson";
+  const endpoint = getApiUrl("api/get_lesson");
   const payload = { level, lesson };
 
   try {
