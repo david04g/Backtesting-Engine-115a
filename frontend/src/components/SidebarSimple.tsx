@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import { useNavigate } from 'react-router-dom';
+import { API_ENDPOINTS } from '../config/api';
 
 interface User {
   id: string;
@@ -40,7 +41,7 @@ export const SidebarSimple: React.FC<SidebarSimpleProps> = ({ active }) => {
             navigate("/");
             return;
           }
-          const res = await fetch(`http://localhost:8000/api/user/${userId}`);
+          const res = await fetch(API_ENDPOINTS.GET_USER(userId));
           const json = await res.json();
           if (json.status === "success" && json.data) {
             setUser(json.data);

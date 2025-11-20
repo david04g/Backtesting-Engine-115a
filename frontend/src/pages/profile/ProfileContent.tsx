@@ -4,6 +4,7 @@ import SidebarSimple from '../../components/SidebarSimple';
 import { get_user_progress } from '../../components/apiServices/userApi';
 import { UserProps } from '../../types';
 import EditProfileModal from '../../components/auth/EditProfileModal';
+import { API_ENDPOINTS } from '../../config/api';
 
 const Card: React.FC<{ title?: string; children?: React.ReactNode; bg?: string; className?: string }> = ({ title, children, bg = '#D9F2A6', className }) => (
   <div className={`rounded-md p-6 border border-black/10 ${className || ''}`} style={{ backgroundColor: bg }}>
@@ -33,7 +34,7 @@ export const ProfileContent: React.FC = () => {
           navigate("/");
           return;
         }
-        const res = await fetch(`http://localhost:8000/api/user/${userId}`);
+        const res = await fetch(API_ENDPOINTS.GET_USER(userId));
         const json = await res.json();
         if (json.status === "success" && json.data) {
           console.log("data:", json.data);
@@ -100,7 +101,7 @@ export const ProfileContent: React.FC = () => {
       const userId = localStorage.getItem("user_id");
       if (!userId) return;
 
-      const response = await fetch(`http://localhost:8000/api/update_profile`, {
+      const response = await fetch(API_ENDPOINTS.UPDATE_PROFILE, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

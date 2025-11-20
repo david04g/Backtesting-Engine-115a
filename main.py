@@ -1,9 +1,14 @@
 ﻿from datetime import datetime
 from typing import Any, Dict, List
+import os
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 from db_supabase.db_util import (
     add_user,
@@ -40,9 +45,20 @@ import pandas as pd
 
 app = FastAPI()
 
+# Get allowed origins from environment variable
+# For production, set ALLOWED_ORIGINS as comma-separated list of URLs
+# Example: ALLOWED_ORIGINS=https://yourapp.vercel.app,https://www.yourapp.com
+allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "")
+if allowed_origins_env:
+    # Split by comma and strip whitespace
+    allowed_origins = [origin.strip() for origin in allowed_origins_env.split(",") if origin.strip()]
+else:
+    # Default to allow all origins for development
+    allowed_origins = ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Use "*" for local testing only
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -737,4 +753,10 @@ async def run_dollar_cost_average(request: Request):
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    # Get port from environment variable, default to 8000
+    # Railway and other platforms set PORT automatically
+    port = int(os.getenv("PORT", "8000"))
+    # Only enable reload in development
+    reload = os.getenv("ENVIRONMENT", "development").lower() == "development"
+    
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=reload)

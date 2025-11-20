@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { API_ENDPOINTS } from '../../config/api';
 
 interface StrategyResult {
   buy_price: number;
@@ -31,7 +32,6 @@ const strategies = [
   },
 ];
 
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:8000';
 
 const Chart: React.FC<{ data: { date: string; value: number }[] }> = ({
   data,
@@ -174,7 +174,21 @@ const CreatePage: React.FC = () => {
     setResult(null);
 
     try {
-      const endpoint = `${API_BASE}/api/strategies/${selectedStrategy}`;
+      let endpoint: string;
+      switch (selectedStrategy) {
+        case 'buy_hold':
+          endpoint = API_ENDPOINTS.STRATEGIES.BUY_HOLD;
+          break;
+        case 'simple_moving_average_crossover':
+          endpoint = API_ENDPOINTS.STRATEGIES.SIMPLE_MOVING_AVERAGE_CROSSOVER;
+          break;
+        case 'dca':
+          endpoint = API_ENDPOINTS.STRATEGIES.DCA;
+          break;
+        default:
+          throw new Error('Unknown strategy');
+      }
+      
       const body: Record<string, any> = {
         ticker,
         start_date: buyDate,
