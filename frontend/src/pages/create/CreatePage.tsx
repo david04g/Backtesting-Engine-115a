@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { API_ENDPOINTS } from '../../config/api';
 
 interface StrategyResult {
@@ -12,6 +12,23 @@ interface StrategyResult {
   total_contributed?: number;
   frequency?: string;
   series: { date: string; value: number; price: number }[];
+}
+
+interface SavedStrategy {
+  strategy_id: string;
+  ticker_name: string;
+  strategy_type: string;
+  money_invested: number;
+  start_date: string;
+  end_date: string;
+  metadata: {
+    strategy_name?: string;
+    short_window?: number;
+    long_window?: number;
+    frequency?: string;
+    contribution?: number;
+  };
+  created_at: string;
 }
 
 const strategies = [
@@ -119,6 +136,15 @@ const CreatePage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<StrategyResult | null>(null);
 
+  const [strategyName, setStrategyName] = useState('');
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const [savedStrategies, setSavedStrategies] = useState<SavedStrategy[]>([]);
+  const [showSavedStrategies, setShowSavedStrategies] = useState(false);
+  const [loadingSavedStrategies, setLoadingSavedStrategies] = useState(false);
+
   const filteredStrategies = useMemo(() => {
     const term = search.trim().toLowerCase();
     if (!term) return strategies;
@@ -135,19 +161,63 @@ const CreatePage: React.FC = () => {
     }));
   }, [result]);
 
+  const getUserId = () => {
+    const userId = localStorage.getItem('user_id');
+    if (userId && userId !== 'null' && userId !== 'undefined') {
+      return userId;
+    }
+    return null;
+  };
+
+  useEffect(() => {
+    const fetchSavedStrategies = async () => {
+      const userId = getUserId();
+      if (!userId) return;
+
+      setLoadingSavedStrategies(true);
+      try {
+        const response = await fetch(API_ENDPOINTS.STRATEGIES.GET_USER_STRATEGIES(userId));
+        const data = await response.json();
+        if (data.status === 'success') {
+          setSavedStrategies(data.data);
+        }
+      } catch (err) {
+        console.error('Error fetching saved strategies:', err);
+      } finally {
+        setLoadingSavedStrategies(false);
+      }
+    };
+
+    fetchSavedStrategies();
+  }, []);
+
+  useEffect(() => {
+    setResult(null);
+    setError(null);
+    setSaveSuccess(false);
+    setSaveError(null);
+  }, [selectedStrategy]);
+
   const summary = useMemo(() => {
     if (!result) return null;
+    
+    if (result.total_return_pct === undefined || result.final_value === undefined) {
+      return null;
+    }
+
     const base = {
       totalReturn: `${result.total_return_pct.toFixed(2)}%`,
       finalValue: `$${result.final_value.toFixed(2)}`,
     };
 
     if (selectedStrategy === 'buy_hold') {
-      return {
-        ...base,
-        buyPrice: `$${result.buy_price.toFixed(2)}`,
-        sellPrice: `$${result.sell_price.toFixed(2)}`,
-      };
+      if (result.buy_price !== undefined && result.sell_price !== undefined) {
+        return {
+          ...base,
+          buyPrice: `$${result.buy_price.toFixed(2)}`,
+          sellPrice: `$${result.sell_price.toFixed(2)}`,
+        };
+      }
     } else if (selectedStrategy === 'simple_moving_average_crossover') {
       return {
         ...base,
@@ -158,8 +228,8 @@ const CreatePage: React.FC = () => {
       return {
         ...base,
         frequency: result.frequency,
-        contribution: `$${result.contribution?.toFixed(2)}`,
-        totalContrib: `$${result.total_contributed?.toFixed(2)}`,
+        contribution: result.contribution ? `$${result.contribution.toFixed(2)}` : 'N/A',
+        totalContrib: result.total_contributed ? `$${result.total_contributed.toFixed(2)}` : 'N/A',
       };
     }
 
@@ -227,6 +297,131 @@ const CreatePage: React.FC = () => {
     }
   };
 
+  const handleSaveStrategy = async () => {
+    const userId = getUserId();
+    if (!userId) {
+      setSaveError('Please log in to save strategies');
+      return;
+    }
+
+    if (!selectedStrategy) {
+      setSaveError('No strategy selected');
+      return;
+    }
+
+    setSaving(true);
+    setSaveError(null);
+    setSaveSuccess(false);
+
+    try {
+      const metadata: Record<string, any> = {};
+      
+      if (strategyName.trim()) {
+        metadata.strategy_name = strategyName.trim();
+      }
+
+      if (selectedStrategy === 'simple_moving_average_crossover') {
+        metadata.short_window = parseInt(shortWindow, 10);
+        metadata.long_window = parseInt(longWindow, 10);
+      }
+
+      if (selectedStrategy === 'dca') {
+        metadata.frequency = frequency;
+        if (contribution.trim() !== '') {
+          metadata.contribution = parseFloat(contribution);
+        }
+      }
+
+      const body = {
+        user_id: userId,
+        strategy_name: strategyName.trim() || `${ticker} ${selectedStrategy}`,
+        ticker: ticker,
+        strategy_type: selectedStrategy,
+        capital: parseFloat(capital),
+        start_date: buyDate,
+        end_date: sellDate,
+        metadata: metadata,
+      };
+
+      const response = await fetch(API_ENDPOINTS.STRATEGIES.SAVE, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      const data = await response.json();
+      if (!response.ok || data.status !== 'success') {
+        throw new Error(data?.message || 'Unable to save strategy.');
+      }
+
+      setSaveSuccess(true);
+      setStrategyName('');
+      
+      const strategiesResponse = await fetch(API_ENDPOINTS.STRATEGIES.GET_USER_STRATEGIES(userId));
+      const strategiesData = await strategiesResponse.json();
+      if (strategiesData.status === 'success') {
+        setSavedStrategies(strategiesData.data);
+      }
+
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err: any) {
+      setSaveError(err?.message || 'Unexpected error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleLoadStrategy = (strategy: SavedStrategy) => {
+    setResult(null);
+    setError(null);
+    setSaveSuccess(false);
+    setSaveError(null);
+
+    setTicker(strategy.ticker_name);
+    setBuyDate(strategy.start_date);
+    setSellDate(strategy.end_date);
+    setCapital(strategy.money_invested.toString());
+    
+    if (strategy.metadata) {
+      if (strategy.metadata.short_window) {
+        setShortWindow(strategy.metadata.short_window.toString());
+      }
+      if (strategy.metadata.long_window) {
+        setLongWindow(strategy.metadata.long_window.toString());
+      }
+      if (strategy.metadata.frequency) {
+        setFrequency(strategy.metadata.frequency);
+      }
+      if (strategy.metadata.contribution) {
+        setContribution(strategy.metadata.contribution.toString());
+      }
+    }
+
+    setSelectedStrategy(strategy.strategy_type);
+    setShowSavedStrategies(false);
+  };
+
+  const handleDeleteStrategy = async (strategyId: string) => {
+    if (!window.confirm('Are you sure you want to delete this strategy?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(API_ENDPOINTS.STRATEGIES.DELETE(strategyId), {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+      if (data.status === 'success') {
+        setSavedStrategies(prev => prev.filter(s => s.strategy_id !== strategyId));
+      } else {
+        alert('Failed to delete strategy: ' + (data.message || 'Unknown error'));
+      }
+    } catch (err: any) {
+      alert('Error deleting strategy: ' + (err?.message || 'Unknown error'));
+    }
+  };
+
   if (!selectedStrategy) {
     return (
       <div className="min-h-screen bg-gray-50 pb-16">
@@ -237,14 +432,20 @@ const CreatePage: React.FC = () => {
             </h1>
           </div>
 
-          <div className="mt-8">
+          <div className="mt-8 flex gap-4">
             <input
               type="text"
               value={search}
               onChange={event => setSearch(event.target.value)}
               placeholder="Search strategies..."
-              className="w-full rounded-full border border-gray-200 bg-white px-6 py-3 text-gray-700 shadow-sm focus:border-pink-300 focus:outline-none focus:ring-2 focus:ring-pink-200"
+              className="flex-1 rounded-full border border-gray-200 bg-white px-6 py-3 text-gray-700 shadow-sm focus:border-pink-300 focus:outline-none focus:ring-2 focus:ring-pink-200"
             />
+            <button
+              onClick={() => setShowSavedStrategies(true)}
+              className="rounded-full bg-lime-300 px-6 py-3 text-sm font-semibold text-gray-800 shadow transition hover:bg-lime-200"
+            >
+              My Strategies ({savedStrategies.length})
+            </button>
           </div>
 
           <div className="mt-10 grid gap-6 md:grid-cols-2">
@@ -274,6 +475,77 @@ const CreatePage: React.FC = () => {
             )}
           </div>
         </div>
+
+        {showSavedStrategies && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+            <div className="max-h-[80vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white p-8 shadow-xl">
+              <div className="mb-6 flex items-center justify-between">
+                <h2 className="text-2xl font-semibold text-gray-800">
+                  My Saved Strategies
+                </h2>
+                <button
+                  onClick={() => setShowSavedStrategies(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {loadingSavedStrategies ? (
+                <div className="py-8 text-center text-gray-500">Loading...</div>
+              ) : savedStrategies.length === 0 ? (
+                <div className="py-8 text-center text-gray-500">
+                  No saved strategies yet. Create and save a strategy to see it here!
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {savedStrategies.map(strategy => (
+                    <div
+                      key={strategy.strategy_id}
+                      className="rounded-2xl bg-gray-50 p-6 shadow-sm ring-1 ring-gray-100"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold text-gray-800">
+                            {strategy.metadata?.strategy_name || `${strategy.ticker_name} ${strategy.strategy_type}`}
+                          </h3>
+                          <div className="mt-2 space-y-1 text-sm text-gray-600">
+                            <p>Ticker: {strategy.ticker_name}</p>
+                            <p>Strategy: {strategies.find(s => s.id === strategy.strategy_type)?.name || strategy.strategy_type}</p>
+                            <p>Capital: ${strategy.money_invested}</p>
+                            <p>Period: {strategy.start_date} to {strategy.end_date}</p>
+                            {strategy.metadata?.short_window && (
+                              <p>Windows: {strategy.metadata.short_window} / {strategy.metadata.long_window}</p>
+                            )}
+                            {strategy.metadata?.frequency && (
+                              <p>Frequency: {strategy.metadata.frequency}</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="ml-4 flex flex-col gap-2">
+                          <button
+                            onClick={() => handleLoadStrategy(strategy)}
+                            className="rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-gray-800 shadow transition hover:bg-lime-200"
+                          >
+                            Load
+                          </button>
+                          <button
+                            onClick={() => handleDeleteStrategy(strategy.strategy_id)}
+                            className="rounded-full bg-red-300 px-4 py-2 text-sm font-semibold text-gray-800 shadow transition hover:bg-red-200"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -281,11 +553,25 @@ const CreatePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
       <div className="mx-auto max-w-6xl px-6 pt-12">
-        <div className="rounded-3xl bg-pink-200 px-8 py-10 text-center shadow-sm">
-          <h1 className="text-3xl font-semibold text-gray-800">
+        <div className="rounded-3xl bg-pink-200 px-8 py-10 shadow-sm">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => setSelectedStrategy(null)}
+              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-gray-800 shadow transition hover:bg-gray-100"
+            >
+              ← Back
+            </button>
+            <button
+              onClick={() => setShowSavedStrategies(true)}
+              className="rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-gray-800 shadow transition hover:bg-lime-200"
+            >
+              My Strategies ({savedStrategies.length})
+            </button>
+          </div>
+          <h1 className="mt-4 text-center text-3xl font-semibold text-gray-800">
             Lookup strategy
           </h1>
-          <p className="mt-2 text-sm text-gray-700">
+          <p className="mt-2 text-center text-sm text-gray-700">
             {strategies.find(s => s.id === selectedStrategy)?.name}
           </p>
         </div>
@@ -409,15 +695,53 @@ const CreatePage: React.FC = () => {
               </div>
             </div>
 
-            <div className="mt-8">
+            <div className="mt-8 space-y-4">
               <button
                 onClick={handleRun}
                 disabled={loading}
-                className="w-32 rounded-full border border-gray-800 bg-white px-6 py-2 text-sm font-semibold text-gray-800 transition hover:bg-gray-100 disabled:opacity-60"
+                className="w-full rounded-full border border-gray-800 bg-white px-6 py-2 text-sm font-semibold text-gray-800 transition hover:bg-gray-100 disabled:opacity-60"
               >
                 {loading ? 'Running…' : 'Run'}
               </button>
+
+              <div className="rounded-2xl bg-white p-4 shadow-sm">
+                <h3 className="mb-3 text-sm font-semibold text-gray-700">
+                  Save This Strategy
+                </h3>
+                <input
+                  type="text"
+                  value={strategyName}
+                  onChange={e => setStrategyName(e.target.value)}
+                  placeholder="Strategy name (optional)"
+                  className="mb-3 w-full rounded-md border border-gray-200 bg-white px-4 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-lime-400"
+                />
+                <button
+                  onClick={handleSaveStrategy}
+                  disabled={saving || savedStrategies.length >= 5}
+                  className="w-full rounded-full bg-lime-300 px-6 py-2 text-sm font-semibold text-gray-800 shadow transition hover:bg-lime-200 disabled:opacity-60"
+                  title={savedStrategies.length >= 5 ? 'Maximum 5 strategies allowed' : ''}
+                >
+                  {saving ? 'Saving…' : 'Save Strategy'}
+                </button>
+                {savedStrategies.length >= 5 && (
+                  <p className="mt-2 text-xs text-red-600">
+                    Maximum limit of 5 strategies reached. Delete a strategy to save a new one.
+                  </p>
+                )}
+              </div>
+
+              {saveSuccess && (
+                <p className="rounded-md bg-lime-100 px-4 py-2 text-sm text-green-700">
+                  Strategy saved successfully!
+                </p>
+              )}
+              {saveError && (
+                <p className="rounded-md bg-red-100 px-4 py-2 text-sm text-red-600">
+                  {saveError}
+                </p>
+              )}
             </div>
+
             {error && (
               <p className="mt-4 rounded-md bg-white px-4 py-2 text-sm text-red-600">
                 {error}
@@ -432,7 +756,6 @@ const CreatePage: React.FC = () => {
               </div>
             </div>
 
-            {/* Additional summary info */}
             {summary && selectedStrategy === 'dca' && (
               <div className="rounded-3xl bg-pink-200 p-6 shadow-sm text-gray-800 text-sm space-y-2">
                 <p>Final Value: {summary.finalValue}</p>
@@ -448,6 +771,77 @@ const CreatePage: React.FC = () => {
           </section>
         </div>
       </div>
+
+      {showSavedStrategies && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="max-h-[80vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white p-8 shadow-xl">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-2xl font-semibold text-gray-800">
+                My Saved Strategies
+              </h2>
+              <button
+                onClick={() => setShowSavedStrategies(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {loadingSavedStrategies ? (
+              <div className="py-8 text-center text-gray-500">Loading...</div>
+            ) : savedStrategies.length === 0 ? (
+              <div className="py-8 text-center text-gray-500">
+                No saved strategies yet. Create and save a strategy to see it here!
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {savedStrategies.map(strategy => (
+                  <div
+                    key={strategy.strategy_id}
+                    className="rounded-2xl bg-gray-50 p-6 shadow-sm ring-1 ring-gray-100"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-gray-800">
+                          {strategy.metadata?.strategy_name || `${strategy.ticker_name} ${strategy.strategy_type}`}
+                        </h3>
+                        <div className="mt-2 space-y-1 text-sm text-gray-600">
+                          <p>Ticker: {strategy.ticker_name}</p>
+                          <p>Strategy: {strategies.find(s => s.id === strategy.strategy_type)?.name || strategy.strategy_type}</p>
+                          <p>Capital: ${strategy.money_invested}</p>
+                          <p>Period: {strategy.start_date} to {strategy.end_date}</p>
+                          {strategy.metadata?.short_window && (
+                            <p>Windows: {strategy.metadata.short_window} / {strategy.metadata.long_window}</p>
+                          )}
+                          {strategy.metadata?.frequency && (
+                            <p>Frequency: {strategy.metadata.frequency}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="ml-4 flex flex-col gap-2">
+                        <button
+                          onClick={() => handleLoadStrategy(strategy)}
+                          className="rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-gray-800 shadow transition hover:bg-lime-200"
+                        >
+                          Load
+                        </button>
+                        <button
+                          onClick={() => handleDeleteStrategy(strategy.strategy_id)}
+                          className="rounded-full bg-red-300 px-4 py-2 text-sm font-semibold text-gray-800 shadow transition hover:bg-red-200"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

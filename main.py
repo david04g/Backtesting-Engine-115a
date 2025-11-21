@@ -35,6 +35,13 @@ from db_supabase.db_level_user_progress_util import (
     parse_completed_lessons,
 )
 
+from db_supabase.db_strategy_storage_util import (
+    save_strategy,
+    get_all_strategies_by_user,
+    update_strategy,
+    delete_strategy,
+)
+
 try:
     import yfinance as yf
 except Exception:
@@ -327,6 +334,76 @@ async def update_profile_root(request: Request):
 
     except Exception as e:
         print(f"Error in update_profile_root: {str(e)}")
+        return {"status": "error", "message": f"An error occurred: {str(e)}"}
+
+
+@app.post("/api/strategies/save")
+async def save_strategy_root(request: Request):
+    try:
+        data = await request.json()
+        user_id = data.get("user_id")
+        strategy_name = data.get("strategy_name")
+        ticker = data.get("ticker")
+        strategy_type = data.get("strategy_type")
+        capital = data.get("capital")
+        start_date = data.get("start_date")
+        end_date = data.get("end_date")
+        metadata = data.get("metadata", {})
+
+        if not user_id:
+            return {"status": "error", "message": "User ID is required"}
+        if not ticker or not strategy_type or not start_date or not end_date:
+            return {"status": "error", "message": "Missing required fields"}
+        
+        try:
+            capital_value = int(float(capital))
+        except (TypeError, ValueError):
+            return {"status": "error", "message": "Invalid capital amount"}
+
+        # Add strategy_name to metadata if provided
+        if strategy_name:
+            metadata["strategy_name"] = strategy_name
+
+        result = save_strategy(
+            user_id=user_id,
+            ticker_name=ticker,
+            strategy_type=strategy_type,
+            money_invested=capital_value,
+            start_date=start_date,
+            end_date=end_date,
+            metadata=metadata
+        )
+
+        if result:
+            return {"status": "success", "data": result}
+        else:
+            return {"status": "error", "message": "Failed to save strategy"}
+
+    except Exception as e:
+        print(f"Error saving strategy: {str(e)}")
+        return {"status": "error", "message": f"An error occurred: {str(e)}"}
+
+
+@app.get("/api/strategies/user/{user_id}")
+async def get_user_strategies(user_id: str):
+    try:
+        strategies = get_all_strategies_by_user(user_id)
+        return {"status": "success", "data": strategies}
+    except Exception as e:
+        print(f"Error getting user strategies: {str(e)}")
+        return {"status": "error", "message": f"An error occurred: {str(e)}"}
+
+
+@app.delete("/api/strategies/{strategy_id}")
+async def delete_strategy_root(strategy_id: str):
+    try:
+        result = delete_strategy(strategy_id)
+        if result:
+            return {"status": "success", "message": "Strategy deleted successfully"}
+        else:
+            return {"status": "error", "message": "Strategy not found"}
+    except Exception as e:
+        print(f"Error deleting strategy: {str(e)}")
         return {"status": "error", "message": f"An error occurred: {str(e)}"}
 
 
