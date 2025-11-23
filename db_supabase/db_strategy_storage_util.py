@@ -10,7 +10,7 @@ SUPABASE_PASS = os.getenv("SUPABASE_PASS")
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_PASS)
 
-def save_strategy(user_id: str, ticker_name: str, strategy_type: str, money_invested: int, start_date: str, end_date: str):
+def save_strategy(user_id: str, ticker_name: str, strategy_type: str, money_invested: int, start_date: str, end_date: str, metadata: dict | None = None):
     try:
         converted_start_date = datetime.fromisoformat(start_date).date()
         converted_end_date = datetime.fromisoformat(end_date).date()
@@ -22,7 +22,7 @@ def save_strategy(user_id: str, ticker_name: str, strategy_type: str, money_inve
         print("Start date must be before end date.")
         return None
 
-    users_existing_strategies = supabase.table("user_strategies").select("strategy_id").eq("user_id", user_id).execute()
+    users_existing_strategies = (supabase.table("user_strategies").select("strategy_id").eq("user_id", user_id).execute())
 
     if users_existing_strategies.data is None:
         print("Could not check the user's existing strategies.")
@@ -31,17 +31,23 @@ def save_strategy(user_id: str, ticker_name: str, strategy_type: str, money_inve
     if len(users_existing_strategies.data) >= 5:
         print("User already has 5 strategies. Limit reached.")
         return None
-        
-    response = supabase.table("user_strategies").insert({
+
+    payload = {
         "user_id": user_id,
         "ticker_name": ticker_name.upper(),
         "strategy_type": strategy_type,
         "money_invested": money_invested,
         "start_date": converted_start_date.isoformat(),
         "end_date": converted_end_date.isoformat(),
-    }).execute()
+        "metadata": metadata or {},
+    }
 
-    return response.data
+    try:
+        response = supabase.table("user_strategies").insert(payload).execute()
+        return response.data
+    except Exception as e:
+        print(f"Error saving strategy for user {user_id}: {e}")
+        return None
 
 def get_all_strategies_by_user(user_id: str):
     response = supabase.table("user_strategies").select("*").eq("user_id", user_id).execute()
@@ -51,7 +57,16 @@ def get_all_strategies_by_user(user_id: str):
     return response.data
 
 def update_strategy(strategy_id: str, updates: dict):
-    response = supabase.table("user_strategies").update(updates).eq("strategy_id", strategy_id).execute()
+    if "metadata" in updates:
+        existing = supabase.table("user_strategies").select("metadata").eq("strategy_id", strategy_id).execute()
+
+        if existing.data:
+            current_meta = existing.data[0].get("metadata", {}) or {}
+            new_meta = {**current_meta, **updates["metadata"]}
+            updates["metadata"] = new_meta
+
+    response = (supabase.table("user_strategies").update(updates).eq("strategy_id", strategy_id).execute())
+
     if not response.data:
         print(f"Failed to update strategy {strategy_id}.")
         return None

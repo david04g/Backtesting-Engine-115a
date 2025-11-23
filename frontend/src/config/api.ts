@@ -47,6 +47,9 @@ export const API_ENDPOINTS = {
     BUY_HOLD: getApiEndpoint('api/strategies/buy_hold'),
     SIMPLE_MOVING_AVERAGE_CROSSOVER: getApiEndpoint('api/strategies/simple_moving_average_crossover'),
     DCA: getApiEndpoint('api/strategies/dca'),
+    SAVE: getApiEndpoint('api/strategies/save'),
+    GET_USER_STRATEGIES: (userId: string) => getApiEndpoint(`api/strategies/user/${userId}`),
+    DELETE: (strategyId: string) => getApiEndpoint(`api/strategies/${strategyId}`),
   },
 };
 
