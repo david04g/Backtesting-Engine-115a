@@ -1,6 +1,32 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { API_ENDPOINTS } from '../../config/api';
 
+const isWeekday = (date: Date): boolean => {
+  const day = date.getDay();
+  return day !== 0 && day !== 6;
+};
+
+const formatDate = (date: Date): string => {
+  return date.toISOString().split('T')[0];
+};
+
+const getLatestMarketCloseDate = (): string => {
+  const now = new Date();
+  let date = new Date(now);
+  
+  do {
+    date.setDate(date.getDate() - 1);
+  } while (!isWeekday(date));
+  
+  return formatDate(date);
+};
+
+const getMinDate = (): string => {
+  const date = new Date();
+  date.setFullYear(date.getFullYear() - 20);
+  return formatDate(date);
+};
+
 interface StrategyResult {
   buy_price: number;
   sell_price: number;
@@ -48,7 +74,6 @@ const strategies = [
     description: 'Invest a fixed amount at regular intervals.',
   },
 ];
-
 
 const Chart: React.FC<{ data: { date: string; value: number }[] }> = ({
   data,
@@ -122,8 +147,17 @@ const CreatePage: React.FC = () => {
   const [search, setSearch] = useState('');
 
   const [ticker, setTicker] = useState('AAPL');
-  const [buyDate, setBuyDate] = useState('2023-11-08');
-  const [sellDate, setSellDate] = useState('2025-07-08');
+  const getDefaultBuyDate = (): string => {
+    const latestClose = new Date(getLatestMarketCloseDate());
+    latestClose.setFullYear(latestClose.getFullYear() - 3);
+    while (!isWeekday(latestClose)) {
+      latestClose.setDate(latestClose.getDate() - 1);
+    }
+    return formatDate(latestClose);
+  };
+
+  const [buyDate, setBuyDate] = useState(getDefaultBuyDate());
+  const [sellDate, setSellDate] = useState(getLatestMarketCloseDate());
   const [capital, setCapital] = useState('1000');
   const [loading, setLoading] = useState(false);
 
@@ -663,9 +697,60 @@ const CreatePage: React.FC = () => {
                   <input
                     type="date"
                     value={buyDate}
-                    onChange={event => setBuyDate(event.target.value)}
-                    className="mt-2 w-full rounded-md bg-lime-200 px-4 py-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-lime-400"
+                    min={getMinDate()}
+                    max={(() => {
+                      const maxDate = new Date(sellDate);
+                      maxDate.setDate(maxDate.getDate() - 1);
+                      while (!isWeekday(maxDate)) {
+                        maxDate.setDate(maxDate.getDate() - 1);
+                      }
+                      return formatDate(maxDate);
+                    })()}
+                    onChange={event => {
+                      const selectedDate = event.target.value;
+                      const date = new Date(selectedDate);
+                      const sellDateObj = new Date(sellDate);
+                      
+                      if (date >= sellDateObj) {
+                        const nextDay = new Date(date);
+                        nextDay.setDate(nextDay.getDate() + 1);
+                        while (!isWeekday(nextDay)) {
+                          nextDay.setDate(nextDay.getDate() + 1);
+                        }
+                        setSellDate(formatDate(nextDay));
+                      }
+                      
+                      if (isWeekday(date)) {
+                        setBuyDate(selectedDate);
+                      } else {
+                        const prevDate = new Date(date);
+                        do {
+                          prevDate.setDate(prevDate.getDate() - 1);
+                        } while (!isWeekday(prevDate));
+                        const formattedDate = formatDate(prevDate);
+                        setBuyDate(formattedDate);
+                        
+                        if (prevDate >= new Date(sellDate)) {
+                          const nextDay = new Date(prevDate);
+                          nextDay.setDate(nextDay.getDate() + 1);
+                          while (!isWeekday(nextDay)) {
+                            nextDay.setDate(nextDay.getDate() + 1);
+                          }
+                          setSellDate(formatDate(nextDay));
+                        }
+                      }
+                    }}
+                    className={`mt-2 w-full rounded-md px-4 py-3 text-gray-800 focus:outline-none focus:ring-2 ${
+                      !isWeekday(new Date(buyDate)) 
+                        ? 'bg-yellow-100 focus:ring-yellow-400' 
+                        : 'bg-lime-200 focus:ring-lime-400'
+                    }`}
                   />
+                  {!isWeekday(new Date(buyDate)) && (
+                    <p className="mt-1 text-xs text-yellow-600">
+                      Date adjusted to previous business day
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm text-gray-700">
@@ -674,9 +759,51 @@ const CreatePage: React.FC = () => {
                   <input
                     type="date"
                     value={sellDate}
-                    onChange={event => setSellDate(event.target.value)}
-                    className="mt-2 w-full rounded-md bg-red-300 px-4 py-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-200"
+                    min={(() => {
+                      const minDate = new Date(buyDate);
+                      minDate.setDate(minDate.getDate() + 1);
+                      while (!isWeekday(minDate)) {
+                        minDate.setDate(minDate.getDate() + 1);
+                      }
+                      return formatDate(minDate);
+                    })()}
+                    max={getLatestMarketCloseDate()}
+                    onChange={event => {
+                      const selectedDate = event.target.value;
+                      const date = new Date(selectedDate);
+                      const buyDateObj = new Date(buyDate);
+                      
+                      if (date <= buyDateObj) {
+                        const nextDay = new Date(buyDateObj);
+                        nextDay.setDate(nextDay.getDate() + 1);
+                        while (!isWeekday(nextDay)) {
+                          nextDay.setDate(nextDay.getDate() + 1);
+                        }
+                        setSellDate(formatDate(nextDay));
+                        return;
+                      }
+                      
+                      if (isWeekday(date)) {
+                        setSellDate(selectedDate);
+                      } else {
+                        const nextDate = new Date(date);
+                        do {
+                          nextDate.setDate(nextDate.getDate() + 1);
+                        } while (!isWeekday(nextDate));
+                        setSellDate(formatDate(nextDate));
+                      }
+                    }}
+                    className={`mt-2 w-full rounded-md px-4 py-3 text-gray-800 focus:outline-none focus:ring-2 ${
+                      !isWeekday(new Date(sellDate)) 
+                        ? 'bg-yellow-100 focus:ring-yellow-400' 
+                        : 'bg-red-300 focus:ring-red-200'
+                    }`}
                   />
+                  {!isWeekday(new Date(sellDate)) && (
+                    <p className="mt-1 text-xs text-yellow-600">
+                      Date adjusted to previous business day
+                    </p>
+                  )}
                 </div>
               </div>
 

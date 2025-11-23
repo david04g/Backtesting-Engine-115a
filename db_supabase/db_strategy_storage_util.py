@@ -42,8 +42,12 @@ def save_strategy(user_id: str, ticker_name: str, strategy_type: str, money_inve
         "metadata": metadata or {},
     }
 
-    response = supabase.table("user_strategies").insert(payload).execute()
-    return response.data
+    try:
+        response = supabase.table("user_strategies").insert(payload).execute()
+        return response.data
+    except Exception as e:
+        print(f"Error saving strategy for user {user_id}: {e}")
+        return None
 
 def get_all_strategies_by_user(user_id: str):
     response = supabase.table("user_strategies").select("*").eq("user_id", user_id).execute()

@@ -446,7 +446,7 @@ async def run_buy_and_hold(request: Request):
         }
 
     if start_dt >= end_dt:
-        return {"status": "error", "message": "Start date must be before end date"}
+        return {"status": "error", "message": "Buy date must be before sell date"}
 
     try:
         hist = yf.download(
@@ -571,7 +571,7 @@ async def run_simple_moving_average_crossover(request: Request):
         }
 
     if start_dt >= end_dt:
-        return {"status": "error", "message": "Start date must be before end date"}
+        return {"status": "error", "message": "Buy date must be before sell date"}
 
     try:
         hist = yf.download(
@@ -730,7 +730,7 @@ async def run_dollar_cost_average(request: Request):
         }
 
     if start_dt >= end_dt:
-        return {"status": "error", "message": "Start date must be before end date"}
+        return {"status": "error", "message": "Buy date must be before sell date"}
 
     try:
         hist = yf.download(
