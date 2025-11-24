@@ -20,6 +20,9 @@ from db_supabase.db_util import (
     get_user_by_id as get_user,
     upload_profile_picture_by_user_id,
     update_user_profile,
+    send_password_reset_email as send_password_reset_email_service,
+    verify_password_reset_code as verify_password_reset_code_service,
+    reset_password as reset_password_service,
 )
 
 from db_supabase.db_lessons import (
@@ -35,6 +38,12 @@ from db_supabase.db_level_user_progress_util import (
     parse_completed_lessons,
 )
 
+from db_supabase.db_quiz import(
+    get_quiz
+)
+
+from db_supabase.db_drag_and_drop import(
+    get_drag_and_drop
 from db_supabase.db_strategy_storage_util import (
     save_strategy,
     get_all_strategies_by_user,
@@ -70,6 +79,26 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.post ("/api/get_quiz")
+async def get_quiz_root(request: Request):
+    data = await request.json()
+    level = data.get("level")
+    lesson = data.get("lesson")
+    if not level:
+        return {"status": "error", "message": "No level"}
+    if not lesson:
+        return {"status": "error", "message": "No lesson"}
+    try:
+        quizInfo = get_quiz(level,lesson);
+        if not quizInfo:
+            return {"status": "error", "message": "No quiz found"}
+        return {"status": "success", "data": quizInfo}
+    except Exception as e:
+        print("Error receiving quiz", e)
+        return {"status": "error", "message": str(e)}
+
+
 
 @app.post ("/api/get_user_learning_progress")
 async def get_user_learning_progress_root(request: Request):
@@ -134,7 +163,8 @@ async def get_lessons_for_level(level: int):
     try:
         lessons = get_lessons_by_level(level)
         if not lessons:
-            return {"status": "error", "message": "No lessons found"}
+            # Return success with empty array instead of error - this is expected when checking if a level exists
+            return {"status": "success", "data": []}
         lessons_sorted = sorted(lessons, key=lambda row: row.get("page_number", 0))
         return {"status": "success", "data": lessons_sorted}
     except Exception as e:
@@ -291,6 +321,84 @@ async def get_user_id_root(request: Request):
     if not user:
         return {"status": "error", "message": "User not found"}
     return {"status": "success", "data": {"id": user["id"]}}
+
+@app.post("/api/forgot_password")
+async def forgot_password_root(request: Request):
+    """Request a password reset code"""
+    try:
+        data = await request.json()
+        email = (data.get("email") or "").strip().lower()
+        if not email:
+            return {"status": "error", "message": "Missing email"}
+        
+        result = send_password_reset_email_service(email)
+        if result.get("success"):
+            return {"status": "success", "data": result}
+        else:
+            return {"status": "error", "message": result.get("message", "Failed to send reset email")}
+    except Exception as e:
+        print(f"Error in forgot_password: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.post("/api/verify_reset_code")
+async def verify_reset_code_root(request: Request):
+    """Verify the password reset code"""
+    try:
+        data = await request.json()
+        email = (data.get("email") or "").strip().lower()
+        reset_code = data.get("reset_code")
+        
+        if not email:
+            return {"status": "error", "message": "Missing email"}
+        if not reset_code:
+            return {"status": "error", "message": "Missing reset code"}
+        
+        try:
+            reset_code_int = int(reset_code)
+        except ValueError:
+            return {"status": "error", "message": "Invalid reset code format"}
+        
+        is_valid = verify_password_reset_code_service(email, reset_code_int)
+        if is_valid:
+            return {"status": "success", "data": {"valid": True}}
+        else:
+            return {"status": "error", "message": "Invalid or expired reset code"}
+    except Exception as e:
+        print(f"Error verifying reset code: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.post("/api/reset_password")
+async def reset_password_root(request: Request):
+    """Reset password using the reset code"""
+    try:
+        data = await request.json()
+        email = (data.get("email") or "").strip().lower()
+        reset_code = data.get("reset_code")
+        new_password = data.get("new_password")
+        
+        if not email:
+            return {"status": "error", "message": "Missing email"}
+        if not reset_code:
+            return {"status": "error", "message": "Missing reset code"}
+        if not new_password:
+            return {"status": "error", "message": "Missing new password"}
+        
+        if len(new_password) < 6:
+            return {"status": "error", "message": "Password must be at least 6 characters"}
+        
+        try:
+            reset_code_int = int(reset_code)
+        except ValueError:
+            return {"status": "error", "message": "Invalid reset code format"}
+        
+        result = reset_password_service(email, reset_code_int, new_password)
+        if result.get("success"):
+            return {"status": "success", "data": result}
+        else:
+            return {"status": "error", "message": result.get("message", "Failed to reset password")}
+    except Exception as e:
+        print(f"Error resetting password: {e}")
+        return {"status": "error", "message": str(e)}
 
 
 # In main.py
@@ -827,6 +935,45 @@ async def run_dollar_cost_average(request: Request):
         },
     }
 
+@app.post("/api/get_drag_and_drop")
+async def get_drag_and_drop_root(request: Request):
+    data = await request.json()
+    level = data.get("level")
+    lesson = data.get("lesson")
+    
+  
+    if level is None:
+        return {"status": "error", "message": "No level"}
+    if lesson is None:
+        return {"status": "error", "message": "No lesson"}
+    
+    
+    try:
+        import json
+        dragAndDropInfo = get_drag_and_drop(level, lesson)
+        
+        if not dragAndDropInfo:
+            print(f"No drag and drop found for level {level}, lesson {lesson}")
+            return {"status": "error", "message": "No drag and drop found"}
+        
+        
+        fields_to_parse = ["options", "selections_titles", "selection_titles", "selection1", "selection2", "selections"]
+        for field in fields_to_parse:
+            if field in dragAndDropInfo and isinstance(dragAndDropInfo[field], str):
+                try:
+                    dragAndDropInfo[field] = json.loads(dragAndDropInfo[field])
+                except (json.JSONDecodeError, TypeError):
+                    
+                    pass
+        
+        
+        return {"status": "success", "data": dragAndDropInfo}
+        
+    except Exception as e:
+        print("Error receiving drag and drop", e)
+        import traceback
+        traceback.print_exc()
+        return {"status": "error", "message": str(e)}
 if __name__ == "__main__":
     import uvicorn
 
