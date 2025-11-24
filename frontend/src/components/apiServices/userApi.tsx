@@ -184,7 +184,7 @@ export const get_lessons_by_level = async (level: number) => {
     if (data.status === "success" && Array.isArray(data.data)) {
       return data.data;
     } else {
-      console.error("Lessons not found for level", level);
+      // No lessons found for this level - return empty array (expected behavior)
       return [];
     }
   } catch (err) {
@@ -214,6 +214,52 @@ export const get_lesson = async (level: number, lesson: number) => {
     }
   } catch (err) {
     console.error("Error fetching lesson by id:", err);
+    return null;
+  }
+};
+
+export const get_quiz_from_db = async (level: number, lesson: number) => {
+  const endpoint = "http://localhost:8000/api/get_quiz";
+  const payload = { level, lesson };
+
+  try {
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+
+    if (data.status === "success" && data.data) {
+      return data.data;
+    }
+    return null;
+  } catch (err) {
+    console.error("Error fetching quiz:", err);
+    return null;
+  }
+};
+
+export const get_drag_and_drop_from_db = async (level: number, lesson: number) => {
+  const endpoint = "http://localhost:8000/api/get_drag_and_drop";
+  const payload = { level, lesson };
+
+  try {
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+
+    if (data.status === "success" && data.data) {
+      return data.data;
+    }
+    return null;
+  } catch (err) {
+    console.error("Error fetching drag and drop:", err);
     return null;
   }
 };

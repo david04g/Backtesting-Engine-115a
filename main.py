@@ -30,6 +30,14 @@ from db_supabase.db_level_user_progress_util import (
     parse_completed_lessons,
 )
 
+from db_supabase.db_quiz import(
+    get_quiz
+)
+
+from db_supabase.db_drag_and_drop import(
+    get_drag_and_drop
+)
+
 try:
     import yfinance as yf
 except Exception:
@@ -47,6 +55,26 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.post ("/api/get_quiz")
+async def get_quiz_root(request: Request):
+    data = await request.json()
+    level = data.get("level")
+    lesson = data.get("lesson")
+    if not level:
+        return {"status": "error", "message": "No level"}
+    if not lesson:
+        return {"status": "error", "message": "No lesson"}
+    try:
+        quizInfo = get_quiz(level,lesson);
+        if not quizInfo:
+            return {"status": "error", "message": "No quiz found"}
+        return {"status": "success", "data": quizInfo}
+    except Exception as e:
+        print("Error receiving quiz", e)
+        return {"status": "error", "message": str(e)}
+
+
 
 @app.post ("/api/get_user_learning_progress")
 async def get_user_learning_progress_root(request: Request):
@@ -111,7 +139,8 @@ async def get_lessons_for_level(level: int):
     try:
         lessons = get_lessons_by_level(level)
         if not lessons:
-            return {"status": "error", "message": "No lessons found"}
+            # Return success with empty array instead of error - this is expected when checking if a level exists
+            return {"status": "success", "data": []}
         lessons_sorted = sorted(lessons, key=lambda row: row.get("page_number", 0))
         return {"status": "success", "data": lessons_sorted}
     except Exception as e:
@@ -733,6 +762,24 @@ async def run_dollar_cost_average(request: Request):
             "series": series,
         },
     }
+
+@app.post("/api/get_drag_and_drop")
+async def get_drag_and_drop_root(request: Request):
+    data = await request.json()
+    level = data.get("level")
+    lesson = data.get("lesson")
+    if not level:
+        return {"status": "error", "message": "No level"}
+    if not lesson:
+        return {"status": "error", "message": "No lesson"}
+    try:
+        dragAndDropInfo = get_drag_and_drop(level, lesson)
+        if not dragAndDropInfo:
+            return {"status": "error", "message": "No drag and drop found"}
+        return {"status": "success", "data": dragAndDropInfo}
+    except Exception as e:
+        print("Error receiving drag and drop", e)
+        return {"status": "error", "message": str(e)}
 
 if __name__ == "__main__":
     import uvicorn

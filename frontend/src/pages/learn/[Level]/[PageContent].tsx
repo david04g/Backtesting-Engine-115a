@@ -6,20 +6,11 @@ import {
   get_user_progress,
   set_user_learning_progress,
 } from "../../../components/apiServices/userApi";
-import {
-  ProgressBar,
-  Slide,
-} from "../../../components/lessons/ProgressBar";
+import { ProgressBar, Slide } from "../../../components/lessons/ProgressBar";
 import { NavigationButtons } from "../../../components/lessons/NavigationButtons";
-import {
-  DragAndDropQuiz,
-  Category,
-  DragAndDropCompletionConfig,
-  MultipleChoiceQuiz,
-  MultipleChoiceOption,
-} from "../../../components/quiz";
-
 import { LevelCompletionPopup } from "../../../components/LevelCompletionPopup";
+// Import the new DB-driven components
+import { DragAndDrop, MultipleChoice } from "../../../components/quiz";
 
 interface LessonRecord {
   id: number;
@@ -33,158 +24,6 @@ interface LessonRecord {
   theme?: string | null;
 }
 
-const DRAG_AND_DROP_CONFIG: Record<
-  number,
-  Record<
-    number,
-    {
-      instructions: string;
-      helper?: string;
-      items: string[];
-      categories: Category[];
-      itemsLabel?: string;
-      completionConfig?: DragAndDropCompletionConfig;
-    }
-  >
-> = {
-  0: {
-    4: {
-      instructions:
-        "Drag each item into the column that best describes whether it is an investable asset.",
-      helper:
-        "Investable assets are things you can put money into with the expectation of future value or income.",
-      items: [
-        "AAPL (Company Shares)",
-        "BTC (Crypto Token)",
-        "Gold ETF",
-        "S&P 500 Index Fund",
-        "Gym Membership",
-        "Coffee Mug",
-        "Gift Card",
-        "Crude Oil Futures",
-      ],
-      categories: [
-        {
-          id: "investable",
-          label: "Investable Asset",
-          correctAnswers: [
-            "AAPL (Company Shares)",
-            "BTC (Crypto Token)",
-            "Gold ETF",
-            "S&P 500 Index Fund",
-            "Crude Oil Futures",
-          ],
-        },
-        {
-          id: "not-investable",
-          label: "Not an Investable Asset",
-          correctAnswers: ["Gym Membership", "Coffee Mug", "Gift Card"],
-        },
-      ],
-    },
-  },
-  1: {
-    1: {
-      instructions: "Drag at least two rule cards into the Strategy Box to build your plan.",
-      helper: "Combine buy and sell rules. You can move cards back if you change your mind.",
-      itemsLabel: "Rule Cards",
-      items: [
-        "Buy once at start",
-        "Buy every month",
-        "Sell at end date",
-        "Sell if price drops 10%",
-      ],
-      categories: [
-        {
-          id: "strategy-box",
-          label: "Strategy Box",
-          placeholder: "Drop rules here..",
-          correctAnswers: [
-            "Buy once at start",
-            "Buy every month",
-            "Sell at end date",
-            "Sell if price drops 10%",
-          ],
-        },
-      ],
-      completionConfig: {
-        requireAllItemsUsed: false,
-        minTotalItemsRequired: 2,
-        skipMissingAnswersValidation: true,
-        autoCheckOnDrop: true,
-        showCheckButton: false,
-        incompleteMessage: "Add at least two cards to the Strategy Box to keep going.",
-        successMessage: "Awesome! Two rules makes a strategy—you can keep moving.",
-      },
-    },
-  },
-};
-
-const MULTIPLE_CHOICE_CONFIG: Record<
-  number,
-  Record<
-    number,
-    {
-      question: string;
-      helperText?: string;
-      options: MultipleChoiceOption[];
-    }
-  >
-> = {
-  1: {
-    2: {
-      question: "At what point is the price highest?",
-      options: [
-        { id: "red", label: "Red" },
-        { id: "blue", label: "Blue" },
-        { id: "yellow", label: "Yellow", isCorrect: true },
-      ],
-    },
-    3: {
-      question: "What is a strategy?",
-      options: [
-        { id: "rules", label: "A set of rules for buying and selling", isCorrect: true },
-        { id: "random", label: "A set of random acts" },
-      ],
-    },
-    4: {
-      question: "Backtesting simulates... ?",
-      options: [
-        { id: "past", label: "How rules would have performed on past data", isCorrect: true },
-        { id: "future", label: "Future guaranteed profits" },
-      ],
-    },
-    5: {
-      question: "On a line chart, the vertical axis shows:",
-      options: [
-        { id: "price", label: "Price", isCorrect: true },
-        { id: "time", label: "Time" },
-      ],
-    },
-    6: {
-      question: "If price at sell is higher than buy, then return is:",
-      options: [
-        { id: "positive", label: "Positive", isCorrect: true },
-        { id: "negative", label: "Negative" },
-      ],
-    },
-    7: {
-      question: "A \"buy once at start\" rule means:",
-      options: [
-        { id: "buy-once", label: "Buy one time at the beginning", isCorrect: true },
-        { id: "buy-daily", label: "Buy every day" },
-      ],
-    },
-    8: {
-      question: "Price trends show the general direction of price movement.",
-      options: [
-        { id: "true", label: "True", isCorrect: true },
-        { id: "false", label: "False" },
-      ],
-    },
-  },
-};
-
 const PageContent = () => {
   const navigate = useNavigate();
   const { level, lesson } = useParams();
@@ -193,13 +32,22 @@ const PageContent = () => {
   const [loading, setLoading] = useState(true);
   const [isQuizComplete, setIsQuizComplete] = useState(false);
   const [hasAttemptedQuiz, setHasAttemptedQuiz] = useState(false);
-  const [quizCompletionState, setQuizCompletionState] = useState<Record<number, boolean>>({});
+  const [quizCompletionState, setQuizCompletionState] = useState<
+    Record<number, boolean>
+  >({});
   const [userId, setUserId] = useState<string | null>(null);
-  const [userProgress, setUserProgress] = useState<{ level: number; lesson: number } | null>(null);
-  const [nextLevelInfo, setNextLevelInfo] = useState<{ level: number; firstLesson: number } | null>(null);
+  const [userProgress, setUserProgress] = useState<{
+    level: number;
+    lesson: number;
+  } | null>(null);
+  const [nextLevelInfo, setNextLevelInfo] = useState<{
+    level: number;
+    firstLesson: number;
+  } | null>(null);
 
   // popup + level-up state
-  const [showLevelCompletionPopup, setShowLevelCompletionPopup] = useState(false);
+  const [showLevelCompletionPopup, setShowLevelCompletionPopup] =
+    useState(false);
   const [levelUpComplete, setLevelUpComplete] = useState(false);
 
   const levelNum = Number(level);
@@ -219,10 +67,15 @@ const PageContent = () => {
           setUserId(savedUserId);
           const progress = await get_user_progress(savedUserId);
           if (progress) {
-            setUserProgress({ level: progress.level ?? 0, lesson: progress.lesson ?? 1 });
+            setUserProgress({
+              level: progress.level ?? 0,
+              lesson: progress.lesson ?? 1,
+            });
 
             if (levelNum > progress.level) {
-              navigate(`/learn/${progress.level}/${progress.lesson || 1}`, { replace: true });
+              navigate(`/learn/${progress.level}/${progress.lesson || 1}`, {
+                replace: true,
+              });
               return;
             }
           }
@@ -251,12 +104,18 @@ const PageContent = () => {
         const upcomingLevel = levelNum + 1;
         try {
           const lessonsForNextLevel = await get_lessons_by_level(upcomingLevel);
-          if (Array.isArray(lessonsForNextLevel) && lessonsForNextLevel.length > 0) {
+          if (
+            Array.isArray(lessonsForNextLevel) &&
+            lessonsForNextLevel.length > 0
+          ) {
             const sortedNext = [...lessonsForNextLevel].sort(
               (a, b) => (a.page_number ?? 0) - (b.page_number ?? 0)
             );
             const firstLessonNumber = sortedNext[0].page_number ?? 1;
-            setNextLevelInfo({ level: upcomingLevel, firstLesson: firstLessonNumber });
+            setNextLevelInfo({
+              level: upcomingLevel,
+              firstLesson: firstLessonNumber,
+            });
           } else {
             setNextLevelInfo(null);
           }
@@ -292,7 +151,8 @@ const PageContent = () => {
     if (!derivedComplete && userProgress) {
       const hasSavedProgress =
         lessonData.level < (userProgress?.level ?? 0) ||
-        (lessonData.level === (userProgress?.level ?? 0) && lessonData.page_number < (userProgress?.lesson ?? 1));
+        (lessonData.level === (userProgress?.level ?? 0) &&
+          lessonData.page_number < (userProgress?.lesson ?? 1));
 
       if (hasSavedProgress) {
         derivedComplete = true;
@@ -369,31 +229,35 @@ const PageContent = () => {
     navigate(`/learn/${levelNum}/${targetLesson.page_number}`);
   };
 
-  const headingTitle = lessonData?.lesson_title || `Level ${lessonData?.level ?? levelNum}`;
+  const headingTitle =
+    lessonData?.lesson_title || `Level ${lessonData?.level ?? levelNum}`;
   const supportingTitle = lessonData?.page_title ?? "";
   const description = lessonData?.page_def ?? "";
   const rawImageUrl = lessonData?.image_url?.trim();
-  const imageUrl = rawImageUrl && rawImageUrl.toLowerCase() !== "none" ? rawImageUrl : null;
-  const dragAndDropConfig = lessonData
-    ? DRAG_AND_DROP_CONFIG[lessonData.level]?.[lessonData.page_number]
-    : undefined;
-  const multipleChoiceConfig = lessonData
-    ? MULTIPLE_CHOICE_CONFIG[lessonData.level]?.[lessonData.page_number]
-    : undefined;
-  const isDragAndDrop = !!dragAndDropConfig;
-  const isMultipleChoice = !!multipleChoiceConfig;
-  const hasPersistedCompletion = lessonData?.id ? !!quizCompletionState[lessonData.id] : false;
+  const imageUrl =
+    rawImageUrl && rawImageUrl.toLowerCase() !== "none" ? rawImageUrl : null;
+
+  // Check content type from database
+  const isDragAndDrop = lessonData?.content_type === "drag_and_drop";
+  const isMultipleChoice =
+    lessonData?.content_type === "quiz" ||
+    lessonData?.content_type === "multiple_choice";
+
+  const hasPersistedCompletion = lessonData?.id
+    ? !!quizCompletionState[lessonData.id]
+    : false;
   const isLessonComplete = isQuizComplete || hasPersistedCompletion;
   const isLastLesson = currentIndex >= 0 && currentIndex === lessons.length - 1;
   const requiresQuiz = isDragAndDrop || isMultipleChoice;
   const baseCanAdvance = !requiresQuiz || isLessonComplete;
-  const canAdvanceWithinLevel = currentIndex >= 0 && currentIndex < lessons.length - 1 && baseCanAdvance;
-  const canStartNextLevel = currentIndex >= 0 && isLastLesson && !!nextLevelInfo && baseCanAdvance;
+  const canAdvanceWithinLevel =
+    currentIndex >= 0 && currentIndex < lessons.length - 1 && baseCanAdvance;
+  const canStartNextLevel =
+    currentIndex >= 0 && isLastLesson && !!nextLevelInfo && baseCanAdvance;
   const canGoNext = canAdvanceWithinLevel || canStartNextLevel;
   const nextButtonLabel = "Next";
 
   useEffect(() => {
-    console.log("isLastLesson:", isLastLesson, "currentIndex:", currentIndex, "lessons:", lessons.length);
     if (!isLastLesson || !baseCanAdvance || levelUpComplete) return;
     if (!userId || !nextLevelInfo) return;
 
@@ -408,7 +272,7 @@ const PageContent = () => {
         localStorage.setItem("lesson", String(nextLevelInfo.firstLesson));
         setUserProgress({
           level: nextLevelInfo.level,
-          lesson: nextLevelInfo.firstLesson
+          lesson: nextLevelInfo.firstLesson,
         });
         setShowLevelCompletionPopup(true);
       } catch (err) {
@@ -450,9 +314,9 @@ const PageContent = () => {
   const finalSupportingTitle = supportingTitle;
   const finalDescription = description;
   const finalImageUrl = imageUrl;
-  const finalDragAndDropConfig = dragAndDropConfig;
-  const shouldPairImageWithQuiz =
-    lessonData.level === 1 && lessonData.page_number === 3 && !!finalImageUrl && isMultipleChoice;
+
+  // Check if we should pair image with quiz
+  const shouldPairImageWithQuiz = isMultipleChoice && !!finalImageUrl;
 
   const imageElement = finalImageUrl ? (
     <div className="flex justify-center">
@@ -464,56 +328,24 @@ const PageContent = () => {
     </div>
   ) : null;
 
-  const dragAndDropSection =
-    isDragAndDrop && finalDragAndDropConfig ? (
-      <div className="flex flex-col gap-4">
-        <div className="rounded-lg border border-black/10 bg-white p-4 shadow-sm">
-          <p className="font-semibold text-gray-900 text-base">
-            {finalDragAndDropConfig.instructions}
-          </p>
-          {finalDragAndDropConfig.helper && (
-            <p className="text-sm text-gray-700 mt-1">
-              {finalDragAndDropConfig.helper}
-            </p>
-          )}
-        </div>
-        <DragAndDropQuiz
-          items={finalDragAndDropConfig.items}
-          categories={finalDragAndDropConfig.categories}
-          onQuizComplete={handleQuizCompletion}
-          containerClassName="max-h-[28rem]"
-          categoryClassName="bg-white"
-          completionConfig={finalDragAndDropConfig.completionConfig}
-          itemsLabel={finalDragAndDropConfig.itemsLabel}
-        />
-        {!isLessonComplete && hasAttemptedQuiz && (
-          <p className="text-sm text-rose-700 font-medium text-center">
-            Complete the quiz and click “Check Answers” to continue.
-          </p>
-        )}
-        {isLessonComplete && hasAttemptedQuiz && (
-          <p className="text-sm text-green-700 font-medium text-center">
-            Great job! You can move to the next lesson.
-          </p>
-        )}
-      </div>
-    ) : null;
+  // Render drag and drop from database
+  const dragAndDropSection = isDragAndDrop ? (
+    <DragAndDrop
+      level={lessonData.level}
+      lesson={lessonData.page_number}
+      onQuizComplete={handleQuizCompletion}
+      containerClassName="max-h-[28rem]"
+    />
+  ) : null;
 
-  const multipleChoiceSection =
-    isMultipleChoice && multipleChoiceConfig ? (
-      <div className="flex flex-col gap-4">
-        <MultipleChoiceQuiz
-          question={multipleChoiceConfig.question}
-          options={multipleChoiceConfig.options}
-          onQuizComplete={handleQuizCompletion}
-        />
-        {!isLessonComplete && hasAttemptedQuiz && (
-          <p className="text-sm text-rose-700 font-medium text-center">
-            Select the correct answer and click “Check Answer” to continue.
-          </p>
-        )}
-      </div>
-    ) : null;
+  // Render multiple choice from database
+  const multipleChoiceSection = isMultipleChoice ? (
+    <MultipleChoice
+      level={lessonData.level}
+      lesson={lessonData.page_number}
+      onQuizComplete={handleQuizCompletion}
+    />
+  ) : null;
 
   return (
     <div className="min-h-screen bg-white">
@@ -540,18 +372,33 @@ const PageContent = () => {
               <div className="flex flex-col gap-6 pb-8">
                 <div
                   className="inline-flex items-center gap-4 rounded-lg px-6 py-3 text-sm font-semibold"
-                  style={{ backgroundColor: "#D9F2A6", color: "#1f2937", maxWidth: "fit-content" }}
+                  style={{
+                    backgroundColor: "#D9F2A6",
+                    color: "#1f2937",
+                    maxWidth: "fit-content",
+                  }}
                 >
                   <span>Level {lessonData.level}</span>
-                  <span className="opacity-70">Page {lessonData.page_number}</span>
+                  <span className="opacity-70">
+                    Page {lessonData.page_number}
+                  </span>
                 </div>
 
                 <div className="rounded-xl border border-black/10 bg-white shadow-sm">
-                  <div className="rounded-t-xl px-6 py-5" style={{ backgroundColor: "#F5C3D2" }}>
-                    <h2 className="text-3xl font-bold text-gray-900">{finalSupportingTitle}</h2>
+                  <div
+                    className="rounded-t-xl px-6 py-5"
+                    style={{ backgroundColor: "#F5C3D2" }}
+                  >
+                    <h2 className="text-3xl font-bold text-gray-900">
+                      {finalSupportingTitle}
+                    </h2>
                   </div>
                   <div className="p-6 flex flex-col gap-6">
-                    <p className="text-lg leading-relaxed text-gray-800">{finalDescription}</p>
+                    <p className="text-lg leading-relaxed text-gray-800">
+                      {finalDescription}
+                    </p>
+
+                    {/* If quiz with image, show side by side */}
                     {shouldPairImageWithQuiz ? (
                       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-start">
                         {imageElement}
@@ -559,11 +406,29 @@ const PageContent = () => {
                       </div>
                     ) : (
                       <>
-                        {imageElement}
-                        {multipleChoiceSection}
+                        {/* If quiz without image, show quiz only */}
+                        {isMultipleChoice &&
+                          !finalImageUrl &&
+                          multipleChoiceSection}
+
+                        {/* If not a quiz, show image separately if exists */}
+                        {!isMultipleChoice && imageElement}
                       </>
                     )}
+
+                    {/* Drag and drop always renders separately */}
                     {dragAndDropSection}
+
+                    {requiresQuiz && !isLessonComplete && hasAttemptedQuiz && (
+                      <p className="text-sm text-rose-700 font-medium text-center">
+                        Complete the quiz to continue.
+                      </p>
+                    )}
+                    {requiresQuiz && isLessonComplete && (
+                      <p className="text-sm text-green-700 font-medium text-center">
+                        ✓ Lesson Complete! You can continue.
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -579,7 +444,9 @@ const PageContent = () => {
 
                   if (isLastLesson) {
                     if (nextLevelInfo) {
-                      navigate(`/learn/${nextLevelInfo.level}/${nextLevelInfo.firstLesson}`);
+                      navigate(
+                        `/learn/${nextLevelInfo.level}/${nextLevelInfo.firstLesson}`
+                      );
                     }
                     return;
                   }
@@ -587,7 +454,11 @@ const PageContent = () => {
                   handleNavigate("next");
 
                   if (userId) {
-                    await set_user_learning_progress(userId, levelNum, lessonNum + 1);
+                    await set_user_learning_progress(
+                      userId,
+                      levelNum,
+                      lessonNum + 1
+                    );
                     localStorage.setItem("level", String(levelNum));
                     localStorage.setItem("lesson", String(lessonNum + 1));
                   }
@@ -603,7 +474,7 @@ const PageContent = () => {
 
       <LevelCompletionPopup
         isOpen={showLevelCompletionPopup}
-        message={`Congratulations on completing Level ${levelNum}! You’ve unlocked new content.`}
+        message={`Congratulations on completing Level ${levelNum}! You've unlocked new content.`}
         actionLabel="Back to Profile"
         onAction={() => {
           setShowLevelCompletionPopup(false);
@@ -616,4 +487,3 @@ const PageContent = () => {
 };
 
 export default PageContent;
-
