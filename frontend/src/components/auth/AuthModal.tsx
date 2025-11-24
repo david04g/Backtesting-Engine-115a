@@ -5,6 +5,7 @@ import { AuthModalProps, UserProps } from "../../types";
 import { useNavigate } from "react-router-dom";
 import { get_user_id, get_user_progress } from "../apiServices/userApi";
 import { ForgotPassword } from "./ForgotPassword";
+import { API_ENDPOINTS } from "../../config/api";
 
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
@@ -24,7 +25,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   const checkUserVerified = async (email: string) => {
     console.log("Checking if user is verified...");
-    const endpoint = "http://localhost:8000/api/is_user_verified";
+    const endpoint = API_ENDPOINTS.IS_USER_VERIFIED;
     const payload = { email };
 
     try {
@@ -49,7 +50,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   const sendVerificationEmail = async () => {
     console.log("Sending verification email...");
-    const endpoint = "http://localhost:8000/api/send_verification_email";
+    const endpoint = API_ENDPOINTS.SEND_VERIFICATION_EMAIL;
     const payload = { email };
 
     try {
@@ -68,7 +69,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   const verifyEmail = async () => {
     console.log("Verifying email...");
-    const endpoint = "http://localhost:8000/api/verify_email";
+    const endpoint = API_ENDPOINTS.VERIFY_EMAIL;
     const payload = { email, verification_code: verifyCode };
 
     try {
@@ -114,8 +115,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     console.log("Submitting credentials...");
 
     const endpoint = isLoginMode
-      ? "http://localhost:8000/api/login_user"
-      : "http://localhost:8000/api/add_user";
+      ? API_ENDPOINTS.LOGIN_USER
+      : API_ENDPOINTS.ADD_USER;
 
     const payload = isLoginMode
       ? { email, password_hash: password }

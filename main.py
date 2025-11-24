@@ -1,9 +1,14 @@
 ﻿from datetime import datetime
 from typing import Any, Dict, List
+import os
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 from db_supabase.db_util import (
     add_user,
@@ -39,6 +44,11 @@ from db_supabase.db_quiz import(
 
 from db_supabase.db_drag_and_drop import(
     get_drag_and_drop
+from db_supabase.db_strategy_storage_util import (
+    save_strategy,
+    get_all_strategies_by_user,
+    update_strategy,
+    delete_strategy,
 )
 
 try:
@@ -51,9 +61,20 @@ import pandas as pd
 
 app = FastAPI()
 
+# Get allowed origins from environment variable
+# For production, set ALLOWED_ORIGINS as comma-separated list of URLs
+# Example: ALLOWED_ORIGINS=https://yourapp.vercel.app,https://www.yourapp.com
+allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "")
+if allowed_origins_env:
+    # Split by comma and strip whitespace
+    allowed_origins = [origin.strip() for origin in allowed_origins_env.split(",") if origin.strip()]
+else:
+    # Default to allow all origins for development
+    allowed_origins = ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Use "*" for local testing only
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -424,6 +445,76 @@ async def update_profile_root(request: Request):
         return {"status": "error", "message": f"An error occurred: {str(e)}"}
 
 
+@app.post("/api/strategies/save")
+async def save_strategy_root(request: Request):
+    try:
+        data = await request.json()
+        user_id = data.get("user_id")
+        strategy_name = data.get("strategy_name")
+        ticker = data.get("ticker")
+        strategy_type = data.get("strategy_type")
+        capital = data.get("capital")
+        start_date = data.get("start_date")
+        end_date = data.get("end_date")
+        metadata = data.get("metadata", {})
+
+        if not user_id:
+            return {"status": "error", "message": "User ID is required"}
+        if not ticker or not strategy_type or not start_date or not end_date:
+            return {"status": "error", "message": "Missing required fields"}
+        
+        try:
+            capital_value = int(float(capital))
+        except (TypeError, ValueError):
+            return {"status": "error", "message": "Invalid capital amount"}
+
+        # Add strategy_name to metadata if provided
+        if strategy_name:
+            metadata["strategy_name"] = strategy_name
+
+        result = save_strategy(
+            user_id=user_id,
+            ticker_name=ticker,
+            strategy_type=strategy_type,
+            money_invested=capital_value,
+            start_date=start_date,
+            end_date=end_date,
+            metadata=metadata
+        )
+
+        if result:
+            return {"status": "success", "data": result}
+        else:
+            return {"status": "error", "message": "Failed to save strategy"}
+
+    except Exception as e:
+        print(f"Error saving strategy: {str(e)}")
+        return {"status": "error", "message": f"An error occurred: {str(e)}"}
+
+
+@app.get("/api/strategies/user/{user_id}")
+async def get_user_strategies(user_id: str):
+    try:
+        strategies = get_all_strategies_by_user(user_id)
+        return {"status": "success", "data": strategies}
+    except Exception as e:
+        print(f"Error getting user strategies: {str(e)}")
+        return {"status": "error", "message": f"An error occurred: {str(e)}"}
+
+
+@app.delete("/api/strategies/{strategy_id}")
+async def delete_strategy_root(strategy_id: str):
+    try:
+        result = delete_strategy(strategy_id)
+        if result:
+            return {"status": "success", "message": "Strategy deleted successfully"}
+        else:
+            return {"status": "error", "message": "Strategy not found"}
+    except Exception as e:
+        print(f"Error deleting strategy: {str(e)}")
+        return {"status": "error", "message": f"An error occurred: {str(e)}"}
+
+
 @app.post("/api/strategies/buy_hold")
 async def run_buy_and_hold(request: Request):
     if yf is None:
@@ -463,7 +554,7 @@ async def run_buy_and_hold(request: Request):
         }
 
     if start_dt >= end_dt:
-        return {"status": "error", "message": "Start date must be before end date"}
+        return {"status": "error", "message": "Buy date must be before sell date"}
 
     try:
         hist = yf.download(
@@ -588,7 +679,7 @@ async def run_simple_moving_average_crossover(request: Request):
         }
 
     if start_dt >= end_dt:
-        return {"status": "error", "message": "Start date must be before end date"}
+        return {"status": "error", "message": "Buy date must be before sell date"}
 
     try:
         hist = yf.download(
@@ -747,7 +838,7 @@ async def run_dollar_cost_average(request: Request):
         }
 
     if start_dt >= end_dt:
-        return {"status": "error", "message": "Start date must be before end date"}
+        return {"status": "error", "message": "Buy date must be before sell date"}
 
     try:
         hist = yf.download(
@@ -886,4 +977,10 @@ async def get_drag_and_drop_root(request: Request):
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    # Get port from environment variable, default to 8000
+    # Railway and other platforms set PORT automatically
+    port = int(os.getenv("PORT", "8000"))
+    # Only enable reload in development
+    reload = os.getenv("ENVIRONMENT", "development").lower() == "development"
+    
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=reload)
