@@ -15,6 +15,9 @@ from db_supabase.db_util import (
     get_user_by_id as get_user,
     upload_profile_picture_by_user_id,
     update_user_profile,
+    send_password_reset_email as send_password_reset_email_service,
+    verify_password_reset_code as verify_password_reset_code_service,
+    reset_password as reset_password_service,
 )
 
 from db_supabase.db_lessons import (
@@ -297,6 +300,84 @@ async def get_user_id_root(request: Request):
     if not user:
         return {"status": "error", "message": "User not found"}
     return {"status": "success", "data": {"id": user["id"]}}
+
+@app.post("/api/forgot_password")
+async def forgot_password_root(request: Request):
+    """Request a password reset code"""
+    try:
+        data = await request.json()
+        email = (data.get("email") or "").strip().lower()
+        if not email:
+            return {"status": "error", "message": "Missing email"}
+        
+        result = send_password_reset_email_service(email)
+        if result.get("success"):
+            return {"status": "success", "data": result}
+        else:
+            return {"status": "error", "message": result.get("message", "Failed to send reset email")}
+    except Exception as e:
+        print(f"Error in forgot_password: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.post("/api/verify_reset_code")
+async def verify_reset_code_root(request: Request):
+    """Verify the password reset code"""
+    try:
+        data = await request.json()
+        email = (data.get("email") or "").strip().lower()
+        reset_code = data.get("reset_code")
+        
+        if not email:
+            return {"status": "error", "message": "Missing email"}
+        if not reset_code:
+            return {"status": "error", "message": "Missing reset code"}
+        
+        try:
+            reset_code_int = int(reset_code)
+        except ValueError:
+            return {"status": "error", "message": "Invalid reset code format"}
+        
+        is_valid = verify_password_reset_code_service(email, reset_code_int)
+        if is_valid:
+            return {"status": "success", "data": {"valid": True}}
+        else:
+            return {"status": "error", "message": "Invalid or expired reset code"}
+    except Exception as e:
+        print(f"Error verifying reset code: {e}")
+        return {"status": "error", "message": str(e)}
+
+@app.post("/api/reset_password")
+async def reset_password_root(request: Request):
+    """Reset password using the reset code"""
+    try:
+        data = await request.json()
+        email = (data.get("email") or "").strip().lower()
+        reset_code = data.get("reset_code")
+        new_password = data.get("new_password")
+        
+        if not email:
+            return {"status": "error", "message": "Missing email"}
+        if not reset_code:
+            return {"status": "error", "message": "Missing reset code"}
+        if not new_password:
+            return {"status": "error", "message": "Missing new password"}
+        
+        if len(new_password) < 6:
+            return {"status": "error", "message": "Password must be at least 6 characters"}
+        
+        try:
+            reset_code_int = int(reset_code)
+        except ValueError:
+            return {"status": "error", "message": "Invalid reset code format"}
+        
+        result = reset_password_service(email, reset_code_int, new_password)
+        if result.get("success"):
+            return {"status": "success", "data": result}
+        else:
+            return {"status": "error", "message": result.get("message", "Failed to reset password")}
+    except Exception as e:
+        print(f"Error resetting password: {e}")
+        return {"status": "error", "message": str(e)}
 
 
 # In main.py

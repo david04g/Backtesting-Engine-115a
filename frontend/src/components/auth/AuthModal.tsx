@@ -4,6 +4,7 @@ import { TrendingUp } from "lucide-react";
 import { AuthModalProps, UserProps } from "../../types";
 import { useNavigate } from "react-router-dom";
 import { get_user_id, get_user_progress } from "../apiServices/userApi";
+import { ForgotPassword } from "./ForgotPassword";
 
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
@@ -17,6 +18,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [name, setName] = useState("");
   const [verifyCode, setVerifyCode] = useState("");
   const [showVerifyStep, setShowVerifyStep] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [currentUser, setCurrentUser] = useState<UserProps | null>(null);
   const navigate = useNavigate();
 
@@ -292,6 +294,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               >
                 {isLoginMode ? "Sign In" : "Sign Up"}
               </button>
+
+              {isLoginMode && (
+                <button
+                  onClick={() => setShowForgotPassword(true)}
+                  className="mt-4 text-sm text-gray-600 hover:text-gray-800 underline text-center"
+                >
+                  Forgot Password?
+                </button>
+              )}
             </>
           )}
         </div>
@@ -304,6 +315,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           ✕
         </button>
       </div>
+
+      {/* Forgot Password Modal */}
+      {showForgotPassword && (
+        <ForgotPassword
+          isOpen={showForgotPassword}
+          onClose={() => {
+            setShowForgotPassword(false);
+            onClose();
+          }}
+          onBackToLogin={() => {
+            setShowForgotPassword(false);
+          }}
+        />
+      )}
     </div>
   );
 };

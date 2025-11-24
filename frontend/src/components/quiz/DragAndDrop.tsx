@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { get_drag_and_drop_from_db } from '../apiServices/userApi';
+import React, { useState, useEffect, useCallback } from "react";
+import { get_drag_and_drop_from_db } from "../apiServices/userApi";
 
 interface Category {
   id: string;
@@ -23,13 +23,15 @@ export const DragAndDrop: React.FC<DragAndDropFromDBProps> = ({
   title,
   instructions,
   onQuizComplete,
-  containerClassName = '',
+  containerClassName = "",
 }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<string[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [categoryItems, setCategoryItems] = useState<Record<string, string[]>>({});
+  const [categoryItems, setCategoryItems] = useState<Record<string, string[]>>(
+    {}
+  );
   const [availableItems, setAvailableItems] = useState<string[]>([]);
   const [feedback, setFeedback] = useState<string | null>(null);
 
@@ -37,12 +39,20 @@ export const DragAndDrop: React.FC<DragAndDropFromDBProps> = ({
     const fetchData = async () => {
       setLoading(true);
       setError(null);
-      
+
       try {
+        console.log(
+          "Fetching drag and drop data for level:",
+          level,
+          "lesson:",
+          lesson
+        );
         const data = await get_drag_and_drop_from_db(level, lesson);
-        
+        console.log("Drag and drop data received:", data);
+
         if (!data) {
-          setError('No drag and drop data found');
+          console.error("No drag and drop data returned from API");
+          setError("No drag and drop data found");
           setLoading(false);
           return;
         }
@@ -52,25 +62,29 @@ export const DragAndDrop: React.FC<DragAndDropFromDBProps> = ({
         setAvailableItems(dbItems);
 
         const cats: Category[] = [];
-        
+
         // Use selections as the single Strategy Box category
-        if (data.selections && Array.isArray(data.selections) && data.selections.length > 0) {
+        if (
+          data.selections &&
+          Array.isArray(data.selections) &&
+          data.selections.length > 0
+        ) {
           cats.push({
-            id: 'strategy-box',
-            label: 'Strategy Box',
-            placeholder: 'Drop rules here..',
+            id: "strategy-box",
+            label: "Strategy Box",
+            placeholder: "Drop rules here..",
             correctAnswers: data.selections,
           });
         } else if (data.selection1 && Array.isArray(data.selection1)) {
           cats.push({
-            id: 'category1',
-            label: 'Category 1',
+            id: "category1",
+            label: "Category 1",
             correctAnswers: data.selection1,
           });
           if (data.selection2 && Array.isArray(data.selection2)) {
             cats.push({
-              id: 'category2',
-              label: 'Category 2',
+              id: "category2",
+              label: "Category 2",
               correctAnswers: data.selection2,
             });
           }
@@ -79,15 +93,14 @@ export const DragAndDrop: React.FC<DragAndDropFromDBProps> = ({
         setCategories(cats);
         setCategoryItems(() => {
           const initial: Record<string, string[]> = {};
-          cats.forEach(cat => {
+          cats.forEach((cat) => {
             initial[cat.id] = [];
           });
           return initial;
         });
-
       } catch (err) {
-        console.error('Error fetching drag and drop data:', err);
-        setError('Failed to load drag and drop data');
+        console.error("Error fetching drag and drop data:", err);
+        setError("Failed to load drag and drop data");
       } finally {
         setLoading(false);
       }
@@ -103,7 +116,7 @@ export const DragAndDrop: React.FC<DragAndDropFromDBProps> = ({
     );
 
     if (placedCount < 2) {
-      setFeedback('Add at least two cards to the Strategy Box to keep going.');
+      setFeedback("Add at least two cards to the Strategy Box to keep going.");
       if (onQuizComplete) {
         onQuizComplete(false);
       }
@@ -111,9 +124,9 @@ export const DragAndDrop: React.FC<DragAndDropFromDBProps> = ({
     }
 
     let allCorrect = true;
-    categories.forEach(category => {
+    categories.forEach((category) => {
       const itemsInCategory = categoryItems[category.id] || [];
-      itemsInCategory.forEach(item => {
+      itemsInCategory.forEach((item) => {
         if (!category.correctAnswers.includes(item)) {
           allCorrect = false;
         }
@@ -121,12 +134,12 @@ export const DragAndDrop: React.FC<DragAndDropFromDBProps> = ({
     });
 
     if (allCorrect && placedCount >= 2) {
-      setFeedback('Awesome! Two rules makes a strategy—you can keep moving.');
+      setFeedback("Awesome! Two rules makes a strategy—you can keep moving.");
       if (onQuizComplete) {
         onQuizComplete(true);
       }
     } else {
-      setFeedback('Add at least two cards to the Strategy Box to keep going.');
+      setFeedback("Add at least two cards to the Strategy Box to keep going.");
       if (onQuizComplete) {
         onQuizComplete(false);
       }
@@ -138,30 +151,33 @@ export const DragAndDrop: React.FC<DragAndDropFromDBProps> = ({
   }, [categoryItems, availableItems, checkAnswers]);
 
   const handleDragStart = (e: React.DragEvent, item: string) => {
-    e.dataTransfer.setData('text/plain', item);
-    e.dataTransfer.setData('source', e.currentTarget.getAttribute('data-source') || 'items');
+    e.dataTransfer.setData("text/plain", item);
+    e.dataTransfer.setData(
+      "source",
+      e.currentTarget.getAttribute("data-source") || "items"
+    );
   };
 
-  const handleDrop = (e: React.DragEvent, targetCategory: 'items' | string) => {
+  const handleDrop = (e: React.DragEvent, targetCategory: "items" | string) => {
     e.preventDefault();
-    const item = e.dataTransfer.getData('text/plain');
-    const source = e.dataTransfer.getData('source');
-    
-    if (source === 'items') {
-      setAvailableItems(prev => prev.filter(i => i !== item));
+    const item = e.dataTransfer.getData("text/plain");
+    const source = e.dataTransfer.getData("source");
+
+    if (source === "items") {
+      setAvailableItems((prev) => prev.filter((i) => i !== item));
     } else {
-      setCategoryItems(prev => ({
+      setCategoryItems((prev) => ({
         ...prev,
-        [source]: (prev[source] || []).filter(i => i !== item)
+        [source]: (prev[source] || []).filter((i) => i !== item),
       }));
     }
-    
-    if (targetCategory === 'items') {
-      setAvailableItems(prev => [...prev, item]);
+
+    if (targetCategory === "items") {
+      setAvailableItems((prev) => [...prev, item]);
     } else {
-      setCategoryItems(prev => ({
+      setCategoryItems((prev) => ({
         ...prev,
-        [targetCategory]: [...(prev[targetCategory] || []), item]
+        [targetCategory]: [...(prev[targetCategory] || []), item],
       }));
     }
   };
@@ -182,20 +198,27 @@ export const DragAndDrop: React.FC<DragAndDropFromDBProps> = ({
     return (
       <div className="flex items-center justify-center p-8">
         <p className="text-gray-600">
-          {error || 'No drag and drop data available for this lesson'}
+          {error || "No drag and drop data available for this lesson"}
         </p>
       </div>
     );
   }
 
-  const displayTitle = title || 'What is a strategy?';
-  const displayInstructions = instructions || 'A strategy is a small set of rules that decides when to buy or sell. Example rules are shown below. Add at least two to the box.';
+  const displayTitle = title || "What is a strategy?";
+  const displayInstructions =
+    instructions ||
+    "A strategy is a small set of rules that decides when to buy or sell. Example rules are shown below. Add at least two to the box.";
 
   return (
     <div className={`flex flex-col gap-4 ${containerClassName}`}>
       {/* Pink header box */}
-      <div className="rounded-lg px-6 py-5 shadow-sm" style={{ backgroundColor: '#F5C3D2' }}>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">{displayTitle}</h2>
+      <div
+        className="rounded-lg px-6 py-5 shadow-sm"
+        style={{ backgroundColor: "#F5C3D2" }}
+      >
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          {displayTitle}
+        </h2>
         <p className="text-base text-gray-900">{displayInstructions}</p>
       </div>
 
@@ -204,11 +227,15 @@ export const DragAndDrop: React.FC<DragAndDropFromDBProps> = ({
         {/* Rule Cards Column */}
         <div className="flex flex-col">
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-xl" style={{ color: '#E8B6B6' }}>★</span>
-            <h3 className="font-semibold text-base text-gray-900">Rule Cards</h3>
+            <span className="text-xl" style={{ color: "#E8B6B6" }}>
+              ★
+            </span>
+            <h3 className="font-semibold text-base text-gray-900">
+              Rule Cards
+            </h3>
           </div>
           <div
-            onDrop={(e) => handleDrop(e, 'items')}
+            onDrop={(e) => handleDrop(e, "items")}
             onDragOver={handleDragOver}
             className="space-y-2"
           >
@@ -219,7 +246,7 @@ export const DragAndDrop: React.FC<DragAndDropFromDBProps> = ({
                 data-source="items"
                 onDragStart={(e) => handleDragStart(e, item)}
                 className="rounded-lg px-4 py-3 text-base font-medium text-gray-900 cursor-move transition-all hover:opacity-80"
-                style={{ backgroundColor: '#F5C3D2' }}
+                style={{ backgroundColor: "#F5C3D2" }}
               >
                 {item}
               </div>
@@ -231,18 +258,25 @@ export const DragAndDrop: React.FC<DragAndDropFromDBProps> = ({
         {categories.map((category) => (
           <div key={category.id} className="flex flex-col">
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-xl" style={{ color: '#D9F2A6' }}>★</span>
-              <h3 className="font-semibold text-base text-gray-900">{category.label}</h3>
+              <span className="text-xl" style={{ color: "#D9F2A6" }}>
+                ★
+              </span>
+              <h3 className="font-semibold text-base text-gray-900">
+                {category.label}
+              </h3>
             </div>
             <div
               onDrop={(e) => handleDrop(e, category.id)}
               onDragOver={handleDragOver}
               className="rounded-lg p-4 min-h-[200px] space-y-2"
-              style={{ backgroundColor: '#D9F2A6' }}
+              style={{ backgroundColor: "#D9F2A6" }}
             >
-              {(categoryItems[category.id] || []).length === 0 && category.placeholder && (
-                <p className="text-sm text-gray-600 italic">{category.placeholder}</p>
-              )}
+              {(categoryItems[category.id] || []).length === 0 &&
+                category.placeholder && (
+                  <p className="text-sm text-gray-600 italic">
+                    {category.placeholder}
+                  </p>
+                )}
               {(categoryItems[category.id] || []).map((item, index) => (
                 <div
                   key={index}
@@ -250,7 +284,7 @@ export const DragAndDrop: React.FC<DragAndDropFromDBProps> = ({
                   data-source={category.id}
                   onDragStart={(e) => handleDragStart(e, item)}
                   className="rounded-lg px-4 py-3 text-base font-medium text-gray-900 cursor-move transition-all hover:opacity-80"
-                  style={{ backgroundColor: '#F5C3D2' }}
+                  style={{ backgroundColor: "#F5C3D2" }}
                 >
                   {item}
                 </div>
@@ -262,7 +296,10 @@ export const DragAndDrop: React.FC<DragAndDropFromDBProps> = ({
 
       {/* Feedback message */}
       {feedback && (
-        <div className="rounded-lg px-4 py-2 text-sm text-center" style={{ backgroundColor: '#D9F2A6' }}>
+        <div
+          className="rounded-lg px-4 py-2 text-sm text-center"
+          style={{ backgroundColor: "#D9F2A6" }}
+        >
           {feedback}
         </div>
       )}
