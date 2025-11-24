@@ -63,27 +63,18 @@ export const DragAndDrop: React.FC<DragAndDropFromDBProps> = ({
 
         const cats: Category[] = [];
 
-        // Debug: Log all keys in data to see what we're getting
-        console.log("All data keys:", Object.keys(data));
-        // Check both possible field names (selections_titles vs selection_titles)
-        console.log("Raw data.selections_titles:", data.selections_titles);
-        console.log("Raw data.selection_titles:", data.selection_titles);
-        console.log("Raw data.selection1:", data.selection1);
-        console.log("Raw data.selection2:", data.selection2);
-
-        // Parse selections_titles (note: database uses 'selections_titles' with 's')
-        // Also check for 'selection_titles' for backward compatibility
+        
         let selectionTitles = data.selections_titles || data.selection_titles;
         
-        // Handle null, undefined, or empty string
+        
         if (selectionTitles === null || selectionTitles === undefined || selectionTitles === '') {
           console.warn("selections_titles is null/undefined/empty, will use fallback");
           selectionTitles = null;
         } else if (typeof selectionTitles === 'string') {
           try {
-            // Remove any extra whitespace
+          
             selectionTitles = selectionTitles.trim();
-            // Parse JSON string
+          
             selectionTitles = JSON.parse(selectionTitles);
           } catch (e) {
             console.error("Failed to parse selections_titles:", e, "Raw value:", selectionTitles);
@@ -91,24 +82,21 @@ export const DragAndDrop: React.FC<DragAndDropFromDBProps> = ({
           }
         }
 
-        console.log("Parsed selections_titles:", selectionTitles);
-        console.log("Is array?", Array.isArray(selectionTitles));
-        console.log("Length?", selectionTitles?.length);
-
-        // Check if we have selections_titles (for multiple dropzones)
+      
         if (selectionTitles && Array.isArray(selectionTitles) && selectionTitles.length > 0) {
           console.log("✓ Using selections_titles to create categories");
-          // Create categories based on selection_titles
+          
           selectionTitles.forEach((title: string, index: number) => {
             const selectionKey = `selection${index + 1}` as keyof typeof data;
+            const selectionKeyStr = String(selectionKey); 
             let correctAnswers = data[selectionKey];
             
-            // Parse if it's a string
+           
             if (typeof correctAnswers === 'string') {
               try {
                 correctAnswers = JSON.parse(correctAnswers);
               } catch (e) {
-                console.error(`Failed to parse ${selectionKey}:`, e);
+                console.error(`Failed to parse ${selectionKeyStr}:`, e);
               }
             }
             
@@ -123,7 +111,7 @@ export const DragAndDrop: React.FC<DragAndDropFromDBProps> = ({
             }
           });
         }
-        // Fallback: Use selections as the single Strategy Box category (for backward compatibility)
+        
         else if (
           data.selections &&
           Array.isArray(data.selections) &&
@@ -136,11 +124,10 @@ export const DragAndDrop: React.FC<DragAndDropFromDBProps> = ({
             correctAnswers: data.selections,
           });
         }
-        // Fallback: Use selection1 and selection2 - create categories even without titles
-        // If we have selection1 and selection2, create categories with generic names
+        
         else if (data.selection1 && Array.isArray(data.selection1)) {
-          console.log("Using fallback: selection1 and selection2");
-          // Try to use selections_titles if available, otherwise use generic names
+         
+          
           const label1 = (selectionTitles && Array.isArray(selectionTitles) && selectionTitles[0]) 
             ? selectionTitles[0] 
             : "Category 1";
@@ -162,7 +149,7 @@ export const DragAndDrop: React.FC<DragAndDropFromDBProps> = ({
           }
         }
 
-        console.log("Final categories:", cats);
+        
 
         setCategories(cats);
         setCategoryItems(() => {
@@ -189,7 +176,7 @@ export const DragAndDrop: React.FC<DragAndDropFromDBProps> = ({
       0
     );
 
-    // Check if all items are placed
+
     if (placedCount === 0) {
       setFeedback("Drag items from the left to the dropzones on the right.");
       if (onQuizComplete) {
@@ -198,21 +185,21 @@ export const DragAndDrop: React.FC<DragAndDropFromDBProps> = ({
       return;
     }
 
-    // For multiple dropzones, check if items are in correct categories
+   
     let allCorrect = true;
     let allItemsPlaced = true;
     
     categories.forEach((category) => {
       const itemsInCategory = categoryItems[category.id] || [];
       
-      // Check if items in this category are correct
+      
       itemsInCategory.forEach((item) => {
         if (!category.correctAnswers.includes(item)) {
           allCorrect = false;
         }
       });
       
-      // Check if all correct answers for this category are placed
+      
       const correctAnswersInCategory = category.correctAnswers.filter(answer => 
         itemsInCategory.includes(answer)
       );
@@ -221,7 +208,7 @@ export const DragAndDrop: React.FC<DragAndDropFromDBProps> = ({
       }
     });
 
-    // Check if there are any items that should be in a category but aren't
+   
     const allCorrectAnswers = categories.flatMap(cat => cat.correctAnswers);
     const allPlacedItems = Object.values(categoryItems).flat();
     const missingItems = allCorrectAnswers.filter(answer => !allPlacedItems.includes(answer));
@@ -306,7 +293,7 @@ export const DragAndDrop: React.FC<DragAndDropFromDBProps> = ({
     );
   }
 
-  // Only show title/instructions if they're provided (don't use defaults for drag-and-drop)
+
   const displayTitle = title;
   const displayInstructions = instructions;
   const showHeader = displayTitle || displayInstructions;
@@ -404,7 +391,7 @@ export const DragAndDrop: React.FC<DragAndDropFromDBProps> = ({
         </div>
       </div>
 
-      {/* Feedback message */}
+   
       {feedback && (
         <div
           className="rounded-lg px-4 py-2 text-sm text-center"

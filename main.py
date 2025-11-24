@@ -856,7 +856,6 @@ async def get_drag_and_drop_root(request: Request):
     if lesson is None:
         return {"status": "error", "message": "No lesson"}
     
-    print(f"\n=== Endpoint called with level: {level}, lesson: {lesson} ===")
     
     try:
         import json
@@ -866,18 +865,17 @@ async def get_drag_and_drop_root(request: Request):
             print(f"No drag and drop found for level {level}, lesson {lesson}")
             return {"status": "error", "message": "No drag and drop found"}
         
-        # Parse JSON strings to arrays if needed
-        # Note: database field is 'selections_titles' (plural), but we check both for compatibility
+        
         fields_to_parse = ["options", "selections_titles", "selection_titles", "selection1", "selection2", "selections"]
         for field in fields_to_parse:
             if field in dragAndDropInfo and isinstance(dragAndDropInfo[field], str):
                 try:
                     dragAndDropInfo[field] = json.loads(dragAndDropInfo[field])
                 except (json.JSONDecodeError, TypeError):
-                    # If parsing fails, keep the original value
+                    
                     pass
         
-        print(f"✓ Returning drag and drop data: {dragAndDropInfo}")
+        
         return {"status": "success", "data": dragAndDropInfo}
         
     except Exception as e:
