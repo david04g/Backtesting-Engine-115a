@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { API_ENDPOINTS } from '../../config/api';
+import { get_user_progress } from '../../components/apiServices/userApi';
 
 const isWeekday = (date: Date): boolean => {
   const day = date.getDay();
@@ -57,23 +58,98 @@ interface SavedStrategy {
   created_at: string;
 }
 
-const strategies = [
+const ALL_STRATEGIES = [
   {
     id: 'buy_hold',
     name: 'Buy and Hold (simple)',
     description: 'Buy once and hold until sell date.',
+    requiredLevel: 1, // unlocks after completing level 0
   },
   {
     id: 'simple_moving_average_crossover',
     name: 'Simple Moving Average Crossover',
     description: 'Trade based on short vs. long moving average crossovers.',
+    requiredLevel: 2, // unlocks after completing level 1
   },
   {
     id: 'dca',
     name: 'Dollar-Cost Averaging (DCA)',
     description: 'Invest a fixed amount at regular intervals.',
+    requiredLevel: 3, // unlocks after completing level 2
   },
 ];
+
+const useAvailableStrategies = () => {
+  const [userLevel, setUserLevel] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUserLevel = async () => {
+      try {
+        const userId = localStorage.getItem('user_id');
+        console.log('User ID from localStorage:', userId);
+        
+        if (userId) {
+          const progress = await get_user_progress(userId);
+          console.log('Progress from API:', progress);
+          // If progress exists, use its level, otherwise default to 0
+          const level = progress?.level ?? 0;
+          console.log('Setting user level to:', level);
+          setUserLevel(level);
+        } else {
+          console.log('No user ID found, setting level to 0');
+          setUserLevel(0); // Default to level 0 if not logged in
+        }
+      } catch (error) {
+        console.error('Error fetching user level:', error);
+        setUserLevel(0); // Default to level 0 on error
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserLevel();
+  }, []);
+
+  // const strategies = useMemo(() => {
+  //   if (loading) return [];
+    
+  //   console.log('Available strategies filter - userLevel:', userLevel);
+    
+  //   // Always show strategies where requiredLevel is 1 (basic strategies)
+  //   // and any strategies where userLevel + 1 >= requiredLevel
+  //   const available = ALL_STRATEGIES.filter(strategy => {
+  //     const isAvailable = strategy.requiredLevel === 1 || 
+  //                        (userLevel !== null && strategy.requiredLevel <= userLevel + 1);
+  //     console.log(`Strategy ${strategy.name} (level ${strategy.requiredLevel}):`, 
+  //                isAvailable ? 'Available' : 'Locked');
+  //     return isAvailable;
+  //   });
+    
+  //   console.log('Available strategies:', available.map(s => s.name));
+  //   return available;
+  // }, [userLevel, loading]);
+
+  const strategies = useMemo(() => {
+  if (loading) return [];
+  
+  console.log('Available strategies filter - userLevel:', userLevel);
+  
+  // For level 1, only show requiredLevel 1 (Buy and Hold)
+  // For higher levels, show strategies where requiredLevel <= userLevel
+  const available = ALL_STRATEGIES.filter(strategy => {
+    if (userLevel === 1) {
+      return strategy.requiredLevel === 1;
+    }
+    return userLevel !== null && strategy.requiredLevel <= userLevel;
+  });
+  
+  console.log('Available strategies:', available.map(s => s.name));
+  return available;
+}, [userLevel, loading]);
+
+  return { strategies, loading };
+};
 
 const Chart: React.FC<{ data: { date: string; value: number }[] }> = ({
   data,
@@ -179,13 +255,16 @@ const CreatePage: React.FC = () => {
   const [showSavedStrategies, setShowSavedStrategies] = useState(false);
   const [loadingSavedStrategies, setLoadingSavedStrategies] = useState(false);
 
+  const { strategies, loading: strategiesLoading } = useAvailableStrategies();
+
   const filteredStrategies = useMemo(() => {
     const term = search.trim().toLowerCase();
     if (!term) return strategies;
-    return strategies.filter(strategy =>
+    const filtered = strategies.filter(strategy =>
       strategy.name.toLowerCase().includes(term)
     );
-  }, [search]);
+    return filtered;
+  }, [search, strategies]);
 
   const chartData = useMemo(() => {
     if (!result) return [];
