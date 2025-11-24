@@ -179,6 +179,16 @@ const CreatePage: React.FC = () => {
   const [showSavedStrategies, setShowSavedStrategies] = useState(false);
   const [loadingSavedStrategies, setLoadingSavedStrategies] = useState(false);
 
+  const [news, setNews] = useState<Array<{
+    title: string;
+    publisher: string;
+    link: string;
+    publish_time?: number;
+    type?: string;
+  }>>([]);
+
+  const [newsError, setNewsError] = useState<string | null>(null);
+
   const filteredStrategies = useMemo(() => {
     const term = search.trim().toLowerCase();
     if (!term) return strategies;
@@ -231,6 +241,55 @@ const CreatePage: React.FC = () => {
     setSaveSuccess(false);
     setSaveError(null);
   }, [selectedStrategy]);
+
+  useEffect(() => {
+  const fetchNews = async () => {
+    if (!ticker || !ticker.trim()) {
+      setNews([]);
+      return;
+    }
+
+    setLoading(true);
+    setNewsError(null);
+    
+    try {
+      const url = API_ENDPOINTS.GET_TICKER_NEWS(ticker.toUpperCase());
+      
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.status === 'success') {
+        const newsItems = Array.isArray(data.data) ? data.data : [];
+        setNews(newsItems);
+        
+        if (newsItems.length === 0) {
+          setNewsError('No recent news found for this ticker.');
+        }
+      } else {
+        throw new Error(data.message || 'Failed to load news');
+      }
+    } catch (err) {
+      const errorMessage = 'Failed to load news. ' + (err instanceof Error ? err.message : '');
+      console.error('Error in fetchNews:', errorMessage, err);
+      setNewsError(errorMessage);
+      setNews([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+    const timeoutId = setTimeout(() => {
+      fetchNews();
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [ticker]);
 
   const summary = useMemo(() => {
     if (!result) return null;
@@ -897,6 +956,55 @@ const CreatePage: React.FC = () => {
             </div>
           </section>
         </div>
+
+        <section className="mt-10">
+          <div className="rounded-3xl bg-pink-200 p-6 shadow-sm">
+            <h2 className="mb-4 text-2xl font-semibold text-gray-800">
+              Latest News for {ticker.toUpperCase()}
+            </h2>
+              {loading ? (
+                <div className="py-8 text-center text-gray-600">
+                  Loading news...
+                </div>
+              ) : newsError ? (
+                <div className="py-4 text-center text-red-600">
+                  Error: {newsError}
+                </div>
+              ) : news.length === 0 ? (
+                <div className="py-8 text-center text-gray-600">
+                  No news articles available for this ticker.
+                </div>
+              ) : (
+              <div className="space-y-4">
+                {news.slice(0, 10).map((article, index) => (
+                  <div
+                    key={index}
+                    className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-100 transition hover:shadow-md"
+                  >
+                    <a
+                      href={article.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block"
+                    >
+                      <h3 className="text-lg font-semibold text-gray-800 hover:text-pink-600">
+                        {article.title}
+                      </h3>
+                        <div className="mt-2 flex items-center gap-3 text-sm text-gray-600">
+                          <span className="font-medium">{article.publisher || 'Unknown source'}</span>
+                          {article.publish_time && (
+                            <span>
+                              {new Date(article.publish_time * 1000).toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
+                    </a>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
       </div>
 
       {showSavedStrategies && (

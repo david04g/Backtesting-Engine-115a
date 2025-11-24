@@ -1,6 +1,7 @@
 ﻿from datetime import datetime
 from typing import Any, Dict, List
 import os
+import time
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -826,6 +827,75 @@ async def run_dollar_cost_average(request: Request):
             "series": series,
         },
     }
+
+@app.get("/api/ticker/{ticker}/news")
+async def get_ticker_news(ticker: str):
+    if yf is None:
+        print("ERROR: yfinance is not installed")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "message": "Server missing yfinance. Install backend requirements.",
+            },
+        )
+
+    ticker_upper = ticker.upper().strip()
+    if not ticker_upper:
+        return {"status": "error", "message": "Invalid ticker"}
+
+    try:
+        print(f"Fetching news for ticker: {ticker_upper}")
+        ticker_obj = yf.Ticker(ticker_upper)
+        
+        print(f"Ticker info available: {hasattr(ticker_obj, 'info')}")
+        
+        news = ticker_obj.news
+        print(f"Raw news data: {news}")
+        
+        if not news:
+            print(f"No news found for {ticker_upper}")
+            try:
+                print("Trying alternative news fetch method...")
+                hist = ticker_obj.history(period="1d")
+                if hist.empty:
+                    print("No historical data available")
+                else:
+                    print("Historical data available, but no news found")
+            except Exception as e:
+                print(f"Alternative fetch error: {str(e)}")
+            
+            return {"status": "success", "data": []}
+        
+        formatted_news = []
+        current_time = int(time.time())
+        for article in news:
+            content = article.get('content', {})
+            provider = content.get('provider', {})
+            pub_date = content.get("pubDate")
+            if pub_date and isinstance(pub_date, str):
+                try:
+                    dt = datetime.datetime.fromisoformat(pub_date.replace('Z', '+00:00'))
+                    publish_time = int(dt.timestamp())
+                except (ValueError, AttributeError):
+                    publish_time = current_time
+            else:
+                publish_time = current_time
+                
+            formatted_news.append({
+                "title": content.get("title", "No title available"),
+                "publisher": provider.get("displayName", "Unknown source"),
+                "link": content.get("canonicalUrl", {}).get("url", "#"),
+                "publish_time": publish_time,
+                "type": content.get("type", "news"),
+            })
+        
+        print(f"Formatted {len(formatted_news)} news articles")
+        return {"status": "success", "data": formatted_news}
+    except Exception as e:
+        error_msg = f"Error fetching news for {ticker_upper}: {str(e)}"
+        print(error_msg)
+        return {"status": "error", "message": error_msg}
 
 if __name__ == "__main__":
     import uvicorn

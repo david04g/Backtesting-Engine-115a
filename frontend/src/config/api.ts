@@ -51,5 +51,8 @@ export const API_ENDPOINTS = {
     GET_USER_STRATEGIES: (userId: string) => getApiEndpoint(`api/strategies/user/${userId}`),
     DELETE: (strategyId: string) => getApiEndpoint(`api/strategies/${strategyId}`),
   },
+  
+  // Ticker endpoints
+  GET_TICKER_NEWS: (ticker: string) => getApiEndpoint(`api/ticker/${ticker}/news`),
 };
 
