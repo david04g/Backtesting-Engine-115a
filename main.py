@@ -850,7 +850,7 @@ async def get_ticker_news(ticker: str):
         
         print(f"Ticker info available: {hasattr(ticker_obj, 'info')}")
         
-        news = ticker_obj.get_news(count=5)
+        news = ticker_obj.get_news(count=5, tab="all")
         print(f"Raw news data: {news}")
         
         if not news:
