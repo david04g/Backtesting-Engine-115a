@@ -7,6 +7,7 @@ import mimetypes
 import smtplib
 import random
 from email.mime.text import MIMEText
+from datetime import datetime, timedelta
 
 dotenv.load_dotenv()
 
@@ -499,3 +500,143 @@ def change_email_by_uid(new_user_email: str, uid: str):
 
     except Exception as e:
         return {"success": False, "message": f"Error updating email: {e}"}
+
+def generate_password_reset_code(email: str):
+    """Generate a 6-digit password reset code and store it with expiration time"""
+    try:
+        email = email.strip().lower()
+        user = get_user_by_email(email)
+        if not user:
+            return {"success": False, "message": "User not found with that email."}
+        
+        # Generate 6-digit reset code
+        random_int = random.randint(100000, 999999)
+        reset_code = f"{random_int:06d}"
+        
+        # Set expiration time (1 hour from now)
+        expires_at = (datetime.utcnow() + timedelta(hours=1)).isoformat()
+        
+        # Store reset code and expiration in database
+        # Using password_reset_code and password_reset_code_expires fields
+        # If these fields don't exist in your schema, you may need to add them
+        response = supabase.table("users").update({
+            "password_reset_code": int(reset_code),
+            "password_reset_code_expires": expires_at
+        }).eq("email", email).execute()
+        
+        if response.data:
+            return {"success": True, "reset_code": reset_code}
+        else:
+            return {"success": False, "message": "Failed to generate reset code"}
+    except Exception as e:
+        return {"success": False, "message": f"Error generating reset code: {e}"}
+
+def send_password_reset_email(email: str):
+    """Send password reset code via email"""
+    try:
+        email = email.strip().lower()
+        user = get_user_by_email(email)
+        if not user:
+            # Don't reveal if email exists or not for security
+            return {"success": True, "message": "If that email exists, a reset code has been sent."}
+        
+        # Generate reset code
+        code_result = generate_password_reset_code(email)
+        if not code_result.get("success"):
+            return code_result
+        
+        reset_code = code_result.get("reset_code")
+        
+        # Send email
+        msg = MIMEText(f"Your password reset code is: {reset_code}\n\nThis code will expire in 1 hour.\n\nIf you didn't request this, please ignore this email.")
+        msg["Subject"] = "Password Reset Code"
+        msg["From"] = os.getenv("SMTP_USER")
+        msg["To"] = email
+        
+        try:
+            with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+                server.login(os.getenv("SMTP_USER"), os.getenv("SMTP_PASS"))
+                server.send_message(msg)
+            print(f"Password reset email sent to {email}")
+            return {"success": True, "message": "Password reset code sent to your email."}
+        except Exception as e:
+            print(f"Error sending password reset email: {e}")
+            return {"success": False, "message": f"Error sending email: {e}"}
+    except Exception as e:
+        return {"success": False, "message": f"Error in password reset: {e}"}
+
+def verify_password_reset_code(email: str, reset_code: int) -> bool:
+    """Verify if the reset code is valid and not expired"""
+    try:
+        email = email.strip().lower()
+        response = supabase.table("users").select("password_reset_code, password_reset_code_expires").eq("email", email).execute()
+        
+        if not response.data or len(response.data) == 0:
+            print("User not found")
+            return False
+        
+        user_data = response.data[0]
+        stored_code = user_data.get("password_reset_code")
+        expires_at_str = user_data.get("password_reset_code_expires")
+        
+        if stored_code is None:
+            print("No reset code found. Please request a new one.")
+            return False
+        
+        if expires_at_str:
+            try:
+                # Parse the expiration datetime
+                expires_str = expires_at_str.replace('Z', '+00:00') if 'Z' in expires_at_str else expires_at_str
+                expires_at = datetime.fromisoformat(expires_str)
+                
+                # Get current UTC time (timezone-aware)
+                from datetime import timezone
+                now_utc = datetime.now(timezone.utc)
+                
+                # Convert expires_at to timezone-aware if it's naive
+                if expires_at.tzinfo is None:
+                    expires_at = expires_at.replace(tzinfo=timezone.utc)
+                
+                if now_utc > expires_at:
+                    print("Reset code has expired. Please request a new one.")
+                    return False
+            except Exception as e:
+                print(f"Error parsing expiration date: {e}")
+                # If we can't parse, assume expired for security
+                return False
+        
+        if str(stored_code) != str(reset_code):
+            print("Invalid reset code.")
+            return False
+        
+        return True
+    except Exception as e:
+        print(f"Error verifying reset code: {e}")
+        return False
+
+def reset_password(email: str, reset_code: int, new_password: str) -> dict:
+    """Reset user password after verifying the reset code"""
+    try:
+        email = email.strip().lower()
+        
+        # Verify the reset code
+        if not verify_password_reset_code(email, reset_code):
+            return {"success": False, "message": "Invalid or expired reset code."}
+        
+        # Hash the new password
+        new_hash = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        
+        # Update password and clear reset code
+        response = supabase.table("users").update({
+            "password_hash": new_hash,
+            "password_reset_code": None,
+            "password_reset_code_expires": None
+        }).eq("email", email).execute()
+        
+        if response.data:
+            print("Password reset successfully.")
+            return {"success": True, "message": "Password has been reset successfully."}
+        else:
+            return {"success": False, "message": "Failed to reset password."}
+    except Exception as e:
+        return {"success": False, "message": f"Error resetting password: {e}"}

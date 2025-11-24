@@ -1,7 +1,7 @@
-export { DragAndDropQuiz } from './DragAndDropQuiz';
-export type { DragAndDropQuizProps, Category, DragAndDropCompletionConfig } from './DragAndDropQuiz';
+// Export DragAndDrop component and its types
+export { DragAndDrop } from './DragAndDrop';
+export type { DragAndDropFromDBProps } from './DragAndDrop';
 
-export { MultipleChoiceQuiz } from './MultipleChoiceQuiz';
-export type { MultipleChoiceQuizProps, MultipleChoiceOption } from './MultipleChoiceQuiz';
-
-
+// Export MultipleChoice component and its types
+export { MultipleChoice } from './MultipleChoice';
+export type { QuizFromDBProps, MultipleChoiceOption } from './MultipleChoice';
