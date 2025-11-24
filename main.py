@@ -43,8 +43,10 @@ from db_supabase.db_quiz import(
     get_quiz
 )
 
-from db_supabase.db_drag_and_drop import(
-    get_drag_and_drop
+from db_supabase.db_drag_and_drop import (
+    get_drag_and_drop,
+)
+
 from db_supabase.db_strategy_storage_util import (
     save_strategy,
     get_all_strategies_by_user,
