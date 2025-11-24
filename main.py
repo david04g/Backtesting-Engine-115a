@@ -850,7 +850,7 @@ async def get_ticker_news(ticker: str):
         
         print(f"Ticker info available: {hasattr(ticker_obj, 'info')}")
         
-        news = ticker_obj.news
+        news = ticker_obj.get_news(count=5)
         print(f"Raw news data: {news}")
         
         if not news:
@@ -873,20 +873,30 @@ async def get_ticker_news(ticker: str):
             content = article.get('content', {})
             provider = content.get('provider', {})
             pub_date = content.get("pubDate")
-            if pub_date and isinstance(pub_date, str):
+            
+            publish_time = current_time
+            
+            if pub_date and isinstance(pub_date, (int, float)):
+                publish_time = int(pub_date)
+            elif pub_date and isinstance(pub_date, str):
                 try:
-                    dt = datetime.datetime.fromisoformat(pub_date.replace('Z', '+00:00'))
+                    if pub_date.endswith('Z'):
+                        pub_date = pub_date[:-1] + '+00:00'
+                    elif '+' not in pub_date and 'Z' not in pub_date:
+                        pub_date += '+00:00'
+                    dt = datetime.fromisoformat(pub_date)
                     publish_time = int(dt.timestamp())
-                except (ValueError, AttributeError):
-                    publish_time = current_time
-            else:
-                publish_time = current_time
+                except (ValueError, AttributeError) as e:
+                    print(f"Error parsing date '{pub_date}': {str(e)}")
+                    if 'providerPublishTime' in article and article['providerPublishTime']:
+                        publish_time = article['providerPublishTime']
                 
             formatted_news.append({
                 "title": content.get("title", "No title available"),
                 "publisher": provider.get("displayName", "Unknown source"),
                 "link": content.get("canonicalUrl", {}).get("url", "#"),
                 "publish_time": publish_time,
+                "published_at": datetime.fromtimestamp(publish_time).strftime('%Y-%m-%d %H:%M:%S'),
                 "type": content.get("type", "news"),
             })
         
