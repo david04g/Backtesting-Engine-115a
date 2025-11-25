@@ -1148,6 +1148,52 @@ async def get_drag_and_drop_root(request: Request):
         import traceback
         traceback.print_exc()
         return {"status": "error", "message": str(e)}
+
+@app.get("/api/ticker/{ticker}/history")
+async def get_ticker_history(ticker: str, period: str = "1mo", interval: str = "1d"):
+    """Get historical price data for a ticker"""
+    if yf is None:
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "message": "Server missing yfinance. Install backend requirements.",
+            },
+        )
+
+    ticker_upper = ticker.upper().strip()
+    if not ticker_upper:
+        return {"status": "error", "message": "Invalid ticker"}
+
+    try:
+        ticker_obj = yf.Ticker(ticker_upper)
+        hist = ticker_obj.history(period=period, interval=interval)
+        
+        if hist is None or hist.empty:
+            return {"status": "error", "message": "No historical data available"}
+        
+        # Convert the DataFrame to a list of dicts
+        history_data = []
+        for idx, row in hist.iterrows():
+            history_data.append({
+                "date": idx.strftime("%Y-%m-%d %H:%M:%S"),
+                "open": float(row["Open"]),
+                "high": float(row["High"]),
+                "low": float(row["Low"]),
+                "close": float(row["Close"]),
+                "volume": int(row["Volume"]) if not pd.isna(row["Volume"]) else 0
+            })
+            
+        return {
+            "status": "success",
+            "data": {
+                "ticker": ticker_upper,
+                "history": history_data
+            }
+        }
+    except Exception as e:
+        return {"status": "error", "message": f"Error fetching history: {str(e)}"}
+
 if __name__ == "__main__":
     import uvicorn
 
