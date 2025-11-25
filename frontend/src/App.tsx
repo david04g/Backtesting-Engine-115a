@@ -6,6 +6,7 @@ import Hero from "./components/Hero";
 import { AboutContent } from "./pages/about";
 import { ProfileContent } from "./pages/profile";
 import { CreatePage } from "./pages/create";
+import MarketNewsPage from "./pages/market-news/MarketNewsPage";
 import PageContent from "./pages/learn/[Level]/[PageContent]";
 
 const App: React.FC = () => {
@@ -46,6 +47,15 @@ const App: React.FC = () => {
               <div className="min-h-screen bg-gray-50">
                 <Navigation />
                 <CreatePage />
+              </div>
+            }
+          />
+          <Route
+            path="/market-news"
+            element={
+              <div className="min-h-screen bg-gray-50">
+                <Navigation />
+                <MarketNewsPage />
               </div>
             }
           />

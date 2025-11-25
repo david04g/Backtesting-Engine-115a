@@ -54,5 +54,7 @@ export const API_ENDPOINTS = {
   
   // Ticker endpoints
   GET_TICKER_NEWS: (ticker: string) => getApiEndpoint(`api/ticker/${ticker}/news`),
+  GET_MARKET_NEWS: getApiEndpoint('api/market-news/latest'),
+
 };
 

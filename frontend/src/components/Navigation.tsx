@@ -76,6 +76,16 @@ const Navigation: React.FC = () => {
           >
             Learn
           </Link>
+          <Link
+            to="/market-news"
+            className={`px-6 py-3 rounded-full font-medium transition-colors ${
+              location.pathname.startsWith("/market-news")
+                ? "bg-lime-300 hover:bg-lime-400 text-gray-800"
+                : "text-gray-700 hover:text-gray-900"
+            }`}
+          >
+            News
+          </Link>
           <button
             onClick={handleLogout}
             className="px-6 py-3 rounded-full bg-gray-800 text-white font-medium hover:bg-gray-700 transition-colors"
