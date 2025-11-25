@@ -448,6 +448,98 @@ async def update_profile_root(request: Request):
         return {"status": "error", "message": f"An error occurred: {str(e)}"}
 
 
+@app.get("/api/market-news/latest")
+async def get_latest_market_news(limit: int = 10):
+    if yf is None:
+        print("ERROR: yfinance is not installed")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "message": "Server missing yfinance. Install backend requirements.",
+            },
+        )
+
+    # List of popular tickers to fetch news from
+    popular_tickers = ['SPY', 'QQQ', 'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'NVDA', 'META']
+    
+    all_news = []
+    
+    for ticker in popular_tickers:
+        try:
+            print(f"Fetching news for ticker: {ticker}")
+            ticker_obj = yf.Ticker(ticker)
+            news = ticker_obj.get_news(count=5, tab="all")
+
+            # Get ticker info for price data
+            ticker_info = ticker_obj.info
+            current_price = ticker_info.get('regularMarketPrice', 0)
+            change = ticker_info.get('regularMarketChange', 0)
+            change_percent = ticker_info.get('regularMarketChangePercent', 0)
+            
+            if not news:
+                continue
+                
+            current_time = int(time.time())
+            
+            for article in news:
+                content = article.get('content', {})
+                provider = content.get('provider', {})
+                pub_date = content.get("pubDate")
+                
+                publish_time = current_time
+                
+                if pub_date and isinstance(pub_date, (int, float)):
+                    publish_time = int(pub_date)
+                elif pub_date and isinstance(pub_date, str):
+                    try:
+                        if pub_date.endswith('Z'):
+                            pub_date = pub_date[:-1] + '+00:00'
+                        elif '+' not in pub_date and 'Z' not in pub_date:
+                            pub_date += '+00:00'
+                        dt = datetime.fromisoformat(pub_date)
+                        publish_time = int(dt.timestamp())
+                    except (ValueError, AttributeError) as e:
+                        print(f"Error parsing date '{pub_date}': {str(e)}")
+                        if 'providerPublishTime' in article and article['providerPublishTime']:
+                            publish_time = article['providerPublishTime']
+                
+                all_news.append({
+                    "title": content.get("title", "No title available"),
+                    "publisher": provider.get("displayName", "Unknown source"),
+                    "link": content.get("canonicalUrl", {}).get("url", "#"),
+                    "publish_time": publish_time,
+                    "published_at": datetime.fromtimestamp(publish_time).strftime('%Y-%m-%d %H:%M:%S'),
+                    "type": content.get("type", "news"),
+                    "ticker": ticker,
+                    "ticker_name": ticker_obj.info.get('shortName', ticker) if hasattr(ticker_obj, 'info') else ticker,
+                    "price": f"${current_price:.2f}",
+                    "change": f"{'+' if change >= 0 else '-'}{change:.2f}",
+                    "changePercent": f"{'+' if change_percent >= 0 else '-'}{change_percent:.2f}%"
+                })
+                
+        except Exception as e:
+            print(f"Error fetching news for {ticker}: {str(e)}")
+            continue
+    
+    # Sort all news by publish time (newest first)
+    all_news.sort(key=lambda x: x['publish_time'], reverse=True)
+    
+    # Remove duplicates based on title
+    seen_titles = set()
+    unique_news = []
+    for article in all_news:
+        title = article['title'].lower()
+        if title not in seen_titles:
+            seen_titles.add(title)
+            unique_news.append(article)
+    
+    # Apply limit
+    return {
+        "status": "success", 
+        "data": unique_news[:limit]
+    }
+
 @app.post("/api/strategies/save")
 async def save_strategy_root(request: Request):
     try:
