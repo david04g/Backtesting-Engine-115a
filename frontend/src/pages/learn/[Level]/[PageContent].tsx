@@ -11,6 +11,7 @@ import { NavigationButtons } from "../../../components/lessons/NavigationButtons
 import { LevelCompletionPopup } from "../../../components/LevelCompletionPopup";
 // Import the new DB-driven components
 import { DragAndDrop, MultipleChoice } from "../../../components/quiz";
+import { EntryExitActivity } from "../../../components/lessons/EntryExitActivity";
 
 interface LessonRecord {
   id: number;
@@ -242,6 +243,8 @@ const PageContent = () => {
   const isMultipleChoice =
     lessonData?.content_type === "quiz" ||
     lessonData?.content_type === "multiple_choice";
+  const isEntryExitActivityLesson =
+    lessonData?.level === 2 && lessonData?.page_number === 3;
 
   const hasPersistedCompletion = lessonData?.id
     ? !!quizCompletionState[lessonData.id]
@@ -418,6 +421,8 @@ const PageContent = () => {
 
                     {/* Drag and drop always renders separately */}
                     {dragAndDropSection}
+
+                    {isEntryExitActivityLesson && <EntryExitActivity />}
 
                     {requiresQuiz && !isLessonComplete && hasAttemptedQuiz && (
                       <p className="text-sm text-rose-700 font-medium text-center">
