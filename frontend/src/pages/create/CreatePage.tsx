@@ -81,8 +81,8 @@ const ALL_STRATEGIES = [
   },
   {
     id: 'buy_hold_markers',
-    name: 'Buy and Hold with Entry/Exit',
-    description: 'Buy and hold with visual entry/exit markers and trading costs',
+    name: 'Buy and Hold Advanced',
+    description: 'Advanced buy and hold with entry/exit and trading costs',
     requiredLevel: 4,
   }
 ];
