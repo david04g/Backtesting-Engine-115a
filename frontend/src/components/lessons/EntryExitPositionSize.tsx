@@ -359,13 +359,16 @@ export default function EntryExitPositionSize(props: Props) {
   useEffect(() => {
     const c = canvasRef.current;
     if (!c) return;
-    // set canvas internal resolution for crispness
-    const ratio = window.devicePixelRatio || 1;
-    c.width = Math.floor((c.clientWidth || 600) * ratio);
-    c.height = Math.floor((c.clientHeight || 220) * ratio);
-    (c.style as any).width = `${c.clientWidth}px`;
-    (c.style as any).height = `${c.clientHeight}px`;
+    
+    // Set canvas size properly
+    const displayWidth = c.clientWidth || 600;
+    const displayHeight = 300;
+    
+    // Set canvas dimensions to match display size
+    c.width = displayWidth;
+    c.height = displayHeight;
 
+    // Draw the chart
     const markers = [];
     if (entryIdx != null) markers.push({ i: entryIdx, color: "#22c55e", label: "Entry" });
     if (exitIdx != null) markers.push({ i: exitIdx, color: "#f59e0b", label: "Exit" });
@@ -381,7 +384,19 @@ export default function EntryExitPositionSize(props: Props) {
       pl: computePL(),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [series, entryIdx, exitIdx, positionPct, capital]);
+  }, [series, entryIdx, exitIdx]); // Remove positionPct and capital from dependencies
+
+  // Separate effect for onChange callback when position or capital changes
+  useEffect(() => {
+    props.onChange?.({
+      entryIndex: entryIdx,
+      exitIndex: exitIdx,
+      positionPct,
+      capital,
+      pl: computePL(),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [positionPct, capital]); // Only depend on positionPct and capital
 
   // handle canvas click mapping to index
   const onCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -431,68 +446,16 @@ export default function EntryExitPositionSize(props: Props) {
           </div>
         </div>
 
-        {/* Green summary cards at the top */}
+        {/* All controls on the same line */}
         <div style={{ 
           display: 'flex', 
           gap: '12px', 
           margin: '16px 0',
+          alignItems: 'center',
           flexWrap: 'wrap',
-          backgroundColor: '#f0fdf4',
-          padding: '12px',
-          borderRadius: '12px',
-          border: '1px solid #dcfce7'
+          maxWidth: '100%'
         }}>
-          <div style={{ 
-            background: 'white', 
-            border: '1px solid #dcfce7',
-            padding: '8px 16px',
-            borderRadius: '8px',
-            minWidth: '100px',
-            textAlign: 'center',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-          }}>
-            <div style={{ fontSize: '12px', color: '#16a34a', marginBottom: '4px' }}>Entry</div>
-            <div style={{ color: '#16a34a', fontWeight: 600, fontSize: '16px' }}>
-              {entryIdx != null ? series[entryIdx].toFixed(2) : "—"}
-            </div>
-          </div>
-
-          <div style={{ 
-            background: 'white', 
-            border: '1px solid #dcfce7',
-            padding: '8px 16px',
-            borderRadius: '8px',
-            minWidth: '100px',
-            textAlign: 'center',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-          }}>
-            <div style={{ fontSize: '12px', color: '#16a34a', marginBottom: '4px' }}>Exit</div>
-            <div style={{ color: '#16a34a', fontWeight: 600, fontSize: '16px' }}>
-              {exitIdx != null ? series[exitIdx].toFixed(2) : "—"}
-            </div>
-          </div>
-
-          <div style={{ 
-            background: 'white', 
-            border: '1px solid #dcfce7',
-            padding: '8px 16px',
-            borderRadius: '8px',
-            minWidth: '100px',
-            textAlign: 'center',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-          }}>
-            <div style={{ fontSize: '12px', color: '#16a34a', marginBottom: '4px' }}>P/L $</div>
-            <div style={{ 
-              color: plValue != null ? (plValue >= 0 ? '#16a34a' : '#ef4444') : '#16a34a',
-              fontWeight: 600, 
-              fontSize: '16px' 
-            }}>
-              {plValue != null ? plValue.toFixed(2) : "—"}
-            </div>
-          </div>
-        </div>
-
-        <div className="le-row" style={{ margin: '16px 0', gap: '12px' }}>
+          {/* Capital input */}
           <div style={{ 
             display: 'flex', 
             alignItems: 'center', 
@@ -501,7 +464,8 @@ export default function EntryExitPositionSize(props: Props) {
             borderRadius: '8px',
             padding: '6px 12px',
             height: '40px',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+            flexShrink: 0
           }}>
             <span style={{ fontSize: '14px', color: '#16a34a', marginRight: '8px' }}>Capital $</span>
             <input
@@ -510,7 +474,7 @@ export default function EntryExitPositionSize(props: Props) {
               min={100}
               onChange={(e) => setCapital(Number(e.target.value))}
               style={{
-                width: '100px',
+                width: '80px',
                 border: '1px solid #dcfce7',
                 borderRadius: '6px',
                 padding: '4px 8px',
@@ -522,6 +486,7 @@ export default function EntryExitPositionSize(props: Props) {
             />
           </div>
 
+          {/* Position slider - more compact */}
           <div style={{ 
             display: 'flex', 
             alignItems: 'center',
@@ -530,7 +495,9 @@ export default function EntryExitPositionSize(props: Props) {
             borderRadius: '8px',
             padding: '6px 12px',
             height: '40px',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+            flexShrink: 0,
+            minWidth: '220px'
           }}>
             <span style={{ fontSize: '14px', color: '#16a34a', marginRight: '8px' }}>Position %</span>
             <input
@@ -540,8 +507,8 @@ export default function EntryExitPositionSize(props: Props) {
               value={positionPct}
               onChange={(e) => setPositionPct(Number(e.target.value))}
               style={{
-                width: '120px',
-                margin: '0 8px',
+                width: '80px',
+                margin: '0 6px',
                 WebkitAppearance: 'none',
                 height: '4px',
                 background: '#d1fae5',
@@ -550,7 +517,7 @@ export default function EntryExitPositionSize(props: Props) {
               }}
             />
             <span style={{ 
-              minWidth: '40px', 
+              minWidth: '35px', 
               textAlign: 'center', 
               fontSize: '14px',
               color: '#16a34a',
@@ -560,16 +527,72 @@ export default function EntryExitPositionSize(props: Props) {
             </span>
           </div>
 
-          <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
+          {/* Entry card */}
+          <div style={{ 
+            background: 'white', 
+            border: '1px solid #dcfce7',
+            padding: '8px 12px',
+            borderRadius: '8px',
+            minWidth: '80px',
+            textAlign: 'center',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+            flexShrink: 0
+          }}>
+            <div style={{ fontSize: '12px', color: '#16a34a', marginBottom: '4px' }}>Entry</div>
+            <div style={{ color: '#16a34a', fontWeight: 600, fontSize: '16px' }}>
+              {entryIdx != null ? series[entryIdx].toFixed(2) : "—"}
+            </div>
+          </div>
+
+          {/* Exit card */}
+          <div style={{ 
+            background: 'white', 
+            border: '1px solid #dcfce7',
+            padding: '8px 12px',
+            borderRadius: '8px',
+            minWidth: '80px',
+            textAlign: 'center',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+            flexShrink: 0
+          }}>
+            <div style={{ fontSize: '12px', color: '#16a34a', marginBottom: '4px' }}>Exit</div>
+            <div style={{ color: '#16a34a', fontWeight: 600, fontSize: '16px' }}>
+              {exitIdx != null ? series[exitIdx].toFixed(2) : "—"}
+            </div>
+          </div>
+
+          {/* P/L card */}
+          <div style={{ 
+            background: 'white', 
+            border: '1px solid #dcfce7',
+            padding: '8px 12px',
+            borderRadius: '8px',
+            minWidth: '80px',
+            textAlign: 'center',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+            flexShrink: 0
+          }}>
+            <div style={{ fontSize: '12px', color: '#16a34a', marginBottom: '4px' }}>P/L $</div>
+            <div style={{ 
+              color: plValue != null ? (plValue >= 0 ? '#16a34a' : '#ef4444') : '#16a34a',
+              fontWeight: 600, 
+              fontSize: '16px' 
+            }}>
+              {plValue != null ? plValue.toFixed(2) : "—"}
+            </div>
+          </div>
+
+          {/* Action buttons */}
+          <div style={{ display: 'flex', gap: '6px', marginLeft: 'auto', flexShrink: 0 }}>
             <button
               onClick={() => regenerate("up", length)}
               style={{
                 background: '#16a34a',
                 color: 'white',
                 border: 'none',
-                padding: '8px 16px',
+                padding: '6px 12px',
                 borderRadius: '6px',
-                fontSize: '14px',
+                fontSize: '13px',
                 cursor: 'pointer',
                 fontWeight: 500,
                 transition: 'all 0.2s'
@@ -585,9 +608,9 @@ export default function EntryExitPositionSize(props: Props) {
                 background: '#16a34a',
                 color: 'white',
                 border: 'none',
-                padding: '8px 16px',
+                padding: '6px 12px',
                 borderRadius: '6px',
-                fontSize: '14px',
+                fontSize: '13px',
                 cursor: 'pointer',
                 fontWeight: 500,
                 transition: 'all 0.2s'
@@ -603,9 +626,9 @@ export default function EntryExitPositionSize(props: Props) {
                 background: 'white',
                 border: '1px solid #dcfce7',
                 color: '#16a34a',
-                padding: '8px 16px',
+                padding: '6px 12px',
                 borderRadius: '6px',
-                fontSize: '14px',
+                fontSize: '13px',
                 cursor: 'pointer',
                 fontWeight: 500,
                 transition: 'all 0.2s'
@@ -627,9 +650,9 @@ export default function EntryExitPositionSize(props: Props) {
             cursor: "crosshair", 
             margin: '12px 0',
             width: '100%',
-            height: '300px',
             borderRadius: '8px',
-            background: '#fff5f7'
+            background: '#fff5f7',
+            display: 'block'
           }}
         />
 

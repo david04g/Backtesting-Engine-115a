@@ -122,15 +122,18 @@ export default function SlippageFeesExecution(props: Props) {
 
   const resultRef = useRef<HTMLDivElement | null>(null);
 
-  // draw on change
+  // draw on change - separated from canvas sizing
   useEffect(() => {
     const c = canvasRef.current;
     if (!c) return;
-    const ratio = window.devicePixelRatio || 1;
-    c.width = Math.floor((c.clientWidth || 900) * ratio);
-    c.height = Math.floor((c.clientHeight || 200) * ratio);
-    (c.style as any).width = `${c.clientWidth}px`;
-    (c.style as any).height = `${c.clientHeight}px`;
+    
+    // Set canvas size properly with fixed height
+    const displayWidth = c.clientWidth || 900;
+    const displayHeight = 300; // Fixed height
+    
+    // Set canvas dimensions to match display size
+    c.width = displayWidth;
+    c.height = displayHeight;
 
     // draw base series
     drawLineCanvas(c, series, { color: "#99d7ff" });
@@ -159,7 +162,40 @@ export default function SlippageFeesExecution(props: Props) {
       resultRef.current.style.color = net >= 0 ? "var(--good)" : "var(--bad)";
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [series, commission, slippageTicks, delaySteps, entryIndex, targetSellIndex]);
+  }, [series, entryIndex, targetSellIndex]); // Only depend on series and indices
+
+  // Separate effect for updating markers when parameters change
+  useEffect(() => {
+    const c = canvasRef.current;
+    if (!c) return;
+
+    // simulate actual sell index with delay + slippage (slippage as ticks)
+    const delay = delaySteps;
+    const randSign = Math.random() > 0.5 ? 1 : -1;
+    const actualSellIdx = Math.min(series.length - 1, targetSellIndex + delay + randSign * slippageTicks);
+
+    // Clear and redraw with new markers
+    drawLineCanvas(c, series, { color: "#99d7ff" });
+    drawLineCanvas(c, series, {
+      color: "#99d7ff",
+      markers: [
+        { i: entryIndex, color: "#22c55e", label: "Buy" },
+        { i: actualSellIdx, color: "#f59e0b", label: "Sell" },
+      ],
+    });
+    
+    // compute executed P/L
+    const buyPx = series[entryIndex];
+    const sellPx = series[actualSellIdx];
+    const net = sellPx - buyPx - commission * 2; // commission both sides
+    if (resultRef.current) {
+      resultRef.current.innerHTML = `Executed: Buy @ ${buyPx.toFixed(2)} → Sell @ ${sellPx.toFixed(2)} (idx ${actualSellIdx})<br/>Fees: $${(commission * 2).toFixed(
+        2
+      )} · Net P/L: $${net.toFixed(2)} (slippage ±${slippageTicks} ticks, delay ${delay} steps)`;
+      resultRef.current.style.color = net >= 0 ? "var(--good)" : "var(--bad)";
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [commission, slippageTicks, delaySteps]); // Only depend on simulation parameters
 
   const simulate = () => {
     // simply re-trigger useEffect by updating series reference (or call the same draw routine)
@@ -169,57 +205,185 @@ export default function SlippageFeesExecution(props: Props) {
   return (
     <section className="le-demo">
       <div className="le-card" aria-labelledby="exec-title">
-        <h2 id="exec-title" style={{ margin: 0, marginBottom: 6 }}>
-          Slippage, Fees, and Execution Timing
-        </h2>
-        <p className="le-small">Simulate executing an order immediately or delayed — see how slippage and fees change results.</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <div>
+            <h2 id="exec-title" style={{ margin: 0, fontSize: '20px', fontWeight: 600, color: '#1f2937' }}>
+              Slippage, Fees, and Execution Timing
+            </h2>
+            <p className="le-small" style={{ margin: '4px 0 0 0', color: '#6b7280' }}>
+              Simulate executing an order immediately or delayed — see how slippage and fees change results.
+            </p>
+          </div>
+        </div>
 
-        <div className="le-row" style={{ marginTop: 8 }}>
-          <span className="le-pill">
-            <span className="le-label">Commission $</span>
-            <select id="fee" value={commission} onChange={(e) => setCommission(Number(e.target.value))}>
+        {/* All controls on the same line */}
+        <div style={{ 
+          display: 'flex', 
+          gap: '12px', 
+          margin: '16px 0',
+          alignItems: 'center',
+          flexWrap: 'wrap'
+        }}>
+          {/* Commission dropdown */}
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            background: 'white',
+            border: '1px solid #dcfce7',
+            borderRadius: '8px',
+            padding: '6px 12px',
+            height: '40px',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+            flexShrink: 0
+          }}>
+            <span style={{ fontSize: '14px', color: '#16a34a', marginRight: '8px' }}>Commission $</span>
+            <select 
+              id="fee"
+              value={commission} 
+              onChange={(e) => setCommission(Number(e.target.value))}
+              style={{
+                border: '1px solid #dcfce7',
+                borderRadius: '6px',
+                padding: '4px 8px',
+                fontSize: '14px',
+                outline: 'none',
+                color: '#16a34a',
+                fontWeight: 500,
+                background: 'white'
+              }}
+            >
               <option value={0}>0</option>
               <option value={1}>1</option>
               <option value={5}>5</option>
             </select>
-          </span>
+          </div>
 
-          <span className="le-pill">
-            <span className="le-label">Slippage (ticks)</span>
+          {/* Slippage slider */}
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center',
+            background: 'white',
+            border: '1px solid #dcfce7',
+            borderRadius: '8px',
+            padding: '6px 12px',
+            height: '40px',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+            flexShrink: 0,
+            minWidth: '200px'
+          }}>
+            <span style={{ fontSize: '14px', color: '#16a34a', marginRight: '8px' }}>Slippage (ticks)</span>
             <input
               id="slip"
-              className="le-range"
               type="range"
               min={0}
               max={5}
               value={slippageTicks}
               onChange={(e) => setSlippageTicks(Number(e.target.value))}
-              style={{ width: 160 }}
+              style={{
+                width: '80px',
+                margin: '0 6px',
+                WebkitAppearance: 'none',
+                height: '4px',
+                background: '#d1fae5',
+                borderRadius: '2px',
+                outline: 'none',
+              }}
             />
-            <span style={{ marginLeft: 8 }}>{slippageTicks}</span>
-          </span>
+            <span style={{ 
+              minWidth: '20px', 
+              textAlign: 'center', 
+              fontSize: '14px',
+              color: '#16a34a',
+              fontWeight: 500
+            }}>
+              {slippageTicks}
+            </span>
+          </div>
 
-          <span className="le-pill">
-            <span className="le-label">Execution delay</span>
-            <select id="delay" value={delaySteps} onChange={(e) => setDelaySteps(Number(e.target.value))}>
+          {/* Execution delay dropdown */}
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            background: 'white',
+            border: '1px solid #dcfce7',
+            borderRadius: '8px',
+            padding: '6px 12px',
+            height: '40px',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+            flexShrink: 0
+          }}>
+            <span style={{ fontSize: '14px', color: '#16a34a', marginRight: '8px' }}>Execution delay</span>
+            <select 
+              id="delay"
+              value={delaySteps} 
+              onChange={(e) => setDelaySteps(Number(e.target.value))}
+              style={{
+                border: '1px solid #dcfce7',
+                borderRadius: '6px',
+                padding: '4px 8px',
+                fontSize: '14px',
+                outline: 'none',
+                color: '#16a34a',
+                fontWeight: 500,
+                background: 'white'
+              }}
+            >
               <option value={0}>Immediate</option>
               <option value={1}>1 step</option>
               <option value={3}>3 steps</option>
             </select>
-          </span>
+          </div>
 
-          <button className="le-primary" id="exec-run" onClick={simulate}>
+          {/* Simulate button */}
+          <button 
+            id="exec-run"
+            onClick={simulate}
+            style={{
+              background: '#16a34a',
+              color: 'white',
+              border: 'none',
+              padding: '8px 16px',
+              borderRadius: '6px',
+              fontSize: '14px',
+              cursor: 'pointer',
+              fontWeight: 500,
+              transition: 'all 0.2s',
+              flexShrink: 0
+            }}
+            onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
+            onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+          >
             Simulate
           </button>
         </div>
 
         <div className="le-row">
           <div style={{ flex: 1 }}>
-            <canvas ref={canvasRef} className="le-canvas" aria-label="Execution chart" style={{ height: 200 }} />
+            <canvas ref={canvasRef} className="le-canvas" aria-label="Execution chart" style={{ 
+              height: 300, 
+              width: '100%',
+              borderRadius: '8px',
+              background: '#fff5f7',
+              cursor: 'crosshair'
+            }} />
           </div>
         </div>
 
-        <div className="le-result" ref={resultRef} style={{ marginTop: 8 }}>
+        <div 
+          className="le-result" 
+          ref={resultRef} 
+          style={{ 
+            marginTop: 12,
+            padding: '12px 16px',
+            background: 'white',
+            border: '1px solid #dcfce7',
+            borderRadius: '8px',
+            fontSize: '14px',
+            color: '#16a34a',
+            fontWeight: 500,
+            boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+          }}
+        >
           Result: —
         </div>
       </div>
