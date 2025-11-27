@@ -1147,7 +1147,6 @@ async def get_drag_and_drop_root(request: Request):
 
 @app.get("/api/ticker/{ticker}/history")
 async def get_ticker_history(ticker: str, period: str = "1mo", interval: str = "1d"):
-    """Get historical price data for a ticker"""
     if yf is None:
         return JSONResponse(
             status_code=500,
@@ -1219,10 +1218,7 @@ async def run_buy_and_hold_markers(request: Request):
         start_dt = datetime.fromisoformat(start_date)
         end_dt = datetime.fromisoformat(end_date)
     except Exception:
-        return {
-            "status": "error",
-            "message": "Invalid date format. Use YYYY-MM-DD",
-        }
+        return {"status": "error", "message": "Invalid date format. Use YYYY-MM-DD"}
 
     if start_dt >= end_dt:
         return {"status": "error", "message": "Buy date must be before sell date"}
@@ -1235,77 +1231,55 @@ async def run_buy_and_hold_markers(request: Request):
             progress=False,
             auto_adjust=True,
         )
-    except Exception as exc:
-        return {"status": "error", "message": f"Data fetch failed: {exc}"}
+    except Exception as e:
+        return {"status": "error", "message": f"Data fetch failed: {e}"}
 
     if hist is None or hist.empty:
-        return {
-            "status": "error",
-            "message": "No data returned for ticker/date range",
-        }
+        return {"status": "error", "message": "No data returned for ticker/date range"}
 
-    prices_series = None
     if isinstance(hist.columns, pd.MultiIndex):
-        if ("Close", ticker) in hist.columns:
-            prices_series = hist[("Close", ticker)]
-        else:
-            close_candidates = [col for col in hist.columns if str(col[0]).lower() == "close"]
-            if close_candidates:
-                prices_series = hist[close_candidates[0]]
+        possible = [c for c in hist.columns if c[0].lower() == "close"]
+        if not possible:
+            return {"status": "error", "message": "Unable to find closing prices (multi-index)"}
+        prices = hist[possible[0]]
     else:
-        if "Close" in hist.columns:
-            prices_series = hist["Close"]
-
-    if prices_series is None:
-        return {
-            "status": "error",
-            "message": "Unable to determine closing prices for ticker",
-        }
-
-    if isinstance(prices_series, pd.DataFrame):
-        if prices_series.shape[1] == 1:
-            prices = prices_series.iloc[:, 0]
-        else:
-            return {
-                "status": "error",
-                "message": "Ambiguous closing price data returned",
-            }
-    else:
-        prices = prices_series
+        if "Close" not in hist.columns:
+            return {"status": "error", "message": "Unable to find closing prices"}
+        prices = hist["Close"]
 
     prices = prices.dropna()
     if prices.empty:
-        return {"status": "error", "message": "No closing prices available"}
+        return {"status": "error", "message": "No valid closing prices"}
 
     buy_price = float(payload.get("entry_price")) if payload.get("entry_price") else float(prices.iloc[0])
     sell_price = float(payload.get("exit_price")) if payload.get("exit_price") else float(prices.iloc[-1])
-    
-    position_capital = capital * (position_percent / 100.0)
-    shares = (position_capital - commission_dollars) / buy_price if buy_price > 0 else 0.0
-    
-    total_trading_costs = 2 * commission_dollars
-    
-    final_value = (shares * sell_price) - total_trading_costs
-    total_return_pct = (((final_value - position_capital) / position_capital) * 100.0) if position_capital > 0 else 0.0
 
-    series: List[Dict[str, Any]] = []
+    position_capital = capital * (position_percent / 100.0)
+
+    shares = position_capital / buy_price if buy_price > 0 else 0.0
+
+    gross_value = shares * sell_price
+    gross_pl = gross_value - position_capital
+
+    total_trading_costs = commission_dollars * 2
+    net_pl = gross_pl - total_trading_costs
+    final_value = position_capital + net_pl     
+
+    total_return_pct = ((final_value - position_capital) / position_capital) * 100.0 if position_capital > 0 else 0.0
+
+    series = []
+    first_price = prices.iloc[0]
+    last_price = prices.iloc[-1]
+
     for idx, price in prices.items():
-        value = float(price) * shares
-        date_str = idx.strftime("%Y-%m-%d") if hasattr(idx, "strftime") else str(idx)
-        
-        is_entry = bool(price == prices.iloc[0])
-        is_exit = bool(price == prices.iloc[-1])
-        
-        series.append(
-            {
-                "date": date_str,
-                "price": float(price),
-                "value": round(value, 2),
-                "is_entry": is_entry,
-                "is_exit": is_exit,
-                "shares": float(shares)
-            }
-        )
+        series.append({
+            "date": idx.strftime("%Y-%m-%d"),
+            "price": float(price),
+            "value": round(float(price) * shares, 2),
+            "is_entry": bool(price == first_price),
+            "is_exit": bool(price == last_price),
+            "shares": float(shares),
+        })
 
     return {
         "status": "success",
