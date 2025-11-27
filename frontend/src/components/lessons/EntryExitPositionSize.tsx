@@ -1,11 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
 
-/**
- * EntryExitPositionSize.tsx
- * - Pixel-faithful port of Module C (Entry / Exit / Position Size)
- * - Self-contained CSS injection so visual matches original demo
- */
-
 type Props = {
   // Optionally pass a precomputed price series; otherwise component generates one
   initialSeries?: number[];
@@ -19,183 +13,6 @@ type Props = {
     pl: number | null;
   }) => void;
 };
-
-function injectStylesOnce() {
-  if (typeof document === "undefined") return;
-  if (document.getElementById("level0-demo-styles")) return;
-  const css = `
-  /* Modern light theme styles */
-  :root {
-    --bg: #f8f9fa;
-    --panel: #ffffff;
-    --muted: #6c757d;
-    --text: #212529;
-    --accent: #4dabf7;
-    --good: #40c057;
-    --bad: #fa5252;
-    --warn: #fcc419;
-    --border: #e9ecef;
-    --chart-bg: #fff5f7;
-    --chart-line: #4dabf7;
-    --pill-bg: #f1f3f5;
-    --pill-border: #e9ecef;
-  }
-  
-  .le-demo { 
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
-    color: var(--text);
-    background: var(--bg);
-    padding: 16px;
-    border-radius: 12px;
-  }
-  
-  .le-card { 
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 12px; 
-    padding: 20px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-  }
-  
-  .le-row { 
-    display: flex; 
-    gap: 12px; 
-    align-items: center; 
-    flex-wrap: wrap; 
-    margin-bottom: 12px;
-  }
-  
-  .le-pill { 
-    background: var(--pill-bg);
-    border: 1px solid var(--pill-border);
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 14px;
-    color: var(--text);
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    height: 36px;
-    box-sizing: border-box;
-  }
-  
-  .le-pill input, 
-  .le-pill select {
-    background: white;
-    border: 1px solid var(--border);
-    color: var(--text);
-    padding: 4px 8px;
-    border-radius: 6px;
-    font-size: 14px;
-    outline: none;
-  }
-  
-  .le-pill input:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 2px rgba(77, 171, 247, 0.2);
-  }
-  
-  .le-range {
-    -webkit-appearance: none;
-    width: 120px;
-    height: 4px;
-    background: #dee2e6;
-    border-radius: 2px;
-    outline: none;
-    margin: 0 8px;
-  }
-  
-  .le-range::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 16px;
-    height: 16px;
-    background: var(--accent);
-    border-radius: 50%;
-    cursor: pointer;
-  }
-  
-  .le-canvas { 
-    width: 100%; 
-    height: 240px; 
-    background: var(--chart-bg);
-    border-radius: 8px; 
-    border: 1px solid var(--border);
-    display: block;
-    margin: 12px 0;
-  }
-  
-  .le-mono { 
-    font-family: 'Roboto Mono', Menlo, Monaco, Consolas, monospace; 
-    color: var(--text);
-  }
-  
-  .le-small { 
-    font-size: 12px; 
-    color: var(--muted);
-    margin-right: 4px;
-  }
-  
-  .le-summary-row { 
-    display: flex; 
-    gap: 12px; 
-    margin-top: 16px;
-    flex-wrap: wrap;
-  }
-  
-  .le-summary { 
-    background: var(--pill-bg);
-    border: 1px solid var(--pill-border);
-    padding: 8px 16px;
-    border-radius: 20px;
-    min-width: 100px;
-    text-align: center;
-  }
-  
-  .le-summary b { 
-    display: block; 
-    font-size: 16px; 
-    margin-top: 4px;
-    font-weight: 500;
-  }
-  
-  .le-btn-clear { 
-    background: transparent;
-    border: 1px solid var(--border);
-    padding: 6px 16px;
-    border-radius: 20px;
-    color: var(--text);
-    cursor: pointer;
-    font-size: 14px;
-    transition: all 0.2s;
-  }
-  
-  .le-btn-clear:hover {
-    background: var(--pill-bg);
-  }
-  
-  .le-primary {
-    background: var(--accent);
-    border: none;
-    padding: 8px 16px;
-    border-radius: 20px;
-    color: white;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-    transition: all 0.2s;
-  }
-  
-  .le-primary:hover {
-    opacity: 0.9;
-    transform: translateY(-1px);
-  }`;
-  const el = document.createElement("style");
-  el.id = "level0-demo-styles";
-  el.innerHTML = css;
-  document.head.appendChild(el);
-}
-
-/* ---- small helpers (same logic as the original demo) ---- */
 
 function genSeries(len = 80, mode: "flat" | "up" | "down" = "flat") {
   const out: number[] = [];
@@ -327,11 +144,7 @@ function drawLineCanvas(
   }
 }
 
-/* -------------------- Component -------------------- */
-
 export default function EntryExitPositionSize(props: Props) {
-  injectStylesOnce();
-
   const length = props.length ?? 80;
   const initialMode = props.initialMode ?? "flat";
 
@@ -433,208 +246,90 @@ export default function EntryExitPositionSize(props: Props) {
   const plValue = computePL();
 
   return (
-    <div className="le-demo">
-      <section className="le-card" aria-labelledby="entry-exit-title">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+    <div className="p-6">
+      <section className="bg-white rounded-lg shadow-sm border border-gray-100 p-6" aria-labelledby="entry-exit-title">
+        <div className="flex justify-between items-center mb-4">
           <div>
-            <h2 id="entry-exit-title" style={{ margin: 0, fontSize: '20px', fontWeight: 600, color: '#1f2937' }}>
+            <h2 id="entry-exit-title" className="text-xl font-semibold text-gray-800 mb-1">
               Entry / Exit / Position Size
             </h2>
-            <p className="le-small" style={{ margin: '4px 0 0 0', color: '#6b7280' }}>
+            <p className="text-sm text-gray-600">
               Pick an entry price and exit price on the chart; choose a position size to see P/L and risk.
             </p>
           </div>
         </div>
 
         {/* All controls on the same line */}
-        <div style={{ 
-          display: 'flex', 
-          gap: '12px', 
-          margin: '16px 0',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          maxWidth: '100%'
-        }}>
+        <div className="flex gap-3 my-4 items-center flex-wrap">
           {/* Capital input */}
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            background: 'white',
-            border: '1px solid #dcfce7',
-            borderRadius: '8px',
-            padding: '6px 12px',
-            height: '40px',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-            flexShrink: 0
-          }}>
-            <span style={{ fontSize: '14px', color: '#16a34a', marginRight: '8px' }}>Capital $</span>
+          <div className="flex items-center bg-white border border-green-200 rounded-lg px-3 py-2 h-10 shadow-sm flex-shrink-0">
+            <span className="text-sm text-green-600 mr-2">Capital $</span>
             <input
               type="number"
               value={capital}
               min={100}
               onChange={(e) => setCapital(Number(e.target.value))}
-              style={{
-                width: '80px',
-                border: '1px solid #dcfce7',
-                borderRadius: '6px',
-                padding: '4px 8px',
-                fontSize: '14px',
-                outline: 'none',
-                color: '#16a34a',
-                fontWeight: 500
-              }}
+              className="w-20 border border-green-200 rounded-md px-2 py-1 text-sm outline-none text-green-600 font-medium"
             />
           </div>
 
-          {/* Position slider - more compact */}
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center',
-            background: 'white',
-            border: '1px solid #dcfce7',
-            borderRadius: '8px',
-            padding: '6px 12px',
-            height: '40px',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-            flexShrink: 0,
-            minWidth: '220px'
-          }}>
-            <span style={{ fontSize: '14px', color: '#16a34a', marginRight: '8px' }}>Position %</span>
+          {/* Position slider */}
+          <div className="flex items-center bg-white border border-green-200 rounded-lg px-3 py-2 h-10 shadow-sm flex-shrink-0 min-w-[220px]">
+            <span className="text-sm text-green-600 mr-2">Position %</span>
             <input
               type="range"
               min={1}
               max={100}
               value={positionPct}
               onChange={(e) => setPositionPct(Number(e.target.value))}
-              style={{
-                width: '80px',
-                margin: '0 6px',
-                WebkitAppearance: 'none',
-                height: '4px',
-                background: '#d1fae5',
-                borderRadius: '2px',
-                outline: 'none',
-              }}
+              className="w-20 mx-1.5 appearance-none h-1 bg-green-100 rounded-md outline-none"
             />
-            <span style={{ 
-              minWidth: '35px', 
-              textAlign: 'center', 
-              fontSize: '14px',
-              color: '#16a34a',
-              fontWeight: 500
-            }}>
+            <span className="min-w-[35px] text-center text-sm text-green-600 font-medium">
               {positionPct}%
             </span>
           </div>
 
           {/* Entry card */}
-          <div style={{ 
-            background: 'white', 
-            border: '1px solid #dcfce7',
-            padding: '8px 12px',
-            borderRadius: '8px',
-            minWidth: '80px',
-            textAlign: 'center',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-            flexShrink: 0
-          }}>
-            <div style={{ fontSize: '12px', color: '#16a34a', marginBottom: '4px' }}>Entry</div>
-            <div style={{ color: '#16a34a', fontWeight: 600, fontSize: '16px' }}>
-              {entryIdx != null ? series[entryIdx].toFixed(2) : "—"}
+          <div className="bg-white border border-green-200 rounded-lg px-4 py-2 min-w-[80px] text-center shadow-sm flex-shrink-0">
+            <div className="text-xs text-green-600 mb-1">Entry</div>
+            <div className="text-green-600 font-semibold text-base">
+              {entryIdx != null ? series[entryIdx].toFixed(2) : "—" }
             </div>
           </div>
 
           {/* Exit card */}
-          <div style={{ 
-            background: 'white', 
-            border: '1px solid #dcfce7',
-            padding: '8px 12px',
-            borderRadius: '8px',
-            minWidth: '80px',
-            textAlign: 'center',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-            flexShrink: 0
-          }}>
-            <div style={{ fontSize: '12px', color: '#16a34a', marginBottom: '4px' }}>Exit</div>
-            <div style={{ color: '#16a34a', fontWeight: 600, fontSize: '16px' }}>
-              {exitIdx != null ? series[exitIdx].toFixed(2) : "—"}
+          <div className="bg-white border border-green-200 rounded-lg px-4 py-2 min-w-[80px] text-center shadow-sm flex-shrink-0">
+            <div className="text-xs text-green-600 mb-1">Exit</div>
+            <div className="text-green-600 font-semibold text-base">
+              {exitIdx != null ? series[exitIdx].toFixed(2) : "—" }
             </div>
           </div>
 
           {/* P/L card */}
-          <div style={{ 
-            background: 'white', 
-            border: '1px solid #dcfce7',
-            padding: '8px 12px',
-            borderRadius: '8px',
-            minWidth: '80px',
-            textAlign: 'center',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-            flexShrink: 0
-          }}>
-            <div style={{ fontSize: '12px', color: '#16a34a', marginBottom: '4px' }}>P/L $</div>
-            <div style={{ 
-              color: plValue != null ? (plValue >= 0 ? '#16a34a' : '#ef4444') : '#16a34a',
-              fontWeight: 600, 
-              fontSize: '16px' 
-            }}>
-              {plValue != null ? plValue.toFixed(2) : "—"}
+          <div className="bg-white border border-green-200 rounded-lg px-4 py-2 min-w-[80px] text-center shadow-sm flex-shrink-0">
+            <div className="text-xs text-green-600 mb-1">P/L $</div>
+            <div className={`font-semibold text-base ${plValue != null ? (plValue >= 0 ? 'text-green-600' : 'text-red-500') : 'text-green-600'}`}>
+              {plValue != null ? plValue.toFixed(2) : "—" }
             </div>
           </div>
 
           {/* Action buttons */}
-          <div style={{ display: 'flex', gap: '6px', marginLeft: 'auto', flexShrink: 0 }}>
+          <div className="flex gap-1.5 ml-auto flex-shrink-0">
             <button
               onClick={() => regenerate("up", length)}
-              style={{
-                background: '#16a34a',
-                color: 'white',
-                border: 'none',
-                padding: '6px 12px',
-                borderRadius: '6px',
-                fontSize: '13px',
-                cursor: 'pointer',
-                fontWeight: 500,
-                transition: 'all 0.2s'
-              }}
-              onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
-              onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+              className="bg-green-600 text-white border-none px-4 py-2 rounded-md text-sm cursor-pointer font-medium transition-opacity hover:opacity-90"
             >
               Generate Uptrend
             </button>
             <button
               onClick={() => regenerate("down", length)}
-              style={{
-                background: '#16a34a',
-                color: 'white',
-                border: 'none',
-                padding: '6px 12px',
-                borderRadius: '6px',
-                fontSize: '13px',
-                cursor: 'pointer',
-                fontWeight: 500,
-                transition: 'all 0.2s'
-              }}
-              onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
-              onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+              className="bg-green-600 text-white border-none px-4 py-2 rounded-md text-sm cursor-pointer font-medium transition-opacity hover:opacity-90"
             >
               Generate Downtrend
             </button>
             <button 
               onClick={clearMarks}
-              style={{
-                background: 'white',
-                border: '1px solid #dcfce7',
-                color: '#16a34a',
-                padding: '6px 12px',
-                borderRadius: '6px',
-                fontSize: '13px',
-                cursor: 'pointer',
-                fontWeight: 500,
-                transition: 'all 0.2s'
-              }}
-              onMouseOver={(e) => e.currentTarget.style.background = '#f0fdf4'}
-              onMouseOut={(e) => e.currentTarget.style.background = 'white'}
+              className="bg-white border border-green-200 text-green-600 px-4 py-2 rounded-md text-sm cursor-pointer font-medium transition-colors hover:bg-green-50"
             >
               Clear Marks
             </button>
@@ -643,64 +338,13 @@ export default function EntryExitPositionSize(props: Props) {
 
         <canvas
           ref={canvasRef}
-          className="le-canvas"
+          className="w-full rounded-lg bg-pink-50 cursor-crosshair"
+          style={{ height: 300 }}
           onClick={onCanvasClick}
           aria-label="Entry/Exit chart"
-          style={{ 
-            cursor: "crosshair", 
-            margin: '12px 0',
-            width: '100%',
-            borderRadius: '8px',
-            background: '#fff5f7',
-            display: 'block'
-          }}
         />
 
-        <div className="le-summary-row" style={{ marginTop: '20px' }}>
-          <div className="le-summary" style={{ background: 'white', border: '1px solid #e5e7eb' }}>
-            <div className="le-small" style={{ color: '#6b7280' }}>Entry</div>
-            <b id="entry-val" style={{ color: '#10b981', fontSize: '16px' }}>
-              {entryIdx != null ? series[entryIdx].toFixed(2) : "—"}
-            </b>
-          </div>
-
-          <div className="le-summary" style={{ background: 'white', border: '1px solid #e5e7eb' }}>
-            <div className="le-small" style={{ color: '#6b7280' }}>Exit</div>
-            <b id="exit-val" style={{ color: '#f59e0b', fontSize: '16px' }}>
-              {exitIdx != null ? series[exitIdx].toFixed(2) : "—"}
-            </b>
-          </div>
-
-          <div className="le-summary" style={{ background: 'white', border: '1px solid #e5e7eb' }}>
-            <div className="le-small" style={{ color: '#6b7280' }}>P/L $</div>
-            <b 
-              id="pl-val" 
-              style={{ 
-                color: plValue != null ? (plValue >= 0 ? '#10b981' : '#ef4444') : '#6b7280',
-                fontSize: '16px'
-              }}
-            >
-              {plValue != null ? plValue.toFixed(2) : "—"}
-            </b>
-          </div>
-
-          <div className="le-summary" style={{ background: 'white', border: '1px solid #e5e7eb' }}>
-            <div className="le-small" style={{ color: '#6b7280' }}>Position $</div>
-            <b style={{ fontSize: '16px', color: '#1f2937' }}>
-              {(capital * (positionPct / 100)).toFixed(2)}
-            </b>
-          </div>
-        </div>
-
-        <div className="le-result" style={{ 
-          marginTop: '16px', 
-          padding: '12px', 
-          background: '#f8fafc', 
-          border: '1px solid #e2e8f0',
-          borderRadius: '8px',
-          color: '#4b5563',
-          fontSize: '14px'
-        }}>
+        <div className="mt-5 p-3 bg-gray-50 rounded-lg text-sm text-gray-600">
           Tip: Position size controls how much capital is exposed. Larger size → larger potential gain or loss.
         </div>
       </section>

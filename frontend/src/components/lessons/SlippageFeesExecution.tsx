@@ -1,11 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
 
-/**
- * SlippageFeesExecution.tsx
- * - Pixel-faithful port of Module D (Slippage, Fees, Execution Timing)
- * - Injects required CSS (same as EntryExitPositionSize)
- */
-
 type Props = {
   // optionally receive the same price series or entry/exit indices from parent
   series?: number[];
@@ -13,12 +7,7 @@ type Props = {
   exitIndex?: number | null;
 };
 
-function injectStylesOnce_Slippage() {
-  if (typeof document === "undefined") return;
-  if (document.getElementById("level0-demo-styles")) return; // already injected by previous component
-}
 
-/* reuse the same drawLineCanvas & genSeries helpers as in EntryExitPositionSize */
 function genSeries(len = 80, mode: "flat" | "up" | "down" = "flat") {
   const out: number[] = [];
   let p = 100;
@@ -107,8 +96,6 @@ function drawLineCanvas(
 }
 
 export default function SlippageFeesExecution(props: Props) {
-  injectStylesOnce_Slippage();
-
   const [series, setSeries] = useState<number[]>(() => props.series ?? genSeries(80, "flat"));
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -203,54 +190,29 @@ export default function SlippageFeesExecution(props: Props) {
   };
 
   return (
-    <section className="le-demo">
-      <div className="le-card" aria-labelledby="exec-title">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+    <section className="p-6">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6" aria-labelledby="exec-title">
+        <div className="flex justify-between items-center mb-4">
           <div>
-            <h2 id="exec-title" style={{ margin: 0, fontSize: '20px', fontWeight: 600, color: '#1f2937' }}>
+            <h2 id="exec-title" className="text-xl font-semibold text-gray-800 mb-1">
               Slippage, Fees, and Execution Timing
             </h2>
-            <p className="le-small" style={{ margin: '4px 0 0 0', color: '#6b7280' }}>
+            <p className="text-sm text-gray-600">
               Simulate executing an order immediately or delayed — see how slippage and fees change results.
             </p>
           </div>
         </div>
 
         {/* All controls on the same line */}
-        <div style={{ 
-          display: 'flex', 
-          gap: '12px', 
-          margin: '16px 0',
-          alignItems: 'center',
-          flexWrap: 'wrap'
-        }}>
+        <div className="flex gap-3 my-4 items-center flex-wrap">
           {/* Commission dropdown */}
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            background: 'white',
-            border: '1px solid #dcfce7',
-            borderRadius: '8px',
-            padding: '6px 12px',
-            height: '40px',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-            flexShrink: 0
-          }}>
-            <span style={{ fontSize: '14px', color: '#16a34a', marginRight: '8px' }}>Commission $</span>
+          <div className="flex items-center bg-white border border-green-200 rounded-lg px-3 py-2 h-10 shadow-sm flex-shrink-0">
+            <span className="text-sm text-green-600 mr-2">Commission $</span>
             <select 
               id="fee"
               value={commission} 
               onChange={(e) => setCommission(Number(e.target.value))}
-              style={{
-                border: '1px solid #dcfce7',
-                borderRadius: '6px',
-                padding: '4px 8px',
-                fontSize: '14px',
-                outline: 'none',
-                color: '#16a34a',
-                fontWeight: 500,
-                background: 'white'
-              }}
+              className="border border-green-200 rounded-md px-2 py-1 text-sm outline-none text-green-600 font-medium bg-white"
             >
               <option value={0}>0</option>
               <option value={1}>1</option>
@@ -259,19 +221,8 @@ export default function SlippageFeesExecution(props: Props) {
           </div>
 
           {/* Slippage slider */}
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center',
-            background: 'white',
-            border: '1px solid #dcfce7',
-            borderRadius: '8px',
-            padding: '6px 12px',
-            height: '40px',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-            flexShrink: 0,
-            minWidth: '200px'
-          }}>
-            <span style={{ fontSize: '14px', color: '#16a34a', marginRight: '8px' }}>Slippage (ticks)</span>
+          <div className="flex items-center bg-white border border-green-200 rounded-lg px-3 py-2 h-10 shadow-sm flex-shrink-0 min-w-[200px]">
+            <span className="text-sm text-green-600 mr-2">Slippage (ticks)</span>
             <input
               id="slip"
               type="range"
@@ -279,54 +230,21 @@ export default function SlippageFeesExecution(props: Props) {
               max={5}
               value={slippageTicks}
               onChange={(e) => setSlippageTicks(Number(e.target.value))}
-              style={{
-                width: '80px',
-                margin: '0 6px',
-                WebkitAppearance: 'none',
-                height: '4px',
-                background: '#d1fae5',
-                borderRadius: '2px',
-                outline: 'none',
-              }}
+              className="w-20 mx-1.5 appearance-none h-1 bg-green-100 rounded-md outline-none"
             />
-            <span style={{ 
-              minWidth: '20px', 
-              textAlign: 'center', 
-              fontSize: '14px',
-              color: '#16a34a',
-              fontWeight: 500
-            }}>
+            <span className="min-w-[20px] text-center text-sm text-green-600 font-medium">
               {slippageTicks}
             </span>
           </div>
 
           {/* Execution delay dropdown */}
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            background: 'white',
-            border: '1px solid #dcfce7',
-            borderRadius: '8px',
-            padding: '6px 12px',
-            height: '40px',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-            flexShrink: 0
-          }}>
-            <span style={{ fontSize: '14px', color: '#16a34a', marginRight: '8px' }}>Execution delay</span>
+          <div className="flex items-center bg-white border border-green-200 rounded-lg px-3 py-2 h-10 shadow-sm flex-shrink-0">
+            <span className="text-sm text-green-600 mr-2">Execution delay</span>
             <select 
               id="delay"
               value={delaySteps} 
               onChange={(e) => setDelaySteps(Number(e.target.value))}
-              style={{
-                border: '1px solid #dcfce7',
-                borderRadius: '6px',
-                padding: '4px 8px',
-                fontSize: '14px',
-                outline: 'none',
-                color: '#16a34a',
-                fontWeight: 500,
-                background: 'white'
-              }}
+              className="border border-green-200 rounded-md px-2 py-1 text-sm outline-none text-green-600 font-medium bg-white"
             >
               <option value={0}>Immediate</option>
               <option value={1}>1 step</option>
@@ -338,51 +256,21 @@ export default function SlippageFeesExecution(props: Props) {
           <button 
             id="exec-run"
             onClick={simulate}
-            style={{
-              background: '#16a34a',
-              color: 'white',
-              border: 'none',
-              padding: '8px 16px',
-              borderRadius: '6px',
-              fontSize: '14px',
-              cursor: 'pointer',
-              fontWeight: 500,
-              transition: 'all 0.2s',
-              flexShrink: 0
-            }}
-            onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
-            onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+            className="bg-green-600 text-white border-none px-4 py-2 rounded-md text-sm cursor-pointer font-medium transition-opacity hover:opacity-90 flex-shrink-0"
           >
             Simulate
           </button>
         </div>
 
-        <div className="le-row">
-          <div style={{ flex: 1 }}>
-            <canvas ref={canvasRef} className="le-canvas" aria-label="Execution chart" style={{ 
-              height: 300, 
-              width: '100%',
-              borderRadius: '8px',
-              background: '#fff5f7',
-              cursor: 'crosshair'
-            }} />
+        <div className="flex">
+          <div className="flex-1">
+            <canvas ref={canvasRef} className="w-full rounded-lg bg-pink-50 cursor-crosshair" style={{ height: 300 }} aria-label="Execution chart" />
           </div>
         </div>
 
         <div 
-          className="le-result" 
+          className="le-result mt-3 p-3 bg-white border border-green-200 rounded-lg text-sm text-green-600 font-medium shadow-sm"
           ref={resultRef} 
-          style={{ 
-            marginTop: 12,
-            padding: '12px 16px',
-            background: 'white',
-            border: '1px solid #dcfce7',
-            borderRadius: '8px',
-            fontSize: '14px',
-            color: '#16a34a',
-            fontWeight: 500,
-            boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-          }}
         >
           Result: —
         </div>
