@@ -146,9 +146,11 @@ const Chart: React.FC<{
     value: number; 
     is_entry?: boolean; 
     is_exit?: boolean; 
-    price?: number 
-  }[] 
-}> = ({ data }) => {
+    price: number 
+  }[];
+  entryPrice?: string;
+  exitPrice?: string;
+}> = ({ data, entryPrice, exitPrice }) => {
   const { path, min, max, range } = useMemo(() => {
     if (!data.length) {
       return { path: '', min: 0, max: 0, range: 1 };
@@ -237,39 +239,129 @@ const Chart: React.FC<{
         strokeLinecap="round"
       />
       
-      {data.map((point, index) => {
-        if (!point.is_entry && !point.is_exit) return null;
+      {(() => {
+        const markers = [];
         
-        const x = data.length === 1 ? 300 : (index / (data.length - 1)) * 600;
-        const y = ((max - point.value) / range) * 300;
+        // First, show backend-provided entry/exit points
+        const backendMarkers = data
+          .filter(point => point.is_entry || point.is_exit)
+          .map((point, index) => {
+            const dataIndex = data.findIndex(p => p === point);
+            const x = data.length === 1 ? 300 : (dataIndex / (data.length - 1)) * 600;
+            const y = ((max - point.price) / range) * 300;
+            console.log('Backend marker:', point.price);
+            
+            return (
+              <g key={`backend-${point.date}-${index}`}>
+                <circle
+                  cx={x}
+                  cy={y}
+                  r="6"
+                  fill={point.is_entry ? "#4CAF50" : "#F44336"}
+                  stroke="white"
+                  strokeWidth="2"
+                />
+                <text
+                  x={x}
+                  y={y - 10}
+                  textAnchor="middle"
+                  fontSize="12"
+                  fill={point.is_entry ? "#4CAF50" : "#F44336"}
+                  fontWeight="bold"
+                >
+                  {point.is_entry ? 'BUY' : 'SELL'} ${point.price.toFixed(2)}
+                </text>
+              </g>
+            );
+          });
         
-        return (
-          <g key={`${point.date}-${point.is_entry ? 'entry' : 'exit'}`}>
-            <circle
-              cx={x}
-              cy={y}
-              r="6"
-              fill={point.is_entry ? "#4CAF50" : "#F44336"}
-              stroke="white"
-              strokeWidth="2"
-            />
-            <text
-              x={x}
-              y={y - 10}
-              textAnchor="middle"
-              fontSize="12"
-              fill={point.is_entry ? "#4CAF50" : "#F44336"}
-              fontWeight="bold"
-            >
-              {point.is_entry ? 'BUY' : 'SELL'} ${point.price?.toFixed(2) || ''}
-            </text>
-          </g>
-        );
-      })}
+        // Then, show user-entered price markers if they exist and are different from backend markers
+        if (entryPrice) {
+          const entryPriceNum = parseFloat(entryPrice);
+          console.log('entryPriceNum:', entryPriceNum);
+          if (!isNaN(entryPriceNum)) {
+            // Find the data point with portfolio value closest to entry price
+            const closestEntryPoint = data.reduce((closest, point, index) => {
+              const currentDiff = Math.abs(point.price - entryPriceNum);
+              const closestDiff = Math.abs(closest.price - entryPriceNum);
+              return currentDiff < closestDiff ? point : closest;
+            }, data[0]);
+            
+            const entryIndex = data.findIndex(p => p === closestEntryPoint);
+            const x = data.length === 1 ? 300 : (entryIndex / (data.length - 1)) * 600;
+            const y = ((max - closestEntryPoint.value) / range) * 300;
+            console.log("value:", closestEntryPoint.value);
+            
+            markers.push(
+              <g key="user-entry-marker">
+                <circle
+                  cx={x}
+                  cy={y}
+                  r="6"
+                  fill="#4CAF50"
+                  stroke="white"
+                  strokeWidth="2"
+                />
+                <text
+                  x={x}
+                  y={y - 10}
+                  textAnchor="middle"
+                  fontSize="12"
+                  fill="#4CAF50"
+                  fontWeight="bold"
+                >
+                  BUY ${closestEntryPoint.price.toFixed(2)}
+                </text>
+              </g>
+            );
+          }
+        }
+        
+        if (exitPrice) {
+          const exitPriceNum = parseFloat(exitPrice);
+          if (!isNaN(exitPriceNum)) {
+            // Find the data point with portfolio value closest to exit price
+            const closestExitPoint = data.reduce((closest, point, index) => {
+              const currentDiff = Math.abs(point.price - exitPriceNum);
+              const closestDiff = Math.abs(closest.price - exitPriceNum);
+              return currentDiff < closestDiff ? point : closest;
+            }, data[0]);
+            
+            const exitIndex = data.findIndex(p => p === closestExitPoint);
+            const x = data.length === 1 ? 300 : (exitIndex / (data.length - 1)) * 600;
+            const y = ((max - closestExitPoint.value) / range) * 300;
+            console.log('value:', closestExitPoint.value);
+            
+            markers.push(
+              <g key="user-exit-marker">
+                <circle
+                  cx={x}
+                  cy={y}
+                  r="6"
+                  fill="#F44336"
+                  stroke="white"
+                  strokeWidth="2"
+                />
+                <text
+                  x={x}
+                  y={y - 10}
+                  textAnchor="middle"
+                  fontSize="12"
+                  fill="#F44336"
+                  fontWeight="bold"
+                >
+                  SELL ${closestExitPoint.price.toFixed(2)}
+                </text>
+              </g>
+            );
+          }
+        }
+        console.log("markers:", markers);
+        return [...backendMarkers, ...markers];
+      })()}
     </svg>
   );
 };
-
 const CreatePage: React.FC = () => {
   const [selectedStrategy, setSelectedStrategy] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -335,13 +427,21 @@ const CreatePage: React.FC = () => {
 
   const chartData = useMemo(() => {
     if (!result?.series) return [];
-    return result.series.map(point => ({
+    
+    console.log('Raw result.series:', result.series);
+    
+    const mappedData = result.series.map(point => ({
       date: point.date,
       value: point.value,
       is_entry: point.is_entry || false,
       is_exit: point.is_exit || false,
       price: point.price
     }));
+    
+    console.log('Mapped chartData:', mappedData);
+    console.log('Entry/Exit points:', mappedData.filter(p => p.is_entry || p.is_exit));
+    
+    return mappedData;
   }, [result]);
 
   const getUserId = () => {
@@ -524,8 +624,6 @@ const CreatePage: React.FC = () => {
       if (selectedStrategy === 'buy_hold_markers') {
         body.commission_dollars = parseFloat(commission) || 0;
         body.position_percent = Math.min(Math.max(parseFloat(positionPercent) || 100, 0), 100);
-        if (entryPrice) body.entry_price = parseFloat(entryPrice);
-        if (exitPrice) body.exit_price = parseFloat(exitPrice);
       }
 
       const response = await fetch(endpoint, {
@@ -1197,7 +1295,7 @@ const CreatePage: React.FC = () => {
               </div>
             )}
             <div className="rounded-3xl bg-pink-200 p-6 shadow-sm">
-              <Chart data={chartData} />
+              <Chart data={chartData} entryPrice={entryPrice} exitPrice={exitPrice} />
             </div>
           </section>
         </div>
