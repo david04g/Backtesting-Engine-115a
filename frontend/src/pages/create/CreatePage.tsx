@@ -48,6 +48,8 @@ interface SavedStrategy {
   money_invested: number;
   start_date: string;
   end_date: string;
+  commission_dollars?: number;
+  position_percent?: number;
   metadata: {
     strategy_name?: string;
     short_window?: number;
@@ -77,6 +79,12 @@ const ALL_STRATEGIES = [
     description: 'Invest a fixed amount at regular intervals.',
     requiredLevel: 3, // unlocks after completing level 2
   },
+  {
+    id: 'buy_hold_markers',
+    name: 'Buy and Hold Advanced',
+    description: 'Advanced buy and hold with entry/exit and trading costs',
+    requiredLevel: 4,
+  }
 ];
 
 const useAvailableStrategies = () => {
@@ -111,52 +119,41 @@ const useAvailableStrategies = () => {
     fetchUserLevel();
   }, []);
 
-  // const strategies = useMemo(() => {
-  //   if (loading) return [];
-    
-  //   console.log('Available strategies filter - userLevel:', userLevel);
-    
-  //   // Always show strategies where requiredLevel is 1 (basic strategies)
-  //   // and any strategies where userLevel + 1 >= requiredLevel
-  //   const available = ALL_STRATEGIES.filter(strategy => {
-  //     const isAvailable = strategy.requiredLevel === 1 || 
-  //                        (userLevel !== null && strategy.requiredLevel <= userLevel + 1);
-  //     console.log(`Strategy ${strategy.name} (level ${strategy.requiredLevel}):`, 
-  //                isAvailable ? 'Available' : 'Locked');
-  //     return isAvailable;
-  //   });
-    
-  //   console.log('Available strategies:', available.map(s => s.name));
-  //   return available;
-  // }, [userLevel, loading]);
-
   const strategies = useMemo(() => {
-  if (loading) return [];
-  
-  console.log('Available strategies filter - userLevel:', userLevel);
-  
-  // For level 1, only show requiredLevel 1 (Buy and Hold)
-  // For higher levels, show strategies where requiredLevel <= userLevel
-  const available = ALL_STRATEGIES.filter(strategy => {
-    if (userLevel === 1) {
-      return strategy.requiredLevel === 1;
-    }
-    return userLevel !== null && strategy.requiredLevel <= userLevel;
-  });
-  
-  console.log('Available strategies:', available.map(s => s.name));
-  return available;
-}, [userLevel, loading]);
+    if (loading) return [];
+    
+    console.log('Available strategies filter - userLevel:', userLevel);
+    
+    // For level 1, only show requiredLevel 1 (Buy and Hold)
+    // For higher levels, show strategies where requiredLevel <= userLevel
+    const available = ALL_STRATEGIES.filter(strategy => {
+      if (userLevel === 1) {
+        return strategy.requiredLevel === 1;
+      }
+      return userLevel !== null && strategy.requiredLevel <= userLevel;
+    });
+    
+    console.log('Available strategies:', available.map(s => s.name));
+    return available;
+  }, [userLevel, loading]);
 
   return { strategies, loading };
 };
 
-const Chart: React.FC<{ data: { date: string; value: number }[] }> = ({
-  data,
-}) => {
-  const path = useMemo(() => {
+const Chart: React.FC<{ 
+  data: { 
+    date: string; 
+    value: number; 
+    is_entry?: boolean; 
+    is_exit?: boolean; 
+    price: number 
+  }[];
+  entryPrice?: string;
+  exitPrice?: string;
+}> = ({ data, entryPrice, exitPrice }) => {
+  const { path, min, max, range } = useMemo(() => {
     if (!data.length) {
-      return '';
+      return { path: '', min: 0, max: 0, range: 1 };
     }
 
     const width = 600;
@@ -167,18 +164,19 @@ const Chart: React.FC<{ data: { date: string; value: number }[] }> = ({
     const range = max - min || 1;
 
     const points = data.map((point, index) => {
-      const x =
-        data.length === 1 ? width / 2 : (index / (data.length - 1)) * width;
+      const x = data.length === 1 ? width / 2 : (index / (data.length - 1)) * width;
       const normalized = (point.value - min) / range;
       const y = height - normalized * height;
       return { x, y };
     });
 
-    return points
+    const path = points
       .map((point, index) =>
         `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`
       )
       .join(' ');
+
+    return { path, min, max, range };
   }, [data]);
 
   if (!data.length) {
@@ -200,12 +198,38 @@ const Chart: React.FC<{ data: { date: string; value: number }[] }> = ({
           <stop offset="0%" stopColor="#84cc16" stopOpacity="0.25" />
           <stop offset="100%" stopColor="#84cc16" stopOpacity="0" />
         </linearGradient>
+        
+        <marker
+          id="entry-arrow"
+          viewBox="0 0 10 10"
+          refX="5"
+          refY="5"
+          markerWidth="6"
+          markerHeight="6"
+          orient="auto-start-reverse"
+        >
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#4CAF50" />
+        </marker>
+        
+        <marker
+          id="exit-arrow"
+          viewBox="0 0 10 10"
+          refX="5"
+          refY="5"
+          markerWidth="6"
+          markerHeight="6"
+          orient="auto-start-reverse"
+        >
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#F44336" />
+        </marker>
       </defs>
+      
       <path
         d={`${path} L 600 300 L 0 300 Z`}
         fill="url(#chart-gradient)"
         stroke="none"
       />
+      
       <path
         d={path}
         fill="none"
@@ -214,10 +238,130 @@ const Chart: React.FC<{ data: { date: string; value: number }[] }> = ({
         strokeLinejoin="round"
         strokeLinecap="round"
       />
+      
+      {(() => {
+        const markers = [];
+        
+        // First, show backend-provided entry/exit points
+        const backendMarkers = data
+          .filter(point => point.is_entry || point.is_exit)
+          .map((point, index) => {
+            const dataIndex = data.findIndex(p => p === point);
+            const x = data.length === 1 ? 300 : (dataIndex / (data.length - 1)) * 600;
+            const y = ((max - point.price) / range) * 300;
+            console.log('Backend marker:', point.price);
+            
+            return (
+              <g key={`backend-${point.date}-${index}`}>
+                <circle
+                  cx={x}
+                  cy={y}
+                  r="6"
+                  fill={point.is_entry ? "#4CAF50" : "#F44336"}
+                  stroke="white"
+                  strokeWidth="2"
+                />
+                <text
+                  x={x}
+                  y={y - 10}
+                  textAnchor="middle"
+                  fontSize="12"
+                  fill={point.is_entry ? "#4CAF50" : "#F44336"}
+                  fontWeight="bold"
+                >
+                  {point.is_entry ? 'BUY' : 'SELL'} ${point.price.toFixed(2)}
+                </text>
+              </g>
+            );
+          });
+        
+        // Then, show user-entered price markers if they exist and are different from backend markers
+        if (entryPrice) {
+          const entryPriceNum = parseFloat(entryPrice);
+          console.log('entryPriceNum:', entryPriceNum);
+          if (!isNaN(entryPriceNum)) {
+            // Find the data point with portfolio value closest to entry price
+            const closestEntryPoint = data.reduce((closest, point, index) => {
+              const currentDiff = Math.abs(point.price - entryPriceNum);
+              const closestDiff = Math.abs(closest.price - entryPriceNum);
+              return currentDiff < closestDiff ? point : closest;
+            }, data[0]);
+            
+            const entryIndex = data.findIndex(p => p === closestEntryPoint);
+            const x = data.length === 1 ? 300 : (entryIndex / (data.length - 1)) * 600;
+            const y = ((max - closestEntryPoint.value) / range) * 300;
+            console.log("value:", closestEntryPoint.value);
+            
+            markers.push(
+              <g key="user-entry-marker">
+                <circle
+                  cx={x}
+                  cy={y}
+                  r="6"
+                  fill="#4CAF50"
+                  stroke="white"
+                  strokeWidth="2"
+                />
+                <text
+                  x={x}
+                  y={y - 10}
+                  textAnchor="middle"
+                  fontSize="12"
+                  fill="#4CAF50"
+                  fontWeight="bold"
+                >
+                  BUY ${closestEntryPoint.price.toFixed(2)}
+                </text>
+              </g>
+            );
+          }
+        }
+        
+        if (exitPrice) {
+          const exitPriceNum = parseFloat(exitPrice);
+          if (!isNaN(exitPriceNum)) {
+            // Find the data point with portfolio value closest to exit price
+            const closestExitPoint = data.reduce((closest, point, index) => {
+              const currentDiff = Math.abs(point.price - exitPriceNum);
+              const closestDiff = Math.abs(closest.price - exitPriceNum);
+              return currentDiff < closestDiff ? point : closest;
+            }, data[0]);
+            
+            const exitIndex = data.findIndex(p => p === closestExitPoint);
+            const x = data.length === 1 ? 300 : (exitIndex / (data.length - 1)) * 600;
+            const y = ((max - closestExitPoint.value) / range) * 300;
+            console.log('value:', closestExitPoint.value);
+            
+            markers.push(
+              <g key="user-exit-marker">
+                <circle
+                  cx={x}
+                  cy={y}
+                  r="6"
+                  fill="#F44336"
+                  stroke="white"
+                  strokeWidth="2"
+                />
+                <text
+                  x={x}
+                  y={y - 10}
+                  textAnchor="middle"
+                  fontSize="12"
+                  fill="#F44336"
+                  fontWeight="bold"
+                >
+                  SELL ${closestExitPoint.price.toFixed(2)}
+                </text>
+              </g>
+            );
+          }
+        }
+        console.log("markers:", markers);
+        return [...backendMarkers, ...markers];
+      })()}
     </svg>
   );
 };
-
 const CreatePage: React.FC = () => {
   const [selectedStrategy, setSelectedStrategy] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -243,6 +387,9 @@ const CreatePage: React.FC = () => {
   const [frequency, setFrequency] = useState('monthly');
   const [contribution, setContribution] = useState('');
 
+  const [commission, setCommission] = useState('0');
+  const [positionPercent, setPositionPercent] = useState('100');
+
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<StrategyResult | null>(null);
 
@@ -266,6 +413,9 @@ const CreatePage: React.FC = () => {
   const [newsError, setNewsError] = useState<string | null>(null);
   const { strategies, loading: strategiesLoading } = useAvailableStrategies();
 
+  const [entryPrice, setEntryPrice] = useState('');
+  const [exitPrice, setExitPrice] = useState('');
+
   const filteredStrategies = useMemo(() => {
     const term = search.trim().toLowerCase();
     if (!term) return strategies;
@@ -276,11 +426,22 @@ const CreatePage: React.FC = () => {
   }, [search, strategies]);
 
   const chartData = useMemo(() => {
-    if (!result) return [];
-    return result.series.map(point => ({
+    if (!result?.series) return [];
+    
+    console.log('Raw result.series:', result.series);
+    
+    const mappedData = result.series.map(point => ({
       date: point.date,
       value: point.value,
+      is_entry: point.is_entry || false,
+      is_exit: point.is_exit || false,
+      price: point.price
     }));
+    
+    console.log('Mapped chartData:', mappedData);
+    console.log('Entry/Exit points:', mappedData.filter(p => p.is_entry || p.is_exit));
+    
+    return mappedData;
   }, [result]);
 
   const getUserId = () => {
@@ -321,46 +482,46 @@ const CreatePage: React.FC = () => {
   }, [selectedStrategy]);
 
   useEffect(() => {
-  const fetchNews = async () => {
-    if (!ticker || !ticker.trim()) {
-      setNews([]);
-      return;
-    }
+    const fetchNews = async () => {
+      if (!ticker || !ticker.trim()) {
+        setNews([]);
+        return;
+      }
 
-    setLoading(true);
-    setNewsError(null);
-    
-    try {
-      const url = API_ENDPOINTS.GET_TICKER_NEWS(ticker.toUpperCase());
+      setLoading(true);
+      setNewsError(null);
       
-      const response = await fetch(url);
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      if (data.status === 'success') {
-        const newsItems = Array.isArray(data.data) ? data.data : [];
-        setNews(newsItems);
+      try {
+        const url = API_ENDPOINTS.GET_TICKER_NEWS(ticker.toUpperCase());
         
-        if (newsItems.length === 0) {
-          setNewsError('No recent news found for this ticker.');
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
         }
-      } else {
-        throw new Error(data.message || 'Failed to load news');
+        
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+          const newsItems = Array.isArray(data.data) ? data.data : [];
+          setNews(newsItems);
+          
+          if (newsItems.length === 0) {
+            setNewsError('No recent news found for this ticker.');
+          }
+        } else {
+          throw new Error(data.message || 'Failed to load news');
+        }
+      } catch (err) {
+        const errorMessage = 'Failed to load news. ' + (err instanceof Error ? err.message : '');
+        console.error('Error in fetchNews:', errorMessage, err);
+        setNewsError(errorMessage);
+        setNews([]);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      const errorMessage = 'Failed to load news. ' + (err instanceof Error ? err.message : '');
-      console.error('Error in fetchNews:', errorMessage, err);
-      setNewsError(errorMessage);
-      setNews([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
     const timeoutId = setTimeout(() => {
       fetchNews();
@@ -402,6 +563,14 @@ const CreatePage: React.FC = () => {
         contribution: result.contribution ? `$${result.contribution.toFixed(2)}` : 'N/A',
         totalContrib: result.total_contributed ? `$${result.total_contributed.toFixed(2)}` : 'N/A',
       };
+    } else if (selectedStrategy === 'buy_hold_markers') {
+      return {
+        ...base,
+        buyPrice: result.buy_price ? `$${result.buy_price.toFixed(2)}` : 'N/A',
+        sellPrice: result.sell_price ? `$${result.sell_price.toFixed(2)}` : 'N/A',
+        commission: result.commission_dollars ? `$${result.commission_dollars.toFixed(2)}` : 'N/A',
+        positionPercent: result.position_percent ? `${result.position_percent}%` : '100%',
+      };
     }
 
     return base;
@@ -426,6 +595,9 @@ const CreatePage: React.FC = () => {
         case 'dca':
           endpoint = API_ENDPOINTS.STRATEGIES.DCA;
           break;
+        case 'buy_hold_markers':
+          endpoint = API_ENDPOINTS.STRATEGIES.BUY_HOLD_MARKERS;
+          break;
         default:
           throw new Error('Unknown strategy');
       }
@@ -449,20 +621,34 @@ const CreatePage: React.FC = () => {
         }
       }
 
+      if (selectedStrategy === 'buy_hold_markers') {
+        body.commission_dollars = parseFloat(commission) || 0;
+        body.position_percent = Math.min(Math.max(parseFloat(positionPercent) || 100, 0), 100);
+      }
+
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
 
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('Non-JSON response:', text);
+        throw new Error('Server returned an invalid response. Please try again later.');
+      }
+
       const data = await response.json();
+      
       if (!response.ok || data.status !== 'success') {
         throw new Error(data?.message || 'Unable to run strategy.');
       }
 
       setResult(data.data);
     } catch (err: any) {
-      setError(err?.message || 'Unexpected error');
+      console.error('Error running strategy:', err);
+      setError(err?.message || 'An unexpected error occurred. Please check the console for details.');
     } finally {
       setLoading(false);
     }
@@ -511,6 +697,8 @@ const CreatePage: React.FC = () => {
         capital: parseFloat(capital),
         start_date: buyDate,
         end_date: sellDate,
+        commission_dollars: parseFloat(commission) || 0,
+        position_percent: Math.min(Math.max(parseFloat(positionPercent) || 100, 0), 100),
         metadata: metadata,
       };
 
@@ -566,6 +754,14 @@ const CreatePage: React.FC = () => {
       if (strategy.metadata.contribution) {
         setContribution(strategy.metadata.contribution.toString());
       }
+    }
+
+    if (strategy.commission_dollars) {
+      setCommission(strategy.commission_dollars.toString());
+    }
+
+    if (strategy.position_percent) {
+      setPositionPercent(strategy.position_percent.toString());
     }
 
     setSelectedStrategy(strategy.strategy_type);
@@ -692,6 +888,12 @@ const CreatePage: React.FC = () => {
                             )}
                             {strategy.metadata?.frequency && (
                               <p>Frequency: {strategy.metadata.frequency}</p>
+                            )}
+                            {strategy.commission_dollars && (
+                              <p>Commission: ${strategy.commission_dollars}</p>
+                            )}
+                            {strategy.position_percent && (
+                              <p>Position Size: {strategy.position_percent}%</p>
                             )}
                           </div>
                         </div>
@@ -1028,9 +1230,72 @@ const CreatePage: React.FC = () => {
                 <p>Frequency: {summary.frequency}</p>
               </div>
             )}
-
+            {selectedStrategy === 'buy_hold_markers' && (
+              <div className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="block text-sm text-gray-700">
+                      Entry Price ($)
+                    </label>
+                    <input
+                      type="number"
+                      value={entryPrice}
+                      onChange={e => setEntryPrice(e.target.value)}
+                      placeholder="Leave empty for market open"
+                      className="mt-2 w-full rounded-md bg-green-100 px-4 py-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-400"
+                      min="0"
+                      step="0.01"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-700">
+                      Exit Price ($)
+                    </label>
+                    <input
+                      type="number"
+                      value={exitPrice}
+                      onChange={e => setExitPrice(e.target.value)}
+                      placeholder="Leave empty for market close"
+                      className="mt-2 w-full rounded-md bg-red-100 px-4 py-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-300"
+                      min="0"
+                      step="0.01"
+                    />
+                  </div>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="block text-sm text-gray-700">
+                      Commission per Trade ($)
+                    </label>
+                    <input
+                      type="number"
+                      value={commission}
+                      onChange={e => setCommission(e.target.value)}
+                      placeholder="e.g., 5.00"
+                      className="mt-2 w-full rounded-md bg-blue-100 px-4 py-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                      min="0"
+                      step="0.01"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-700">
+                      Position Size (% of Capital)
+                    </label>
+                    <input
+                      type="number"
+                      value={positionPercent}
+                      onChange={e => setPositionPercent(e.target.value)}
+                      className="mt-2 w-full rounded-md bg-purple-100 px-4 py-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300"
+                      min="1"
+                      max="100"
+                      step="1"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="rounded-3xl bg-pink-200 p-6 shadow-sm">
-              <Chart data={chartData} />
+              <Chart data={chartData} entryPrice={entryPrice} exitPrice={exitPrice} />
             </div>
           </section>
         </div>

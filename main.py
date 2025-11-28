@@ -1115,12 +1115,10 @@ async def get_drag_and_drop_root(request: Request):
     level = data.get("level")
     lesson = data.get("lesson")
     
-  
     if level is None:
         return {"status": "error", "message": "No level"}
     if lesson is None:
         return {"status": "error", "message": "No lesson"}
-    
     
     try:
         import json
@@ -1130,7 +1128,6 @@ async def get_drag_and_drop_root(request: Request):
             print(f"No drag and drop found for level {level}, lesson {lesson}")
             return {"status": "error", "message": "No drag and drop found"}
         
-        
         fields_to_parse = ["options", "selections_titles", "selection_titles", "selection1", "selection2", "selections"]
         for field in fields_to_parse:
             if field in dragAndDropInfo and isinstance(dragAndDropInfo[field], str):
@@ -1139,8 +1136,7 @@ async def get_drag_and_drop_root(request: Request):
                 except (json.JSONDecodeError, TypeError):
                     
                     pass
-        
-        
+           
         return {"status": "success", "data": dragAndDropInfo}
         
     except Exception as e:
@@ -1151,7 +1147,6 @@ async def get_drag_and_drop_root(request: Request):
 
 @app.get("/api/ticker/{ticker}/history")
 async def get_ticker_history(ticker: str, period: str = "1mo", interval: str = "1d"):
-    """Get historical price data for a ticker"""
     if yf is None:
         return JSONResponse(
             status_code=500,
@@ -1172,7 +1167,6 @@ async def get_ticker_history(ticker: str, period: str = "1mo", interval: str = "
         if hist is None or hist.empty:
             return {"status": "error", "message": "No historical data available"}
         
-        # Convert the DataFrame to a list of dicts
         history_data = []
         for idx, row in hist.iterrows():
             history_data.append({
@@ -1193,6 +1187,114 @@ async def get_ticker_history(ticker: str, period: str = "1mo", interval: str = "
         }
     except Exception as e:
         return {"status": "error", "message": f"Error fetching history: {str(e)}"}
+
+@app.post("/api/strategies/buy_hold_markers")
+async def run_buy_and_hold_markers(request: Request):
+    if yf is None:
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "message": "Server missing yfinance. Install backend requirements.",
+            },
+        )
+
+    try:
+        payload = await request.json()
+    except Exception:
+        return {"status": "error", "message": "Invalid JSON body"}
+
+    ticker = (payload.get("ticker") or "").upper().strip()
+    start_date = payload.get("start_date")
+    end_date = payload.get("end_date")
+    capital = float(payload.get("capital", 1000))
+    commission_dollars = float(payload.get("commission_dollars", 0))
+    position_percent = float(payload.get("position_percent", 100))
+
+    if not ticker or not start_date or not end_date:
+        return {"status": "error", "message": "Missing required fields"}
+
+    try:
+        start_dt = datetime.fromisoformat(start_date)
+        end_dt = datetime.fromisoformat(end_date)
+    except Exception:
+        return {"status": "error", "message": "Invalid date format. Use YYYY-MM-DD"}
+
+    if start_dt >= end_dt:
+        return {"status": "error", "message": "Buy date must be before sell date"}
+
+    try:
+        hist = yf.download(
+            ticker,
+            start=start_dt.strftime("%Y-%m-%d"),
+            end=end_dt.strftime("%Y-%m-%d"),
+            progress=False,
+            auto_adjust=True,
+        )
+    except Exception as e:
+        return {"status": "error", "message": f"Data fetch failed: {e}"}
+
+    if hist is None or hist.empty:
+        return {"status": "error", "message": "No data returned for ticker/date range"}
+
+    if isinstance(hist.columns, pd.MultiIndex):
+        possible = [c for c in hist.columns if c[0].lower() == "close"]
+        if not possible:
+            return {"status": "error", "message": "Unable to find closing prices (multi-index)"}
+        prices = hist[possible[0]]
+    else:
+        if "Close" not in hist.columns:
+            return {"status": "error", "message": "Unable to find closing prices"}
+        prices = hist["Close"]
+
+    prices = prices.dropna()
+    if prices.empty:
+        return {"status": "error", "message": "No valid closing prices"}
+
+    buy_price = float(payload.get("entry_price")) if payload.get("entry_price") else float(prices.iloc[0])
+    sell_price = float(payload.get("exit_price")) if payload.get("exit_price") else float(prices.iloc[-1])
+
+    position_capital = capital * (position_percent / 100.0)
+
+    shares = position_capital / buy_price if buy_price > 0 else 0.0
+
+    gross_value = shares * sell_price
+    gross_pl = gross_value - position_capital
+
+    total_trading_costs = commission_dollars * 2
+    net_pl = gross_pl - total_trading_costs
+    final_value = position_capital + net_pl     
+
+    total_return_pct = ((final_value - position_capital) / position_capital) * 100.0 if position_capital > 0 else 0.0
+
+    series = []
+    first_price = prices.iloc[0]
+    last_price = prices.iloc[-1]
+
+    for idx, price in prices.items():
+        series.append({
+            "date": idx.strftime("%Y-%m-%d"),
+            "price": float(price),
+            "value": round(float(price) * shares, 2),
+            "is_entry": bool(price == first_price),
+            "is_exit": bool(price == last_price),
+            "shares": float(shares),
+        })
+
+    return {
+        "status": "success",
+        "data": {
+            "buy_price": round(buy_price, 4),
+            "sell_price": round(sell_price, 4),
+            "final_value": round(final_value, 2),
+            "total_return_pct": round(total_return_pct, 2),
+            "shares": round(shares, 6),
+            "commission_dollars": round(commission_dollars, 2),
+            "position_percent": round(position_percent, 2),
+            "trading_costs": round(total_trading_costs, 2),
+            "series": series,
+        },
+    }
 
 if __name__ == "__main__":
     import uvicorn
