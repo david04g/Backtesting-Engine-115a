@@ -61,6 +61,38 @@ const StockChart: React.FC = () => {
 
     ctx.stroke();
 
+    // Draw starting price line
+    const minValue = Math.min(...data);
+    const maxValue = Math.max(...data);
+    const startingY = (1 - (data[0] - minValue) / (maxValue - minValue)) * canvas.height;
+    
+    // Draw the line
+    ctx.beginPath();
+    ctx.strokeStyle = '#ef4444';
+    ctx.setLineDash([5, 3]);
+    ctx.lineWidth = 1.5;
+    ctx.moveTo(0, startingY);
+    ctx.lineTo(canvas.width, startingY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    
+    // Add label with background
+    const labelText = `Start: $${data[0].toFixed(2)}`;
+    const textWidth = ctx.measureText(labelText).width;
+    const labelX = 10;
+    const labelY = startingY - 10;
+    
+    // Draw label background
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+    ctx.fillRect(labelX - 5, labelY - 10, textWidth + 10, 16);
+    
+    // Draw label text
+    ctx.fillStyle = '#ef4444';
+    ctx.font = 'bold 11px Arial';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(labelText, labelX, labelY);
+
     // Draw area under line
     ctx.lineTo(canvas.width, canvas.height);
     ctx.lineTo(0, canvas.height);
