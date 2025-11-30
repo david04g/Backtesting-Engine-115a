@@ -9,7 +9,7 @@ interface User {
 }
 
 type SidebarSimpleProps = {
-  active: 'profile' | 'strategies' | 'learn';
+  active: 'profile' | 'strategies' | 'learn' | 'montecarlo';
 };
 
 const IconDot: React.FC = () => (
@@ -79,7 +79,7 @@ export const SidebarSimple: React.FC<SidebarSimpleProps> = ({ active }) => {
       <div>
         <nav className="pt-6 space-y-3 px-4">
           <button 
-            onClick={() => {}}
+            onClick={() => navigate('/profile')}
             className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-all hover:opacity-80 active:scale-[0.98] cursor-pointer ${active === 'profile' ? 'bg-white/40' : ''}`}
           >
             <IconDot />
@@ -87,8 +87,8 @@ export const SidebarSimple: React.FC<SidebarSimpleProps> = ({ active }) => {
             <span className="ml-auto">‹</span>
           </button>
           <button 
-            onClick={() => {}}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-all hover:opacity-80 active:scale-[0.98] cursor-pointer ${active === 'strategies' ? 'bg-white/40' : ''}`}
+            onClick={() => navigate('/montecarlo')}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-all hover:opacity-80 active:scale-[0.98] cursor-pointer ${active === 'montecarlo' ? 'bg-white/40' : ''}`}
           >
             <IconList />
             <span className="font-semibold">Monte Carlo</span>
