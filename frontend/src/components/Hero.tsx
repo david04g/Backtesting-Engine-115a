@@ -19,14 +19,14 @@ const Hero: React.FC = () => {
     setShowAuthModal(true);
   };
   return (
-    <main className="px-6 py-16">
-      <div className="mx-auto flex w-full max-w-4xl flex-col gap-12 lg:flex-row lg:items-center lg:justify-between">
+    <main className="px-4 sm:px-6 py-12 sm:py-16">
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-8 sm:gap-12 lg:flex-row lg:items-center lg:justify-between">
         <div className="max-w-2xl">
-          <h1 className="mb-8 text-4xl font-bold leading-tight text-gray-800 sm:text-5xl lg:text-6xl">
+          <h1 className="mb-6 sm:mb-8 text-3xl sm:text-4xl font-bold leading-tight text-gray-800 md:text-5xl lg:text-6xl">
             Test Your Trading Strategies
           </h1>
 
-          <p className="mb-12 text-lg leading-relaxed text-gray-600 sm:text-xl">
+          <p className="mb-8 sm:mb-12 text-base sm:text-lg leading-relaxed text-gray-600 md:text-xl">
             Backtest your trading strategies with historical data, optimize
             parameters, and make data-driven decisions before risking real
             capital.
@@ -34,7 +34,7 @@ const Hero: React.FC = () => {
 
           <div className="flex flex-wrap gap-4">
             <button
-              className="rounded-full border-2 border-gray-800 bg-white px-8 py-4 text-lg font-medium text-gray-800 transition-colors hover:bg-gray-50"
+              className="rounded-full border-2 border-gray-800 bg-white px-6 py-3 sm:px-8 sm:py-4 text-base sm:text-lg font-medium text-gray-800 transition-colors hover:bg-gray-50"
               onClick={handleGetStartedClick}
             >
               Get started

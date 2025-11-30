@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { API_ENDPOINTS } from '../../config/api';
 import { get_user_progress } from '../../components/apiServices/userApi';
+import SidebarSimple from '../../components/SidebarSimple';
 
 const isWeekday = (date: Date): boolean => {
   const day = date.getDay();
@@ -791,25 +792,27 @@ const CreatePage: React.FC = () => {
 
   if (!selectedStrategy) {
     return (
-      <div className="min-h-screen bg-gray-50 pb-16">
-        <div className="mx-auto max-w-5xl px-6 pt-12">
+      <div className="min-h-screen bg-gray-50 flex">
+        <SidebarSimple active="strategies" />
+        <div className="flex-1 pb-16">
+          <div className="mx-auto max-w-5xl px-6 pt-12">
           <div className="rounded-3xl bg-pink-200 px-8 py-10 text-center shadow-sm">
             <h1 className="text-3xl font-semibold text-gray-800">
               Lookup strategy
             </h1>
           </div>
 
-          <div className="mt-8 flex gap-4">
+          <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row gap-3 sm:gap-4">
             <input
               type="text"
               value={search}
               onChange={event => setSearch(event.target.value)}
               placeholder="Search strategies..."
-              className="flex-1 rounded-full border border-gray-200 bg-white px-6 py-3 text-gray-700 shadow-sm focus:border-pink-300 focus:outline-none focus:ring-2 focus:ring-pink-200"
+              className="flex-1 rounded-full border border-gray-200 bg-white px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base text-gray-700 shadow-sm focus:border-pink-300 focus:outline-none focus:ring-2 focus:ring-pink-200"
             />
             <button
               onClick={() => setShowSavedStrategies(true)}
-              className="rounded-full bg-lime-300 px-6 py-3 text-sm font-semibold text-gray-800 shadow transition hover:bg-lime-200"
+              className="rounded-full bg-lime-300 px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-gray-800 shadow transition hover:bg-lime-200 whitespace-nowrap"
             >
               My Strategies ({savedStrategies.length})
             </button>
@@ -841,7 +844,7 @@ const CreatePage: React.FC = () => {
               </div>
             )}
           </div>
-        </div>
+          </div>
 
         {showSavedStrategies && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
@@ -919,37 +922,40 @@ const CreatePage: React.FC = () => {
             </div>
           </div>
         )}
+        </div>
       </div>
-    );
+  );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-16">
-      <div className="mx-auto max-w-6xl px-6 pt-12">
-        <div className="rounded-3xl bg-pink-200 px-8 py-10 shadow-sm">
-          <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-gray-50 flex">
+      <SidebarSimple active="strategies" />
+      <div className="flex-1 pb-16">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 pt-8 sm:pt-12">
+        <div className="rounded-3xl bg-pink-200 px-4 py-6 sm:px-8 sm:py-10 shadow-sm">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
             <button
               onClick={() => setSelectedStrategy(null)}
-              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-gray-800 shadow transition hover:bg-gray-100"
+              className="rounded-full bg-white px-4 py-2 text-xs sm:text-sm font-semibold text-gray-800 shadow transition hover:bg-gray-100"
             >
               ← Back
             </button>
             <button
               onClick={() => setShowSavedStrategies(true)}
-              className="rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-gray-800 shadow transition hover:bg-lime-200"
+              className="rounded-full bg-lime-300 px-4 py-2 text-xs sm:text-sm font-semibold text-gray-800 shadow transition hover:bg-lime-200"
             >
               My Strategies ({savedStrategies.length})
             </button>
           </div>
-          <h1 className="mt-4 text-center text-3xl font-semibold text-gray-800">
+          <h1 className="mt-4 text-center text-2xl sm:text-3xl font-semibold text-gray-800">
             Lookup strategy
           </h1>
-          <p className="mt-2 text-center text-sm text-gray-700">
+          <p className="mt-2 text-center text-xs sm:text-sm text-gray-700">
             {strategies.find(s => s.id === selectedStrategy)?.name}
           </p>
         </div>
 
-        <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(360px,1fr)_minmax(480px,1.25fr)]">
+        <div className="mt-6 sm:mt-10 grid gap-6 sm:gap-8 lg:grid-cols-[minmax(360px,1fr)_minmax(480px,1.25fr)]">
           <section className="rounded-3xl bg-pink-200 p-6 shadow-sm">
             <h2 className="text-2xl font-semibold text-gray-800">Inputs</h2>
             <div className="mt-6 space-y-5">
@@ -1420,7 +1426,8 @@ const CreatePage: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+        </div>
+      </div>
   );
 };
 
