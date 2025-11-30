@@ -48,14 +48,9 @@ export const API_ENDPOINTS = {
     SIMPLE_MOVING_AVERAGE_CROSSOVER: getApiEndpoint('api/strategies/simple_moving_average_crossover'),
     DCA: getApiEndpoint('api/strategies/dca'),
     SAVE: getApiEndpoint('api/strategies/save'),
-    BUY_HOLD_MARKERS: getApiEndpoint('api/strategies/buy_hold_markers'),
+BUY_HOLD_MARKERS: getApiEndpoint('api/strategies/buy_hold_markers'),
     GET_USER_STRATEGIES: (userId: string) => getApiEndpoint(`api/strategies/user/${userId}`),
     DELETE: (strategyId: string) => getApiEndpoint(`api/strategies/${strategyId}`),
-  },
-  
-  // Monte Carlo endpoints
-  MONTE_CARLO: {
-    RUN: getApiEndpoint('api/montecarlo/run'),
   },
   
   // Ticker endpoints

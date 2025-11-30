@@ -52,7 +52,6 @@ from db_supabase.db_strategy_storage_util import (
     get_all_strategies_by_user,
     update_strategy,
     delete_strategy,
-    get_strategy_by_id,
 )
 
 try:
@@ -61,7 +60,6 @@ except Exception:
     yf = None
 
 import pandas as pd
-import numpy as np
 
 
 app = FastAPI()
@@ -758,12 +756,6 @@ async def run_simple_moving_average_crossover(request: Request):
     short_window = int(payload.get("short_window", 100)) #if value is not given, default value is 100
     long_window = int(payload.get("long_window", 250)) #if value is not given, default value is 250
 
-    # Validate window sizes
-    if short_window >= long_window:
-        return {"status": "error", "message": "Short window must be less than long window"}
-    if short_window <= 0 or long_window <= 0:
-        return {"status": "error", "message": "Window sizes must be positive integers"}
-
     try:
         capital = float(capital_raw)
     except (TypeError, ValueError):
@@ -782,7 +774,7 @@ async def run_simple_moving_average_crossover(request: Request):
         }
 
     if start_dt >= end_dt:
-        return {"status": "error", "message": "Start date must be before end date"}
+        return {"status": "error", "message": "Buy date must be before sell date"}
 
     try:
         hist = yf.download(
@@ -834,13 +826,6 @@ async def run_simple_moving_average_crossover(request: Request):
     if prices.empty:
         return {"status": "error", "message": "No closing prices available"}
 
-    # Validate data length
-    if len(prices) < long_window:
-        return {
-            "status": "error",
-            "message": f"Insufficient data: need at least {long_window} trading days, got {len(prices)}",
-        }
-
     short_moving_average = prices.rolling(window=short_window).mean()
     long_moving_average = prices.rolling(window=long_window).mean()
 
@@ -867,15 +852,14 @@ async def run_simple_moving_average_crossover(request: Request):
         else:
             ma_long = None
 
-        # Use signal_shifted to reflect the actual position used for returns
-        signal_val = int(signal_shifted.loc[idx])
+        signal_val = int(signal.loc[idx])
         equity_val = round(equity_curve.loc[idx], 2)
         series.append(
             {
                 "date": date_str,
                 "price": float(price),
-                "short_ma": float(ma_short) if ma_short is not None else None,
-                "long_ma": float(ma_long) if ma_long is not None else None,
+                "short_ma": float(ma_short) if ma_short else None,
+                "long_ma": float(ma_long) if ma_long else None,
                 "signal": signal_val,
                 "value": equity_val,
             }
@@ -1309,401 +1293,6 @@ async def run_buy_and_hold_markers(request: Request):
             "position_percent": round(position_percent, 2),
             "trading_costs": round(total_trading_costs, 2),
             "series": series,
-        },
-    }
-
-# ============================================================================
-# Monte Carlo Simulation Module
-# ============================================================================
-
-def extract_prices_from_hist(hist, ticker: str):
-    """Extract price series from yfinance DataFrame."""
-    prices_series = None
-    if isinstance(hist.columns, pd.MultiIndex):
-        if ("Close", ticker) in hist.columns:
-            prices_series = hist[("Close", ticker)]
-        else:
-            close_candidates = [col for col in hist.columns if str(col[0]).lower() == "close"]
-            if close_candidates:
-                prices_series = hist[close_candidates[0]]
-    else:
-        if "Close" in hist.columns:
-            prices_series = hist["Close"]
-    
-    if prices_series is None:
-        return None
-    
-    if isinstance(prices_series, pd.DataFrame):
-        if prices_series.shape[1] == 1:
-            prices = prices_series.iloc[:, 0]
-        else:
-            return None
-    else:
-        prices = prices_series
-    
-    prices = prices.dropna()
-    return prices if not prices.empty else None
-
-def generate_bootstrap_path(returns: pd.Series, horizon_days: int, initial_price: float) -> pd.Series:
-    """Generate a synthetic price path by bootstrapping historical returns."""
-    returns_array = returns.values
-    if len(returns_array) == 0:
-        return None
-    
-    # Sample returns with replacement
-    sampled_returns = np.random.choice(returns_array, size=horizon_days, replace=True)
-    
-    # Generate price path
-    prices = [initial_price]
-    for ret in sampled_returns:
-        prices.append(prices[-1] * (1 + ret))
-    
-    # Create date index (use business days)
-    dates = pd.date_range(start=pd.Timestamp.now().normalize(), periods=horizon_days + 1, freq='B')
-    return pd.Series(prices, index=dates[:len(prices)])
-
-def generate_forward_sim_path(returns: pd.Series, horizon_days: int, initial_price: float) -> pd.Series:
-    """Generate a forward simulation path using estimated return distribution."""
-    returns_array = returns.values
-    if len(returns_array) == 0:
-        return None
-    
-    # Estimate distribution parameters
-    mean_return = np.mean(returns_array)
-    std_return = np.std(returns_array)
-    
-    # Generate random returns from normal distribution
-    sampled_returns = np.random.normal(mean_return, std_return, size=horizon_days)
-    
-    # Generate price path
-    prices = [initial_price]
-    for ret in sampled_returns:
-        prices.append(prices[-1] * (1 + ret))
-    
-    # Create date index (use business days)
-    dates = pd.date_range(start=pd.Timestamp.now().normalize(), periods=horizon_days + 1, freq='B')
-    return pd.Series(prices, index=dates[:len(prices)])
-
-def run_sma_crossover_on_prices(
-    prices: pd.Series,
-    capital: float,
-    short_window: int,
-    long_window: int
-) -> float:
-    """Run SMA crossover strategy on a custom price series. Returns final capital."""
-    if len(prices) < long_window:
-        return capital
-    
-    short_moving_average = prices.rolling(window=short_window).mean()
-    long_moving_average = prices.rolling(window=long_window).mean()
-    
-    signal = (short_moving_average > long_moving_average).astype(int)
-    signal_shifted = signal.shift(1).fillna(0)
-    
-    daily_returns = prices.pct_change().fillna(0)
-    strategy_returns = daily_returns * signal_shifted
-    
-    equity_curve = (1 + strategy_returns).cumprod() * capital
-    return float(equity_curve.iloc[-1])
-
-def run_dca_on_prices(
-    prices: pd.Series,
-    capital: float,
-    frequency: str,
-    contribution: float = None
-) -> float:
-    """Run DCA strategy on a custom price series. Returns final capital."""
-    if prices.empty:
-        return capital
-    
-    # Determine buy dates based on frequency
-    start_date = prices.index[0]
-    end_date = prices.index[-1]
-    
-    if frequency == "weekly":
-        buy_dates = pd.date_range(start_date, end_date, freq="W")
-    elif frequency == "biweekly":
-        buy_dates = pd.date_range(start_date, end_date, freq="2W")
-    elif frequency == "monthly":
-        buy_dates = pd.date_range(start_date, end_date, freq="M")
-    else:
-        return capital
-    
-    trading_days = prices.index
-    mapped_buy_dates = []
-    for d in buy_dates:
-        valid_days = trading_days[trading_days <= d]
-        if len(valid_days) > 0:
-            mapped_buy_dates.append(valid_days[-1])
-    
-    buy_dates = list(dict.fromkeys(mapped_buy_dates))
-    if not buy_dates:
-        return capital
-    
-    if contribution is None:
-        contribution = capital / len(buy_dates)
-    
-    total_contributed = 0.0
-    total_shares = 0.0
-    
-    for date, price in prices.items():
-        if date in buy_dates and total_contributed < capital:
-            amount = min(contribution, capital - total_contributed)
-            shares_bought = amount / price
-            total_shares += shares_bought
-            total_contributed += amount
-    
-    final_price = prices.iloc[-1]
-    portfolio_value = total_shares * final_price
-    return float(portfolio_value)
-
-def run_buy_hold_advanced_on_prices(
-    prices: pd.Series,
-    capital: float,
-    entry_price: float = None,
-    exit_price: float = None,
-    position_percent: float = 100.0,
-    commission_dollars: float = 0.0
-) -> float:
-    """Run Buy & Hold Advanced strategy on a custom price series. Returns final capital."""
-    if prices.empty:
-        return capital
-    
-    buy_price = entry_price if entry_price else float(prices.iloc[0])
-    sell_price = exit_price if exit_price else float(prices.iloc[-1])
-    
-    position_capital = capital * (position_percent / 100.0)
-    shares = position_capital / buy_price if buy_price > 0 else 0.0
-    
-    gross_value = shares * sell_price
-    gross_pl = gross_value - position_capital
-    total_trading_costs = commission_dollars * 2
-    net_pl = gross_pl - total_trading_costs
-    final_value = position_capital + net_pl
-    
-    return float(final_value)
-
-@app.post("/api/montecarlo/run")
-async def run_monte_carlo(request: Request):
-    """Run Monte Carlo simulation on a saved strategy."""
-    if yf is None:
-        return JSONResponse(
-            status_code=500,
-            content={
-                "status": "error",
-                "message": "Server missing yfinance. Install backend requirements.",
-            },
-        )
-    
-    try:
-        payload = await request.json()
-    except Exception:
-        return {"status": "error", "message": "Invalid JSON body"}
-    
-    strategy_id = payload.get("strategy_id")
-    user_id = payload.get("user_id")  # Optional, but recommended for security
-    mode = payload.get("mode")  # "historical_bootstrap" or "forward_sim"
-    horizon_days = payload.get("horizon_days")
-    horizon_years = payload.get("horizon_years")
-    num_simulations = payload.get("num_simulations", 1000)
-    
-    if not strategy_id:
-        return {"status": "error", "message": "Missing strategy_id"}
-    if mode not in ["historical_bootstrap", "forward_sim"]:
-        return {"status": "error", "message": "Invalid mode. Must be 'historical_bootstrap' or 'forward_sim'"}
-    if not horizon_days and not horizon_years:
-        return {"status": "error", "message": "Must provide either horizon_days or horizon_years"}
-    if num_simulations < 1 or num_simulations > 10000:
-        return {"status": "error", "message": "num_simulations must be between 1 and 10000"}
-    
-    # Convert years to days if needed (approximate 252 trading days per year)
-    if horizon_years:
-        horizon_days = int(horizon_years * 252)
-    
-    # Load strategy from database with user ownership validation
-    # This ensures users can only run MC on their own strategies
-    strategy = get_strategy_by_id(strategy_id, user_id)
-    if not strategy:
-        return {"status": "error", "message": "Strategy not found or access denied"}
-    
-    strategy_type = strategy.get("strategy_type")
-    ticker = strategy.get("ticker_name")
-    capital = float(strategy.get("money_invested", 1000))
-    start_date = strategy.get("start_date")
-    end_date = strategy.get("end_date")
-    metadata_raw = strategy.get("metadata", {})
-    
-    # Handle metadata - could be dict or JSON string
-    import json
-    if isinstance(metadata_raw, str):
-        try:
-            metadata = json.loads(metadata_raw)
-        except (json.JSONDecodeError, TypeError):
-            metadata = {}
-    elif isinstance(metadata_raw, dict):
-        metadata = metadata_raw
-    else:
-        metadata = {}
-    
-    # Check if strategy is eligible for Monte Carlo
-    eligible_types = ["simple_moving_average_crossover", "dca", "buy_hold_markers"]
-    if strategy_type not in eligible_types:
-        return {
-            "status": "error",
-            "message": f"Strategy type '{strategy_type}' is not eligible for Monte Carlo simulation"
-        }
-    
-    # Fetch historical data for calibration
-    try:
-        start_dt = datetime.fromisoformat(start_date) if isinstance(start_date, str) else start_date
-        end_dt = datetime.fromisoformat(end_date) if isinstance(end_date, str) else end_date
-        
-        # For forward_sim, use recent data (last 5 years or available)
-        if mode == "forward_sim":
-            # Get most recent price and recent historical data
-            recent_end = datetime.now()
-            recent_start = recent_end - pd.Timedelta(days=5*365)
-            hist_calibration = yf.download(
-                ticker,
-                start=recent_start.strftime("%Y-%m-%d"),
-                end=recent_end.strftime("%Y-%m-%d"),
-                progress=False,
-                auto_adjust=True,
-            )
-        else:
-            # For historical_bootstrap, use the strategy's date range or fallback to 5 years
-            if start_dt and end_dt:
-                hist_calibration = yf.download(
-                    ticker,
-                    start=start_dt.strftime("%Y-%m-%d") if hasattr(start_dt, 'strftime') else str(start_dt),
-                    end=end_dt.strftime("%Y-%m-%d") if hasattr(end_dt, 'strftime') else str(end_dt),
-                    progress=False,
-                    auto_adjust=True,
-                )
-            else:
-                # Fallback to 5 years
-                recent_end = datetime.now()
-                recent_start = recent_end - pd.Timedelta(days=5*365)
-                hist_calibration = yf.download(
-                    ticker,
-                    start=recent_start.strftime("%Y-%m-%d"),
-                    end=recent_end.strftime("%Y-%m-%d"),
-                    progress=False,
-                    auto_adjust=True,
-                )
-    except Exception as exc:
-        return {"status": "error", "message": f"Data fetch failed: {exc}"}
-    
-    if hist_calibration is None or hist_calibration.empty:
-        return {"status": "error", "message": "No calibration data available"}
-    
-    prices_calibration = extract_prices_from_hist(hist_calibration, ticker)
-    if prices_calibration is None or len(prices_calibration) < 10:
-        return {"status": "error", "message": "Insufficient calibration data"}
-    
-    # Calculate returns
-    returns = prices_calibration.pct_change().dropna()
-    if len(returns) == 0:
-        return {"status": "error", "message": "No valid returns calculated"}
-    
-    # Get initial price for simulation
-    if mode == "forward_sim":
-        initial_price = float(prices_calibration.iloc[-1])  # Most recent price
-    else:
-        initial_price = float(prices_calibration.iloc[0])  # Start of calibration period
-    
-    # Run simulations
-    final_capitals = []
-    
-    for _ in range(num_simulations):
-        if mode == "historical_bootstrap":
-            synthetic_prices = generate_bootstrap_path(returns, horizon_days, initial_price)
-        else:  # forward_sim
-            synthetic_prices = generate_forward_sim_path(returns, horizon_days, initial_price)
-        
-        if synthetic_prices is None or len(synthetic_prices) < 2:
-            continue
-        
-        # Run strategy on synthetic prices
-        try:
-            if strategy_type == "simple_moving_average_crossover":
-                short_window = metadata.get("short_window", 100)
-                long_window = metadata.get("long_window", 250)
-                final_capital = run_sma_crossover_on_prices(
-                    synthetic_prices, capital, short_window, long_window
-                )
-            elif strategy_type == "dca":
-                frequency = metadata.get("frequency", "monthly")
-                contribution = metadata.get("contribution")
-                final_capital = run_dca_on_prices(
-                    synthetic_prices, capital, frequency, contribution
-                )
-            elif strategy_type == "buy_hold_markers":
-                entry_price = metadata.get("entry_price")
-                exit_price = metadata.get("exit_price")
-                position_percent = metadata.get("position_percent", 100.0)
-                commission_dollars = metadata.get("commission_dollars", 0.0)
-                final_capital = run_buy_hold_advanced_on_prices(
-                    synthetic_prices, capital, entry_price, exit_price, position_percent, commission_dollars
-                )
-            else:
-                continue
-            
-            final_capitals.append(final_capital)
-        except Exception as e:
-            print(f"Error running strategy on synthetic path: {e}")
-            continue
-    
-    if len(final_capitals) == 0:
-        return {"status": "error", "message": "No valid simulations completed"}
-    
-    # Calculate statistics
-    final_capitals_array = np.array(final_capitals)
-    returns_array = ((final_capitals_array - capital) / capital) * 100.0
-    
-    percentiles = {
-        "p10": float(np.percentile(final_capitals_array, 10)),
-        "p25": float(np.percentile(final_capitals_array, 25)),
-        "p50": float(np.percentile(final_capitals_array, 50)),
-        "p75": float(np.percentile(final_capitals_array, 75)),
-        "p90": float(np.percentile(final_capitals_array, 90)),
-    }
-    
-    return_percentiles = {
-        "p10": float(np.percentile(returns_array, 10)),
-        "p25": float(np.percentile(returns_array, 25)),
-        "p50": float(np.percentile(returns_array, 50)),
-        "p75": float(np.percentile(returns_array, 75)),
-        "p90": float(np.percentile(returns_array, 90)),
-    }
-    
-    probability_of_loss = float(np.mean(final_capitals_array < capital)) * 100.0
-    mean_final_capital = float(np.mean(final_capitals_array))
-    std_final_capital = float(np.std(final_capitals_array))
-    
-    return {
-        "status": "success",
-        "data": {
-            "strategy_id": strategy_id,
-            "strategy_type": strategy_type,
-            "ticker": ticker,
-            "initial_capital": capital,
-            "mode": mode,
-            "horizon_days": horizon_days,
-            "num_simulations": len(final_capitals),
-            "statistics": {
-                "mean_final_capital": round(mean_final_capital, 2),
-                "std_final_capital": round(std_final_capital, 2),
-                "min_final_capital": float(np.min(final_capitals_array)),
-                "max_final_capital": float(np.max(final_capitals_array)),
-                "percentiles": {k: round(v, 2) for k, v in percentiles.items()},
-                "return_percentiles": {k: round(v, 2) for k, v in return_percentiles.items()},
-                "probability_of_loss": round(probability_of_loss, 2),
-            },
-            "distribution": {
-                "final_capitals": [round(float(x), 2) for x in final_capitals_array[:100]],  # First 100 for preview
-                "returns": [round(float(x), 2) for x in returns_array[:100]],
-            },
         },
     }
 

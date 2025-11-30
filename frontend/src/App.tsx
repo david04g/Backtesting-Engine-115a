@@ -9,7 +9,6 @@ import { CreatePage } from "./pages/create";
 import MarketNewsPage from "./pages/market-news/MarketNewsPage";
 import LearnPage from "./pages/learn/LearnPage";
 import PageContent from "./pages/learn/[Level]/[PageContent]";
-import { MonteCarloPage } from "./pages/montecarlo";
 
 const App: React.FC = () => {
   return (
@@ -76,15 +75,6 @@ const App: React.FC = () => {
               <>
                 <Navigation />
                 <PageContent />
-              </>
-            }
-          />
-          <Route
-            path="/montecarlo"
-            element={
-              <>
-                <Navigation />
-                <MonteCarloPage />
               </>
             }
           />
