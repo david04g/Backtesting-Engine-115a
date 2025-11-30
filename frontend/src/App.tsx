@@ -8,7 +8,6 @@ import { ProfileContent } from "./pages/profile";
 import { CreatePage } from "./pages/create";
 import MarketNewsPage from "./pages/market-news/MarketNewsPage";
 import PageContent from "./pages/learn/[Level]/[PageContent]";
-import TradingComponentsDemo from "./pages/temp/TradingComponentsDemo";
 
 const App: React.FC = () => {
   return (
@@ -57,15 +56,6 @@ const App: React.FC = () => {
               <div className="min-h-screen bg-gray-50">
                 <Navigation />
                 <MarketNewsPage />
-              </div>
-            }
-          />
-          <Route
-            path="/trading-demo"
-            element={
-              <div className="min-h-screen bg-gray-50">
-                <Navigation />
-                <TradingComponentsDemo />
               </div>
             }
           />

@@ -14,6 +14,8 @@ type Props = {
   }) => void;
 };
 
+const CANVAS_PADDING = 36;
+
 function genSeries(len = 80, mode: "flat" | "up" | "down" = "flat") {
   const out: number[] = [];
   let p = 100;
@@ -38,12 +40,12 @@ function drawLineCanvas(
 ) {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
-  
-  // Set canvas background to light pink
-  ctx.fillStyle = "#fff5f7";
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "#ffb3d2";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  
-  const pad = 16; // Reduced padding for more chart area
+
+  const pad = CANVAS_PADDING;
   const w = canvas.width - pad * 2;
   const h = canvas.height - pad * 2;
   const filtered = series.filter((v) => v != null) as number[];
@@ -53,41 +55,24 @@ function drawLineCanvas(
   const scaleX = w / (series.length - 1 || 1);
   const scaleY = h / range;
 
-  // Draw subtle grid lines
-  ctx.strokeStyle = "rgba(0, 0, 0, 0.05)";
-  ctx.lineWidth = 1;
-  
-  // Horizontal grid lines
-  const yStep = range / 4;
-  for (let i = 0; i <= 4; i++) {
-    const y = pad + (i * h) / 4;
-    ctx.beginPath();
-    ctx.setLineDash([2, 2]);
-    ctx.moveTo(pad, y);
-    ctx.lineTo(pad + w, y);
-    ctx.stroke();
-    
-    // Add Y-axis labels
-    if (i > 0) {
-      ctx.fillStyle = "#6b7280";
-      ctx.font = "10px -apple-system, system-ui, sans-serif";
-      ctx.textAlign = "right";
-      ctx.textBaseline = "middle";
-      const value = (max - (i * yStep)).toFixed(2);
-      ctx.fillText(value, pad - 8, y);
-    }
-  }
-  
-  // Reset line dash
-  ctx.setLineDash([]);
+  // Draw axes similar to the reference mockup
+  ctx.strokeStyle = "#1f1f1f";
+  ctx.lineWidth = 3;
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(pad, pad);
+  ctx.lineTo(pad, pad + h);
+  ctx.lineTo(pad + w, pad + h);
+  ctx.stroke();
 
   // Draw the main price line
   ctx.beginPath();
-  ctx.lineWidth = 2.5;
-  ctx.strokeStyle = opts?.color ?? "#4dabf7";
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = opts?.color ?? "#a5f4ff";
   ctx.lineJoin = "round";
-  
-  // Draw the line
+  ctx.lineCap = "round";
+
   series.forEach((v, i) => {
     if (v == null) return;
     const x = pad + i * scaleX;
@@ -106,39 +91,22 @@ function drawLineCanvas(
       if (m.i < 0 || m.i >= series.length) return;
       const x = pad + m.i * scaleX;
       const y = pad + h - (series[m.i] - min) * scaleY;
-      
+
       // Draw marker circle
       ctx.beginPath();
-      ctx.fillStyle = m.color === "#22c55e" ? "#10b981" : "#f59e0b"; // Green for entry, orange for exit
-      ctx.arc(x, y, 6, 0, Math.PI * 2);
+      ctx.fillStyle = m.color ?? "#111827";
+      ctx.arc(x, y, 5, 0, Math.PI * 2);
       ctx.fill();
-      
-      // Add white border to marker
-      ctx.beginPath();
-      ctx.strokeStyle = "white";
-      ctx.lineWidth = 2;
-      ctx.arc(x, y, 7, 0, Math.PI * 2);
-      ctx.stroke();
-      
+
       // Add label
       if (m.label) {
-        ctx.font = "12px -apple-system, system-ui, sans-serif";
+        ctx.font = "14px 'Space Grotesk', 'Inter', sans-serif";
         ctx.textAlign = "left";
-        ctx.textBaseline = "bottom";
-        ctx.fillStyle = m.color === "#22c55e" ? "#10b981" : "#f59e0b";
-        
-        // Position label above or below the point to avoid overlap
-        const labelY = y - 10 > 20 ? y - 10 : y + 20;
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = "#1f1f1f";
+        const labelY = y - 18 < pad ? y + 18 : y - 18;
         const text = `${m.label} @ ${series[m.i].toFixed(2)}`;
-        
-        // Add text background for better readability
-        const textWidth = ctx.measureText(text).width;
-        ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
-        ctx.fillRect(x + 10, labelY - 14, textWidth + 10, 20);
-        
-        // Draw text
-        ctx.fillStyle = m.color === "#22c55e" ? "#10b981" : "#f59e0b";
-        ctx.fillText(text, x + 15, labelY);
+        ctx.fillText(text, x + 12, labelY);
       }
     });
   }
@@ -216,7 +184,7 @@ export default function EntryExitPositionSize(props: Props) {
     const c = canvasRef.current;
     if (!c) return;
     const rect = c.getBoundingClientRect();
-    const pad = 30;
+    const pad = CANVAS_PADDING;
     const w = rect.width - pad * 2;
     const clickX = e.clientX - rect.left - pad;
     const idx = Math.round((clickX / (w || 1)) * (series.length - 1));
@@ -245,108 +213,114 @@ export default function EntryExitPositionSize(props: Props) {
 
   const plValue = computePL();
 
+  const chipClass =
+    "flex items-center gap-2 rounded-full border border-[#1f1f1f]/15 bg-[#edffac] px-4 py-2 text-sm font-semibold text-[#1f1f1f] shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]";
+  const statClass =
+    "flex flex-col items-center rounded-full border border-[#1f1f1f]/15 bg-[#edffac] px-6 py-2 text-sm font-semibold text-[#1f1f1f] shadow-[0_2px_6px_rgba(0,0,0,0.08)]";
+
   return (
     <div className="p-6">
-      <section className="bg-white rounded-lg shadow-sm border border-gray-100 p-6" aria-labelledby="entry-exit-title">
-        <div className="flex justify-between items-center mb-4">
-          <div>
-            <h2 id="entry-exit-title" className="text-xl font-semibold text-gray-800 mb-1">
-              Entry / Exit / Position Size
-            </h2>
-            <p className="text-sm text-gray-600">
-              Pick an entry price and exit price on the chart; choose a position size to see P/L and risk.
-            </p>
-          </div>
+      <section
+        className="rounded-[32px] bg-[#f6ffb9] p-6 shadow-[0_8px_30px_rgba(0,0,0,0.12)]"
+        aria-labelledby="entry-exit-title"
+      >
+        <div className="space-y-2 text-[#1f1f1f]">
+          <h2 id="entry-exit-title" className="text-lg font-semibold">
+            Pick an entry price and exit price on the chart; choose a position size to see P/L and risk.
+          </h2>
         </div>
 
-        {/* All controls on the same line */}
-        <div className="flex gap-3 my-4 items-center flex-wrap">
-          {/* Capital input */}
-          <div className="flex items-center bg-white border border-green-200 rounded-lg px-3 py-2 h-10 shadow-sm flex-shrink-0">
-            <span className="text-sm text-green-600 mr-2">Capital $</span>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <div className={chipClass}>
+            <span>Capital $</span>
             <input
               type="number"
               value={capital}
               min={100}
               onChange={(e) => setCapital(Number(e.target.value))}
-              className="w-20 border border-green-200 rounded-md px-2 py-1 text-sm outline-none text-green-600 font-medium"
+              className="w-24 rounded-full border border-transparent bg-white/70 px-3 py-1 text-right text-base font-semibold text-[#1f1f1f] focus:border-black/30 focus:outline-none"
             />
           </div>
 
-          {/* Position slider */}
-          <div className="flex items-center bg-white border border-green-200 rounded-lg px-3 py-2 h-10 shadow-sm flex-shrink-0 min-w-[220px]">
-            <span className="text-sm text-green-600 mr-2">Position %</span>
+          <div className={`${chipClass} flex-grow min-w-[220px]`}>
+            <span>Position %</span>
             <input
               type="range"
               min={1}
               max={100}
               value={positionPct}
               onChange={(e) => setPositionPct(Number(e.target.value))}
-              className="w-20 mx-1.5 appearance-none h-1 bg-green-100 rounded-md outline-none"
+              className="mx-2 h-1 w-full grow appearance-none rounded-full bg-white/70"
             />
-            <span className="min-w-[35px] text-center text-sm text-green-600 font-medium">
-              {positionPct}%
+            <span className="text-base">{positionPct}%</span>
+          </div>
+
+          <div className={statClass}>
+            <span className="text-xs uppercase tracking-wide text-[#2c2c2c]">
+              Entry
+            </span>
+            <span className="text-xl">
+              {entryIdx != null ? series[entryIdx].toFixed(2) : "—"}
             </span>
           </div>
 
-          {/* Entry card */}
-          <div className="bg-white border border-green-200 rounded-lg px-4 py-2 min-w-[80px] text-center shadow-sm flex-shrink-0">
-            <div className="text-xs text-green-600 mb-1">Entry</div>
-            <div className="text-green-600 font-semibold text-base">
-              {entryIdx != null ? series[entryIdx].toFixed(2) : "—" }
-            </div>
+          <div className={statClass}>
+            <span className="text-xs uppercase tracking-wide text-[#2c2c2c]">
+              Exit
+            </span>
+            <span className="text-xl">
+              {exitIdx != null ? series[exitIdx].toFixed(2) : "—"}
+            </span>
           </div>
 
-          {/* Exit card */}
-          <div className="bg-white border border-green-200 rounded-lg px-4 py-2 min-w-[80px] text-center shadow-sm flex-shrink-0">
-            <div className="text-xs text-green-600 mb-1">Exit</div>
-            <div className="text-green-600 font-semibold text-base">
-              {exitIdx != null ? series[exitIdx].toFixed(2) : "—" }
-            </div>
+          <div className={statClass}>
+            <span className="text-xs uppercase tracking-wide text-[#2c2c2c]">
+              P/L $
+            </span>
+            <span
+              className={`text-xl ${
+                plValue != null ? (plValue >= 0 ? "text-emerald-600" : "text-rose-600") : "text-[#1f1f1f]"
+              }`}
+            >
+              {plValue != null ? plValue.toFixed(2) : "—"}
+            </span>
           </div>
 
-          {/* P/L card */}
-          <div className="bg-white border border-green-200 rounded-lg px-4 py-2 min-w-[80px] text-center shadow-sm flex-shrink-0">
-            <div className="text-xs text-green-600 mb-1">P/L $</div>
-            <div className={`font-semibold text-base ${plValue != null ? (plValue >= 0 ? 'text-green-600' : 'text-red-500') : 'text-green-600'}`}>
-              {plValue != null ? plValue.toFixed(2) : "—" }
-            </div>
-          </div>
-
-          {/* Action buttons */}
-          <div className="flex gap-1.5 ml-auto flex-shrink-0">
+          <div className="ml-auto flex flex-wrap gap-2">
             <button
               onClick={() => regenerate("up", length)}
-              className="bg-green-600 text-white border-none px-4 py-2 rounded-md text-sm cursor-pointer font-medium transition-opacity hover:opacity-90"
+              className="rounded-full border border-[#1f1f1f]/15 bg-white/70 px-4 py-2 text-sm font-semibold text-[#1f1f1f] transition hover:bg-white"
             >
               Generate Uptrend
             </button>
             <button
               onClick={() => regenerate("down", length)}
-              className="bg-green-600 text-white border-none px-4 py-2 rounded-md text-sm cursor-pointer font-medium transition-opacity hover:opacity-90"
+              className="rounded-full border border-[#1f1f1f]/15 bg-white/70 px-4 py-2 text-sm font-semibold text-[#1f1f1f] transition hover:bg-white"
             >
               Generate Downtrend
             </button>
-            <button 
+            <button
               onClick={clearMarks}
-              className="bg-white border border-green-200 text-green-600 px-4 py-2 rounded-md text-sm cursor-pointer font-medium transition-colors hover:bg-green-50"
+              className="rounded-full border border-[#1f1f1f]/15 bg-transparent px-4 py-2 text-sm font-semibold text-[#1f1f1f] transition hover:bg-white/40"
             >
               Clear Marks
             </button>
           </div>
         </div>
 
-        <canvas
-          ref={canvasRef}
-          className="w-full rounded-lg bg-pink-50 cursor-crosshair"
-          style={{ height: 300 }}
-          onClick={onCanvasClick}
-          aria-label="Entry/Exit chart"
-        />
-
-        <div className="mt-5 p-3 bg-gray-50 rounded-lg text-sm text-gray-600">
-          Tip: Position size controls how much capital is exposed. Larger size → larger potential gain or loss.
+        <div className="mt-6 rounded-[40px] bg-[#ffb3d2] p-6 shadow-[inset_0_2px_12px_rgba(0,0,0,0.15)]">
+          <canvas
+            ref={canvasRef}
+            className="w-full rounded-[28px] bg-transparent cursor-crosshair"
+            style={{ height: 320 }}
+            onClick={onCanvasClick}
+            aria-label="Entry/Exit chart"
+          />
         </div>
+
+        <p className="mt-4 text-center text-sm font-medium text-[#3d3d3d]">
+          Tip: Position size controls how much capital is exposed. Larger size → larger potential gain or loss.
+        </p>
       </section>
     </div>
   );

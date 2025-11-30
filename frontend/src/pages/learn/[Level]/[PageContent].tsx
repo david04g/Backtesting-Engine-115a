@@ -12,6 +12,8 @@ import { LevelCompletionPopup } from "../../../components/LevelCompletionPopup";
 // Import the new DB-driven components
 import { DragAndDrop, MultipleChoice } from "../../../components/quiz";
 import { EntryExitActivity } from "../../../components/lessons/EntryExitActivity";
+import EntryExitPositionSize from "../../../components/lessons/EntryExitPositionSize";
+import SlippageFeesExecution from "../../../components/lessons/SlippageFeesExecution";
 
 interface LessonRecord {
   id: number;
@@ -245,6 +247,10 @@ const PageContent = () => {
     lessonData?.content_type === "multiple_choice";
   const isEntryExitActivityLesson =
     lessonData?.level === 2 && lessonData?.page_number === 3;
+  const isLevel3EntryLesson =
+    lessonData?.level === 3 && lessonData?.page_number === 1;
+  const isLevel3SlippageLesson =
+    lessonData?.level === 3 && lessonData?.page_number === 2;
 
   const hasPersistedCompletion = lessonData?.id
     ? !!quizCompletionState[lessonData.id]
@@ -423,6 +429,8 @@ const PageContent = () => {
                     {dragAndDropSection}
 
                     {isEntryExitActivityLesson && <EntryExitActivity />}
+                    {isLevel3EntryLesson && <EntryExitPositionSize />}
+                    {isLevel3SlippageLesson && <SlippageFeesExecution />}
 
                     {requiresQuiz && !isLessonComplete && hasAttemptedQuiz && (
                       <p className="text-sm text-rose-700 font-medium text-center">
