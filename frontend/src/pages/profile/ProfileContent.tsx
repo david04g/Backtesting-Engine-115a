@@ -130,20 +130,20 @@ export const ProfileContent: React.FC = () => {
   };
   
   return (
-    <div className="w-full min-h-[calc(100vh-72px)] bg-white flex flex-col md:flex-row">
-      <SidebarSimple active="strategies" />
-      <div className="flex-1 flex flex-col w-full md:w-auto">
-        <div className="px-4 sm:px-6 md:px-12 pt-6 md:pt-10 pb-6 md:pb-8 border-b border-black/10">
-          <div className="text-2xl md:text-3xl font-bold text-center">Profile Overview</div>
+    <div className="w-full h-[calc(100vh-72px)] bg-white flex">
+      <SidebarSimple active="profile" />
+      <div className="flex-1 flex flex-col">
+        <div className="px-12 pt-10 pb-8 border-b border-black/10">
+          <div className="text-3xl font-bold text-center">Profile Overview</div>
           {loading ? (
-            <div className="mt-6 md:mt-8 text-center text-gray-500">Loading profile...</div>
+            <div className="mt-8 text-center text-gray-500">Loading profile...</div>
           ) : user ? (
-            <div className="mt-6 md:mt-8 flex flex-col sm:flex-row items-center gap-4 sm:gap-8">
+            <div className="mt-8 flex items-center gap-8">
               {user.profileImage ? (
                 <img 
                   src={`${user.profileImage}?t=${new Date().getTime()}`}
                   alt="Profile"
-                  className="w-20 h-20 sm:w-24 sm:h-24 md:w-[110px] md:h-[110px] rounded-full object-cover"
+                  className="w-[110px] h-[110px] rounded-full object-cover"
                 />
               ) : (
                 <div 
@@ -151,24 +151,24 @@ export const ProfileContent: React.FC = () => {
                   style={{ width: 110, height: 110, backgroundColor: '#D9F2A6' }} 
                 />
               )}
-              <div className="flex-1 text-center sm:text-left">
-                <div className="font-semibold text-base md:text-lg">{user.name}</div>
-                <div className="text-xs md:text-sm text-gray-700">{user.email}</div>
+              <div className="flex-1">
+                <div className="font-semibold text-lg">{user.name}</div>
+                <div className="text-sm text-gray-700">{user.email}</div>
               </div>
               <button 
                 onClick={() => setIsEditModalOpen(true)}
-                className="px-4 md:px-6 py-2 md:py-3 rounded-full bg-black text-white text-xs md:text-sm"
+                className="px-6 py-3 rounded-full bg-black text-white text-sm"
               >
                 Edit
               </button>
             </div>
           ) : (
-            <div className="mt-6 md:mt-8 text-center text-red-500">User not found</div>
+            <div className="mt-8 text-center text-red-500">User not found</div>
           )}
         </div>
 
-        <div className="px-4 sm:px-6 md:px-12 py-6 md:py-8 grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 flex-1 items-start">
-          <div className="col-span-1 md:col-span-8">
+        <div className="px-12 py-8 grid grid-cols-12 gap-8 flex-1 items-start">
+          <div className="col-span-8">
             <Card title="Learn">
               <button 
                 onClick={handleLearnClick}
@@ -196,14 +196,14 @@ export const ProfileContent: React.FC = () => {
               </Card>
             </div>
           </div>
-          <div className="col-span-1 md:col-span-4">
+          <div className="col-span-4">
             <Card>
               <div className="text-xs font-bold uppercase text-center mb-3">Current Level</div>
-              <div className="mx-auto rounded-md p-6 md:p-8 text-center" style={{ backgroundColor: '#F0B3BD' }}>
-                <div className="mx-auto mb-4 flex h-16 w-16 md:h-20 md:w-20 items-center justify-center rounded-full" style={{ backgroundColor: '#D9F2A6' }}>
-                  <span className="text-2xl md:text-3xl">⤴</span>
+              <div className="mx-auto rounded-md p-8 text-center" style={{ backgroundColor: '#F0B3BD' }}>
+                <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full" style={{ backgroundColor: '#D9F2A6' }}>
+                  <span className="text-3xl">⤴</span>
                 </div>
-                <div className="font-extrabold text-lg md:text-xl">Level {typeof level === 'number' ? level : 0}</div>
+                <div className="font-extrabold">Level {typeof level === 'number' ? level : 0}</div>
               </div>
             </Card>
           </div>

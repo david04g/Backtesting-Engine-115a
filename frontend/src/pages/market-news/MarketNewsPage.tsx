@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_ENDPOINTS } from '../../config/api';
 import NewsStockChart from '../../components/NewsStockChart';
-import SidebarSimple from '../../components/SidebarSimple';
 
 interface NewsArticle {
   id: string;
@@ -64,10 +63,8 @@ const MarketNewsPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex">
-        <SidebarSimple active="news" />
-        <div className="flex-1 p-6">
-          <div className="max-w-6xl mx-auto">
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-6xl mx-auto">
           <h1 className="text-2xl font-bold mb-6">Market News</h1>
           <div className="text-center py-8">
             <div className="inline-flex items-center space-x-2">
@@ -92,7 +89,6 @@ const MarketNewsPage: React.FC = () => {
               <div key={i} className="bg-white p-6 rounded-lg shadow-sm animate-pulse h-32" />
             ))}
           </div>
-          </div>
         </div>
       </div>
     );
@@ -100,14 +96,11 @@ const MarketNewsPage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex">
-        <SidebarSimple active="news" />
-        <div className="flex-1 p-6">
-          <div className="max-w-6xl mx-auto">
-            <h1 className="text-2xl font-bold mb-6">Market News</h1>
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-              {error}
-            </div>
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-6xl mx-auto">
+          <h1 className="text-2xl font-bold mb-6">Market News</h1>
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+            {error}
           </div>
         </div>
       </div>
@@ -115,92 +108,89 @@ const MarketNewsPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <SidebarSimple active="news" />
-      <div className="flex-1 p-6">
-        <div className="max-w-6xl mx-auto">
-          <h1 className="text-2xl font-bold mb-6">Market News</h1>
-          
-          {articles.length === 0 ? (
-            <div className="bg-white p-6 rounded-lg shadow-sm text-center">
-              <p className="text-gray-500">No news articles available at the moment.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {articles.map((article) => (
-                <div 
-                  key={`${article.ticker}-${article.publish_time}`}
-                  className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer border border-gray-100"
-                  onClick={() => article.link && window.open(article.link, '_blank')}
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <span className="text-sm font-medium text-gray-900">
-                          {article.ticker} • {article.ticker_name}
-                        </span>
-                        <span className="text-xs text-gray-500">•</span>
-                        <span className="text-xs text-gray-500">
-                          {new Date(article.publish_time * 1000).toLocaleTimeString([], { 
-                            hour: '2-digit', 
-                            minute: '2-digit' 
-                          })}
-                        </span>
-                      </div>
-                      <h2 className="font-semibold text-gray-900 mb-2 text-lg">{article.title}</h2>
-                      <p className="text-sm text-gray-600 mb-3">{article.publisher}</p>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-6xl mx-auto">
+        <h1 className="text-2xl font-bold mb-6">Market News</h1>
+        
+        {articles.length === 0 ? (
+          <div className="bg-white p-6 rounded-lg shadow-sm text-center">
+            <p className="text-gray-500">No news articles available at the moment.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {articles.map((article) => (
+              <div 
+                key={`${article.ticker}-${article.publish_time}`}
+                className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer border border-gray-100"
+                onClick={() => article.link && window.open(article.link, '_blank')}
+              >
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <span className="text-sm font-medium text-gray-900">
+                        {article.ticker} • {article.ticker_name}
+                      </span>
+                      <span className="text-xs text-gray-500">•</span>
+                      <span className="text-xs text-gray-500">
+                        {new Date(article.publish_time * 1000).toLocaleTimeString([], { 
+                          hour: '2-digit', 
+                          minute: '2-digit' 
+                        })}
+                      </span>
                     </div>
-                    
-                    {article.price && (
-                      <div className="ml-6 flex flex-col items-end min-w-[120px]">
-                        <div className="text-right">
-                          <div className="font-medium text-gray-900 text-lg">{article.price}</div>
-                          {article.change && article.changePercent && (
-                            <div className="flex items-center space-x-1 justify-end mt-1">
-                              <div className={`text-sm font-medium ${
-                                article.change.startsWith('+') ? 'text-green-600' : 'text-red-600'
-                              }`}>
-                                {article.change} ({article.changePercent.replace(/[()%+]/g, '')}%)
-                              </div>
-                              <div className="group relative">
-                                <svg 
-                                  className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" 
-                                  fill="none" 
-                                  viewBox="0 0 24 24" 
-                                  stroke="currentColor"
-                                >
-                                  <path 
-                                    strokeLinecap="round" 
-                                    strokeLinejoin="round" 
-                                    strokeWidth={2} 
-                                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
-                                  />
-                                </svg>
-                                <div className="absolute hidden group-hover:block z-10 w-48 p-2 text-xs text-gray-600 bg-white border border-gray-200 rounded shadow-lg -left-24 top-6">
-                                  Price change and percentage change since previous close
-                                </div>
+                    <h2 className="font-semibold text-gray-900 mb-2 text-lg">{article.title}</h2>
+                    <p className="text-sm text-gray-600 mb-3">{article.publisher}</p>
+                  </div>
+                  
+                  {article.price && (
+                    <div className="ml-6 flex flex-col items-end min-w-[120px]">
+                      <div className="text-right">
+                        <div className="font-medium text-gray-900 text-lg">{article.price}</div>
+                        {article.change && article.changePercent && (
+                          <div className="flex items-center space-x-1 justify-end mt-1">
+                            <div className={`text-sm font-medium ${
+                              article.change.startsWith('+') ? 'text-green-600' : 'text-red-600'
+                            }`}>
+                              {article.change} ({article.changePercent.replace(/[()%+]/g, '')}%)
+                            </div>
+                            <div className="group relative">
+                              <svg 
+                                className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" 
+                                fill="none" 
+                                viewBox="0 0 24 24" 
+                                stroke="currentColor"
+                              >
+                                <path 
+                                  strokeLinecap="round" 
+                                  strokeLinejoin="round" 
+                                  strokeWidth={2} 
+                                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+                                />
+                              </svg>
+                              <div className="absolute hidden group-hover:block z-10 w-48 p-2 text-xs text-gray-600 bg-white border border-gray-200 rounded shadow-lg -left-24 top-6">
+                                Price change and percentage change since previous close
                               </div>
                             </div>
-                          )}
-                        </div>
-                        <div className="w-24 h-10 mt-2">
-                          <NewsStockChart 
-                            ticker={article.ticker}
-                            positive={!article.change || article.change.startsWith('+')} 
-                            width={100} 
-                            height={40} 
-                            period="1d"
-                            interval="1m"
-                          />
-                        </div>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                      <div className="w-24 h-10 mt-2">
+                        <NewsStockChart 
+                          ticker={article.ticker}
+                          positive={!article.change || article.change.startsWith('+')} 
+                          width={100} 
+                          height={40} 
+                          period="1d"
+                          interval="1m"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

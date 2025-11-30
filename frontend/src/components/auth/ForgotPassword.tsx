@@ -137,14 +137,14 @@ export const ForgotPassword: React.FC<ForgotPasswordProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="relative flex flex-col md:flex-row w-full max-w-4xl bg-white rounded-2xl overflow-hidden shadow-2xl border border-gray-200 max-h-[90vh] overflow-y-auto">
+      <div className="relative flex w-full max-w-4xl bg-white rounded-2xl overflow-hidden shadow-2xl border border-gray-200">
         {/* Left Side */}
-        <div className="w-full md:w-1/2 bg-lime-200 flex flex-col justify-center items-center p-6 md:p-10 text-center min-h-[200px] md:min-h-0">
-          <TrendingUp className="w-10 h-10 md:w-12 md:h-12 text-gray-800 mb-4" />
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-3">
+        <div className="w-1/2 bg-lime-200 flex flex-col justify-center items-center p-10 text-center">
+          <TrendingUp className="w-12 h-12 text-gray-800 mb-4" />
+          <h2 className="text-3xl font-bold text-gray-800 mb-3">
             Reset Password
           </h2>
-          <p className="text-sm md:text-base text-gray-700 mb-6 max-w-xs">
+          <p className="text-gray-700 mb-6 max-w-xs">
             {step === "request" && "Enter your email to receive a reset code."}
             {step === "verify" && "Enter the code sent to your email."}
             {step === "reset" && "Enter your new password."}
@@ -152,10 +152,10 @@ export const ForgotPassword: React.FC<ForgotPasswordProps> = ({
         </div>
 
         {/* Right Side */}
-        <div className="w-full md:w-1/2 bg-white p-6 md:p-10 flex flex-col justify-center">
+        <div className="w-1/2 bg-white p-10 flex flex-col justify-center">
           {step === "request" && (
             <>
-              <h3 className="text-xl md:text-2xl font-semibold text-gray-800 mb-4 md:mb-6">
+              <h3 className="text-2xl font-semibold text-gray-800 mb-6">
                 Forgot Password?
               </h3>
               <p className="text-sm text-gray-600 mb-4">
@@ -206,7 +206,7 @@ export const ForgotPassword: React.FC<ForgotPasswordProps> = ({
 
           {step === "verify" && (
             <>
-              <h3 className="text-xl md:text-2xl font-semibold text-gray-800 mb-4 md:mb-6">
+              <h3 className="text-2xl font-semibold text-gray-800 mb-6">
                 Enter Reset Code
               </h3>
               <p className="text-sm text-gray-600 mb-4">
@@ -261,7 +261,7 @@ export const ForgotPassword: React.FC<ForgotPasswordProps> = ({
 
           {step === "reset" && (
             <>
-              <h3 className="text-xl md:text-2xl font-semibold text-gray-800 mb-4 md:mb-6">
+              <h3 className="text-2xl font-semibold text-gray-800 mb-6">
                 Set New Password
               </h3>
 
