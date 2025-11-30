@@ -1,6 +1,9 @@
 import React, {useEffect, useState} from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_ENDPOINTS } from '../config/api';
+import { BookOpen, Newspaper } from 'lucide-react';
+
+// IconDot is no longer used but keeping it in case it's needed later
 
 interface User {
   id: string;
@@ -9,7 +12,7 @@ interface User {
 }
 
 type SidebarSimpleProps = {
-  active: 'profile' | 'strategies' | 'learn';
+  active: 'strategies' | 'learn' | 'news';
 };
 
 const IconDot: React.FC = () => (
@@ -27,59 +30,64 @@ const IconList: React.FC = () => (
 );
 
 export const SidebarSimple: React.FC<SidebarSimpleProps> = ({ active }) => {
-
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-      async function fetchUser() {
-        try {
-          const userId = localStorage.getItem("user_id");
-          if (!userId || userId === "null" || userId === "undefined") {
-            console.log("no valid user id, redirecting");
-            navigate("/");
-            return;
-          }
-          const res = await fetch(API_ENDPOINTS.GET_USER(userId));
-          const json = await res.json();
-          if (json.status === "success" && json.data) {
-            setUser(json.data);
-          } else {
-            console.error("api error: ", json.message);
-            navigate("/");
-          }
-        } catch (err) {
-          console.error("error fetching user: ", err);
+    async function fetchUser() {
+      try {
+        const userId = localStorage.getItem("user_id");
+        if (!userId || userId === "null" || userId === "undefined") {
+          console.log("no valid user id, redirecting");
           navigate("/");
-        } finally {
-          setLoading(false);
+          return;
         }
+        const res = await fetch(API_ENDPOINTS.GET_USER(userId));
+        const json = await res.json();
+        if (json.status === "success" && json.data) {
+          setUser(json.data);
+        } else {
+          console.error("api error: ", json.message);
+          navigate("/");
+        }
+      } catch (err) {
+        console.error("error fetching user: ", err);
+        navigate("/");
+      } finally {
+        setLoading(false);
       }
-      fetchUser();
-    }, [navigate]);
-    
+    }
+    fetchUser();
+  }, [navigate]);
 
   return (
-    <aside className="flex flex-col justify-between" style={{ width: 240, backgroundColor: '#D9F2A6' }}>
+    <aside className="hidden md:flex flex-col justify-between flex-shrink-0" style={{ width: 240, backgroundColor: '#D9F2A6' }}>
       <div>
         <nav className="pt-6 space-y-3 px-4">
           <button 
-            onClick={() => {}}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-all hover:opacity-80 active:scale-[0.98] cursor-pointer ${active === 'profile' ? 'bg-white/40' : ''}`}
-          >
-            <IconDot />
-            <span className="font-semibold">Profile</span>
-            <span className="ml-auto">‹</span>
-          </button>
-          <button 
-            onClick={() => {}}
+            onClick={() => navigate('/create')}
             className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-all hover:opacity-80 active:scale-[0.98] cursor-pointer ${active === 'strategies' ? 'bg-white/40' : ''}`}
           >
             <IconList />
             <span className="font-semibold">Strategies</span>
           </button>
-          
+          <button 
+            onClick={() => navigate('/learn')}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-all hover:opacity-80 active:scale-[0.98] cursor-pointer ${active === 'learn' ? 'bg-white/40' : ''}`}
+          >
+            <BookOpen size={16} />
+            <span className="font-semibold">Learn</span>
+            <span className="ml-auto">›</span>
+          </button>
+          <button 
+            onClick={() => navigate('/market-news')}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-all hover:opacity-80 active:scale-[0.98] cursor-pointer ${active === 'news' ? 'bg-white/40' : ''}`}
+          >
+            <Newspaper size={16} />
+            <span className="font-semibold">News</span>
+            <span className="ml-auto">›</span>
+          </button>
         </nav>
       </div>
       <div className="px-6 pb-6 text-xs">
