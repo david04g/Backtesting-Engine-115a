@@ -60,15 +60,6 @@ const App: React.FC = () => {
             }
           />
           <Route
-            path="/learn/:level/:page"
-            element={
-              <div className="min-h-screen bg-gray-50">
-                <Navigation />
-                <PageContent />
-              </div>
-            }
-          />
-          <Route
             path="/learn/:level/:lesson"
             element={
               <>

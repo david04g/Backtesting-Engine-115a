@@ -56,9 +56,13 @@ const PageContent = () => {
   const levelNum = Number(level);
   const lessonNum = Number(lesson);
 
+  console.log("Route params:", { level, lesson, levelNum, lessonNum });
+
   useEffect(() => {
     const fetchProgressAndLesson = async () => {
+      console.log("useEffect triggered");
       if (Number.isNaN(levelNum) || Number.isNaN(lessonNum)) {
+        console.log("Early return due to NaN:", { levelNum, lessonNum });
         return;
       }
 
@@ -68,26 +72,35 @@ const PageContent = () => {
         const savedUserId = localStorage.getItem("user_id");
         if (savedUserId) {
           setUserId(savedUserId);
-          const progress = await get_user_progress(savedUserId);
-          if (progress) {
-            setUserProgress({
-              level: progress.level ?? 0,
-              lesson: progress.lesson ?? 1,
-            });
-
-            if (levelNum > progress.level) {
-              navigate(`/learn/${progress.level}/${progress.lesson || 1}`, {
-                replace: true,
+          try {
+            const progress = await get_user_progress(savedUserId);
+            if (progress) {
+              setUserProgress({
+                level: progress.level ?? 0,
+                lesson: progress.lesson ?? 1,
               });
-              return;
+
+              if (levelNum > progress.level) {
+                navigate(`/learn/${progress.level}/${progress.lesson || 1}`, {
+                  replace: true,
+                });
+                return;
+              }
             }
+          } catch (progressError) {
+            console.warn("Failed to fetch user progress, continuing without progress check:", progressError);
+            // Continue without progress check - allow access to lessons
           }
         }
 
+        console.log(`Loading lesson: level=${levelNum}, lesson=${lessonNum}`);
         const [lessonResponse, lessonsForLevel] = await Promise.all([
           get_lesson(levelNum, lessonNum),
           get_lessons_by_level(levelNum),
         ]);
+
+        console.log("Lesson response:", lessonResponse);
+        console.log("Lessons for level:", lessonsForLevel);
 
         if (lessonResponse) {
           setLessonData(lessonResponse as LessonRecord);
@@ -132,6 +145,7 @@ const PageContent = () => {
         setLessons([]);
         setNextLevelInfo(null);
       } finally {
+        console.log("Setting loading to false");
         setLoading(false);
       }
     };

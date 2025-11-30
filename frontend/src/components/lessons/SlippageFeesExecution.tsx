@@ -32,7 +32,11 @@ function drawLineCanvas(
 ) {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
+
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "#ffb3d2";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
   const pad = 30;
   const w = canvas.width - pad * 2;
   const h = canvas.height - pad * 2;
@@ -40,19 +44,24 @@ function drawLineCanvas(
   const max = Math.max(...series);
   const scaleX = w / (series.length - 1 || 1);
   const scaleY = h / (max - min || 1);
-  // grid
-  ctx.strokeStyle = "#142233";
-  ctx.lineWidth = 1;
-  for (let i = 0; i <= 4; i++) {
-    ctx.beginPath();
-    ctx.moveTo(pad, pad + (i * h) / 4);
-    ctx.lineTo(pad + w, pad + (i * h) / 4);
-    ctx.stroke();
-  }
-  // series
+
+  // Draw axes with rounded corners style
+  ctx.strokeStyle = "#1f1f1f";
+  ctx.lineWidth = 3;
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
   ctx.beginPath();
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = opts?.color ?? "#99d7ff";
+  ctx.moveTo(pad, pad);
+  ctx.lineTo(pad, pad + h);
+  ctx.lineTo(pad + w, pad + h);
+  ctx.stroke();
+
+  // Draw main price line
+  ctx.beginPath();
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = opts?.color ?? "#8ec5ff";
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
   series.forEach((v, i) => {
     const x = pad + i * scaleX;
     const y = pad + h - (v - min) * scaleY;
@@ -60,7 +69,8 @@ function drawLineCanvas(
     else ctx.lineTo(x, y);
   });
   ctx.stroke();
-  // overlays
+
+  // Draw overlays
   if (opts?.overlays) {
     opts.overlays.forEach((o) => {
       ctx.beginPath();
@@ -76,20 +86,29 @@ function drawLineCanvas(
       ctx.stroke();
     });
   }
-  // markers
+
+  // Draw markers
   if (opts?.markers) {
     opts.markers.forEach((m) => {
       if (m.i < 0 || m.i >= series.length) return;
       const x = pad + m.i * scaleX;
       const y = pad + h - (series[m.i] - min) * scaleY;
-      ctx.fillStyle = m.color ?? "#f59e0b";
+
+      // Draw marker circle
       ctx.beginPath();
+      ctx.fillStyle = m.color ?? "#1f1f1f";
       ctx.arc(x, y, 5, 0, Math.PI * 2);
       ctx.fill();
+
+      // Add label
       if (m.label) {
-        ctx.fillStyle = "#cfe9ff";
-        ctx.font = "12px system-ui";
-        ctx.fillText(`${m.label} @ ${series[m.i].toFixed(2)}`, x + 8, y - 8);
+        ctx.font = "14px 'Space Grotesk', 'Inter', sans-serif";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = "#1f1f1f";
+        const labelY = y - 18 < pad ? y + 18 : y - 18;
+        const text = `${m.label} @ ${series[m.i].toFixed(2)}`;
+        ctx.fillText(text, x + 12, labelY);
       }
     });
   }
@@ -122,8 +141,8 @@ export default function SlippageFeesExecution(props: Props) {
     c.width = displayWidth;
     c.height = displayHeight;
 
-    // draw base series
-    drawLineCanvas(c, series, { color: "#99d7ff" });
+    // draw base series with new color
+    drawLineCanvas(c, series, { color: "#8ec5ff" });
 
     // simulate actual sell index with delay + slippage (slippage as ticks)
     const delay = delaySteps;
@@ -162,7 +181,7 @@ export default function SlippageFeesExecution(props: Props) {
     const actualSellIdx = Math.min(series.length - 1, targetSellIndex + delay + randSign * slippageTicks);
 
     // Clear and redraw with new markers
-    drawLineCanvas(c, series, { color: "#99d7ff" });
+    drawLineCanvas(c, series, { color: "#8ec5ff" });
     drawLineCanvas(c, series, {
       color: "#99d7ff",
       markers: [
@@ -190,29 +209,29 @@ export default function SlippageFeesExecution(props: Props) {
   };
 
   return (
-    <section className="p-6">
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6" aria-labelledby="exec-title">
-        <div className="flex justify-between items-center mb-4">
-          <div>
-            <h2 id="exec-title" className="text-xl font-semibold text-gray-800 mb-1">
-              Slippage, Fees, and Execution Timing
-            </h2>
-            <p className="text-sm text-gray-600">
-              Simulate executing an order immediately or delayed — see how slippage and fees change results.
-            </p>
-          </div>
+    <div className="p-6">
+      <section
+        className="rounded-[32px] bg-[#f6ffb9] p-6 shadow-[0_8px_30px_rgba(0,0,0,0.12)]"
+        aria-labelledby="exec-title"
+      >
+        <div className="space-y-2 text-[#1f1f1f]">
+          <h2 id="exec-title" className="text-lg font-semibold">
+            Slippage, Fees, and Execution Timing
+          </h2>
+          <p className="text-sm text-[#3d3d3d]">
+            Simulate executing an order immediately or delayed — see how slippage and fees change results.
+          </p>
         </div>
 
-        {/* All controls on the same line */}
-        <div className="flex gap-3 my-4 items-center flex-wrap">
+        <div className="mt-4 flex flex-wrap items-center gap-3">
           {/* Commission dropdown */}
-          <div className="flex items-center bg-white border border-green-200 rounded-lg px-3 py-2 h-10 shadow-sm flex-shrink-0">
-            <span className="text-sm text-green-600 mr-2">Commission $</span>
+          <div className="flex items-center gap-2 rounded-full border border-[#1f1f1f]/15 bg-[#edffac] px-4 py-2 text-sm font-semibold text-[#1f1f1f] shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
+            <span>Commission $</span>
             <select 
               id="fee"
               value={commission} 
               onChange={(e) => setCommission(Number(e.target.value))}
-              className="border border-green-200 rounded-md px-2 py-1 text-sm outline-none text-green-600 font-medium bg-white"
+              className="w-16 rounded-full border border-transparent bg-white/70 px-3 py-1 text-right text-base font-semibold text-[#1f1f1f] focus:border-black/30 focus:outline-none"
             >
               <option value={0}>0</option>
               <option value={1}>1</option>
@@ -221,8 +240,8 @@ export default function SlippageFeesExecution(props: Props) {
           </div>
 
           {/* Slippage slider */}
-          <div className="flex items-center bg-white border border-green-200 rounded-lg px-3 py-2 h-10 shadow-sm flex-shrink-0 min-w-[200px]">
-            <span className="text-sm text-green-600 mr-2">Slippage (ticks)</span>
+          <div className="flex items-center gap-2 rounded-full border border-[#1f1f1f]/15 bg-[#edffac] px-4 py-2 text-sm font-semibold text-[#1f1f1f] shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] min-w-[200px] flex-grow">
+            <span>Slippage (ticks)</span>
             <input
               id="slip"
               type="range"
@@ -230,21 +249,19 @@ export default function SlippageFeesExecution(props: Props) {
               max={5}
               value={slippageTicks}
               onChange={(e) => setSlippageTicks(Number(e.target.value))}
-              className="w-20 mx-1.5 appearance-none h-1 bg-green-100 rounded-md outline-none"
+              className="mx-2 h-1 w-full grow appearance-none rounded-full bg-white/70"
             />
-            <span className="min-w-[20px] text-center text-sm text-green-600 font-medium">
-              {slippageTicks}
-            </span>
+            <span className="text-base min-w-[20px] text-center">{slippageTicks}</span>
           </div>
 
           {/* Execution delay dropdown */}
-          <div className="flex items-center bg-white border border-green-200 rounded-lg px-3 py-2 h-10 shadow-sm flex-shrink-0">
-            <span className="text-sm text-green-600 mr-2">Execution delay</span>
+          <div className="flex items-center gap-2 rounded-full border border-[#1f1f1f]/15 bg-[#edffac] px-4 py-2 text-sm font-semibold text-[#1f1f1f] shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
+            <span>Execution delay</span>
             <select 
               id="delay"
               value={delaySteps} 
               onChange={(e) => setDelaySteps(Number(e.target.value))}
-              className="border border-green-200 rounded-md px-2 py-1 text-sm outline-none text-green-600 font-medium bg-white"
+              className="w-24 rounded-full border border-transparent bg-white/70 px-3 py-1 text-right text-base font-semibold text-[#1f1f1f] focus:border-black/30 focus:outline-none"
             >
               <option value={0}>Immediate</option>
               <option value={1}>1 step</option>
@@ -256,25 +273,28 @@ export default function SlippageFeesExecution(props: Props) {
           <button 
             id="exec-run"
             onClick={simulate}
-            className="bg-green-600 text-white border-none px-4 py-2 rounded-md text-sm cursor-pointer font-medium transition-opacity hover:opacity-90 flex-shrink-0"
+            className="rounded-full border border-[#1f1f1f]/15 bg-white/70 px-4 py-2 text-sm font-semibold text-[#1f1f1f] transition hover:bg-white"
           >
             Simulate
           </button>
         </div>
 
-        <div className="flex">
-          <div className="flex-1">
-            <canvas ref={canvasRef} className="w-full rounded-lg bg-pink-50 cursor-crosshair" style={{ height: 300 }} aria-label="Execution chart" />
-          </div>
+        <div className="mt-6 rounded-[40px] bg-[#ffb3d2] p-6 shadow-[inset_0_2px_12px_rgba(0,0,0,0.15)]">
+          <canvas 
+            ref={canvasRef} 
+            className="w-full rounded-[28px] bg-transparent cursor-crosshair" 
+            style={{ height: 320 }} 
+            aria-label="Execution chart" 
+          />
         </div>
 
         <div 
-          className="le-result mt-3 p-3 bg-white border border-green-200 rounded-lg text-sm text-green-600 font-medium shadow-sm"
+          className="mt-4 rounded-full border border-[#1f1f1f]/15 bg-[#edffac] px-6 py-3 text-sm font-semibold text-[#1f1f1f] shadow-[0_2px_6px_rgba(0,0,0,0.08)]"
           ref={resultRef} 
         >
           Result: —
         </div>
-      </div>
-    </section>
+      </section>
+    </div>
   );
 }
