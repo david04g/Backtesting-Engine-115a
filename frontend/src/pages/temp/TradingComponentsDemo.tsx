@@ -93,17 +93,91 @@
 
 // export default TradingComponentsDemo;
 
-import React from "react";
-import EntryExitPositionSize from '../../components/lessons/EntryExitPositionSize';
-import SlippageFeesExecution from '../../components/lessons/SlippageFeesExecution';
+import React, { useCallback, useMemo, useState } from "react";
+import EntryExitPositionSize from "../../components/lessons/EntryExitPositionSize";
+import SlippageFeesExecution from "../../components/lessons/SlippageFeesExecution";
 
+function generateSampleSeries(length = 80) {
+  const prices: number[] = [100];
+  for (let i = 1; i < length; i += 1) {
+    const change = (Math.random() - 0.5) * 4;
+    const next = Math.max(40, Math.min(200, prices[i - 1] + change));
+    prices.push(+next.toFixed(2));
+  }
+  return prices;
+}
 
 export default function TradingComponentsDemo() {
+  const [series, setSeries] = useState<number[]>(() => generateSampleSeries());
+  const [seriesVersion, setSeriesVersion] = useState(0);
+  const [entryIndex, setEntryIndex] = useState<number | null>(null);
+  const [exitIndex, setExitIndex] = useState<number | null>(null);
+
+  const handleEntryExitChange = useCallback(
+    ({ entryIndex: entry, exitIndex: exit }: { entryIndex: number | null; exitIndex: number | null }) => {
+      setEntryIndex(entry);
+      setExitIndex(exit);
+    },
+    []
+  );
+
+  const regenerateSeries = () => {
+    setSeries(generateSampleSeries());
+    setSeriesVersion((version) => version + 1);
+    setEntryIndex(null);
+    setExitIndex(null);
+  };
+
+  const effectiveEntryIndex = entryIndex ?? 10;
+  const effectiveExitIndex = exitIndex ?? 40;
+
+  const slippageSeries = useMemo(() => [...series], [series]);
+
   return (
-    <>
-      <EntryExitPositionSize />
-      <div style={{ height: 18 }} />
-      <SlippageFeesExecution />
-    </>
+    <main className="max-w-6xl mx-auto px-6 py-10 space-y-8">
+      <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <p className="text-sm uppercase tracking-wide text-lime-800 font-semibold">Interactive Demo</p>
+          <h1 className="text-3xl font-bold text-gray-900 mt-1">Trading Components Demo</h1>
+          <p className="text-gray-600 mt-2 max-w-2xl">
+            Experiment with the same entry/exit workflow and slippage simulation found in the lessons—now housed in a dedicated
+            sandbox so you can play without affecting lesson progress.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={regenerateSeries}
+          className="self-start rounded-full border border-lime-200 bg-white px-5 py-2 font-semibold text-lime-800 shadow-sm hover:bg-lime-50"
+        >
+          Regenerate Sample Prices
+        </button>
+      </header>
+
+      <section className="grid gap-8 lg:grid-cols-2">
+        <div className="rounded-3xl border border-gray-100 bg-white shadow-md">
+          <div className="border-b border-gray-100 px-6 py-4">
+            <h2 className="text-xl font-semibold text-gray-900">Entry/Exit & Position Size</h2>
+            <p className="text-sm text-gray-600">Pick trade levels and sizing to see how capital at risk changes.</p>
+          </div>
+          <EntryExitPositionSize
+            key={seriesVersion}
+            initialSeries={series}
+            onChange={handleEntryExitChange}
+          />
+        </div>
+
+        <div className="rounded-3xl border border-gray-100 bg-white shadow-md">
+          <div className="border-b border-gray-100 px-6 py-4">
+            <h2 className="text-xl font-semibold text-gray-900">Slippage, Fees & Execution</h2>
+            <p className="text-sm text-gray-600">See how the same trade performs once you add execution friction.</p>
+          </div>
+          <SlippageFeesExecution
+            series={slippageSeries}
+            entryIndex={effectiveEntryIndex}
+            exitIndex={effectiveExitIndex}
+          />
+        </div>
+      </section>
+    </main>
   );
 }
