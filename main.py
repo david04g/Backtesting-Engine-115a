@@ -1046,6 +1046,185 @@ async def run_dollar_cost_average(request: Request):
         },
     }
 
+@app.post("/api/strategies/value_averaging")
+async def run_value_averaging(request: Request):
+    if yf is None:
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "message": "Server missing yfinance. Install backend requirements.",
+            },
+        )
+
+    try:
+        payload = await request.json()
+    except Exception:
+        return {"status": "error", "message": "Invalid JSON body"}
+
+    ticker = (payload.get("ticker") or "").upper().strip()
+    start_date = payload.get("start_date")
+    end_date = payload.get("end_date")
+    capital_raw = payload.get("capital")
+    frequency = (payload.get("frequency") or "monthly").lower()
+    target_growth_rate_raw = payload.get("target_growth_rate")
+
+    try:
+        capital = float(capital_raw)
+        if capital <= 0:
+            raise ValueError
+    except Exception:
+        return {"status": "error", "message": "Invalid capital amount"}
+
+    target_growth_rate = None
+    if target_growth_rate_raw is not None:
+        try:
+            target_growth_rate = float(target_growth_rate_raw) / 100.0  # Convert percentage to decimal
+            if target_growth_rate < 0:
+                raise ValueError
+        except Exception:
+            return {"status": "error", "message": "Invalid target growth rate"}
+
+    if not ticker or not start_date or not end_date:
+        return {"status": "error", "message": "Missing required fields"}
+
+    try:
+        start_dt = datetime.fromisoformat(start_date)
+        end_dt = datetime.fromisoformat(end_date)
+    except Exception:
+        return {
+            "status": "error",
+            "message": "Invalid date format. Use YYYY-MM-DD",
+        }
+
+    if start_dt >= end_dt:
+        return {"status": "error", "message": "Buy date must be before sell date"}
+
+    try:
+        hist = yf.download(
+            ticker,
+            start=start_dt.strftime("%Y-%m-%d"),
+            end=end_dt.strftime("%Y-%m-%d"),
+            progress=False,
+            auto_adjust=True,
+        )
+    except Exception as e:
+        return {"status": "error", "message": f"Data fetch failed: {e}"}
+
+    if hist is None or hist.empty:
+        return {"status": "error", "message": "No data returned for ticker/date range"}
+
+    prices = hist["Close"]
+    if isinstance(prices, pd.DataFrame):
+        prices = prices.iloc[:, 0]
+    prices = prices.dropna()
+
+    if prices.empty:
+        return {"status": "error", "message": "No closing price data available"}
+
+    if frequency == "weekly":
+        buy_dates = pd.date_range(start_dt, end_dt, freq="W")
+    elif frequency == "biweekly":
+        buy_dates = pd.date_range(start_dt, end_dt, freq="2W")
+    elif frequency == "monthly":
+        buy_dates = pd.date_range(start_dt, end_dt, freq="M")
+    else:
+        return {"status": "error", "message": "Invalid frequency."}
+
+    trading_days = prices.index
+
+    mapped_buy_dates = []
+    for d in buy_dates:
+        valid_days = trading_days[trading_days <= d]
+        if len(valid_days) > 0:
+            mapped_buy_dates.append(valid_days[-1])
+
+    buy_dates = list(dict.fromkeys(mapped_buy_dates))
+
+    if not buy_dates:
+        return {"status": "error", "message": "No valid value averaging buy dates available in price data"}
+
+    # Default target growth rate: distribute capital evenly if not specified
+    if target_growth_rate is None:
+        # Calculate growth rate that would use all capital evenly
+        num_periods = len(buy_dates)
+        if num_periods > 1:
+            target_growth_rate = 0.01  # 1% default growth per period
+        else:
+            target_growth_rate = 0.0
+
+    # Initialize value averaging
+    total_shares = 0.0
+    total_contributed = 0.0
+    initial_target = capital / len(buy_dates) if len(buy_dates) > 0 else capital
+    current_period = 0
+
+    series = []
+
+    for date, price in prices.items():
+        if hasattr(date, "strftime"):
+            date_str = date.strftime("%Y-%m-%d")
+        else:
+            date_str = str(date)
+
+        current_portfolio_value = total_shares * price
+
+        # Check if this is a buy date
+        if date in buy_dates:
+            # Calculate target value for this period
+            if current_period == 0:
+                target_value = initial_target
+            else:
+                target_value = initial_target * ((1 + target_growth_rate) ** current_period)
+
+            # Calculate how much we need to invest or sell
+            difference = target_value - current_portfolio_value
+
+            if difference > 0:
+                # Need to invest more
+                # Only invest if we have capital left
+                available_capital = capital - total_contributed
+                investment_amount = min(difference, available_capital)
+                
+                if investment_amount > 0:
+                    shares_bought = investment_amount / price
+                    total_shares += shares_bought
+                    total_contributed += investment_amount
+
+            # Note: We don't sell if above target in this implementation
+            # (value averaging typically allows selling, but we'll keep it simple)
+
+            current_period += 1
+
+        # Update portfolio value after any trades
+        portfolio_value = total_shares * price
+
+        series.append({
+            "date": date_str,
+            "price": float(price),
+            "value": round(portfolio_value, 2),
+            "shares": round(total_shares, 6),
+            "contributed": round(total_contributed, 2),
+        })
+
+    final_value = series[-1]["value"]
+    if total_contributed > 0:
+        total_return_pct = ((final_value - total_contributed) / total_contributed * 100)
+    else:
+        total_return_pct = 0.0
+
+    return {
+        "status": "success",
+        "data": {
+            "frequency": frequency,
+            "target_growth_rate": round(target_growth_rate * 100, 2) if target_growth_rate else None,
+            "total_contributed": round(total_contributed, 2),
+            "final_value": round(final_value, 2),
+            "total_return_pct": round(total_return_pct, 2),
+            "series": series,
+        },
+    }
+
 @app.get("/api/ticker/{ticker}/news")
 async def get_ticker_news(ticker: str):
     if yf is None:
@@ -1457,6 +1636,84 @@ def run_dca_on_prices(
     portfolio_value = total_shares * final_price
     return float(portfolio_value)
 
+def run_value_averaging_on_prices(
+    prices: pd.Series,
+    capital: float,
+    frequency: str,
+    target_growth_rate: float = None
+) -> float:
+    """Run Value Averaging strategy on a custom price series. Returns final capital."""
+    if prices.empty:
+        return capital
+    
+    # Determine buy dates based on frequency
+    start_date = prices.index[0]
+    end_date = prices.index[-1]
+    
+    if frequency == "weekly":
+        buy_dates = pd.date_range(start_date, end_date, freq="W")
+    elif frequency == "biweekly":
+        buy_dates = pd.date_range(start_date, end_date, freq="2W")
+    elif frequency == "monthly":
+        buy_dates = pd.date_range(start_date, end_date, freq="M")
+    else:
+        return capital
+    
+    trading_days = prices.index
+    mapped_buy_dates = []
+    for d in buy_dates:
+        valid_days = trading_days[trading_days <= d]
+        if len(valid_days) > 0:
+            mapped_buy_dates.append(valid_days[-1])
+    
+    buy_dates = list(dict.fromkeys(mapped_buy_dates))
+    if not buy_dates:
+        return capital
+    
+    # Default target growth rate
+    if target_growth_rate is None:
+        num_periods = len(buy_dates)
+        if num_periods > 1:
+            target_growth_rate = 0.01  # 1% default growth per period
+        else:
+            target_growth_rate = 0.0
+    
+    # Initialize value averaging
+    total_shares = 0.0
+    total_contributed = 0.0
+    initial_target = capital / len(buy_dates) if len(buy_dates) > 0 else capital
+    current_period = 0
+    
+    for date, price in prices.items():
+        current_portfolio_value = total_shares * price
+        
+        # Check if this is a buy date
+        if date in buy_dates:
+            # Calculate target value for this period
+            if current_period == 0:
+                target_value = initial_target
+            else:
+                target_value = initial_target * ((1 + target_growth_rate) ** current_period)
+            
+            # Calculate how much we need to invest
+            difference = target_value - current_portfolio_value
+            
+            if difference > 0:
+                # Need to invest more
+                available_capital = capital - total_contributed
+                investment_amount = min(difference, available_capital)
+                
+                if investment_amount > 0:
+                    shares_bought = investment_amount / price
+                    total_shares += shares_bought
+                    total_contributed += investment_amount
+            
+            current_period += 1
+    
+    final_price = prices.iloc[-1]
+    portfolio_value = total_shares * final_price
+    return float(portfolio_value)
+
 def run_buy_hold_advanced_on_prices(
     prices: pd.Series,
     capital: float,
@@ -1546,7 +1803,7 @@ async def run_monte_carlo(request: Request):
         metadata = {}
     
     # Check if strategy is eligible for Monte Carlo
-    eligible_types = ["simple_moving_average_crossover", "dca", "buy_hold_markers"]
+    eligible_types = ["simple_moving_average_crossover", "dca", "buy_hold_markers", "value_averaging"]
     if strategy_type not in eligible_types:
         return {
             "status": "error",
@@ -1645,6 +1902,14 @@ async def run_monte_carlo(request: Request):
                 commission_dollars = metadata.get("commission_dollars", 0.0)
                 final_capital = run_buy_hold_advanced_on_prices(
                     synthetic_prices, capital, entry_price, exit_price, position_percent, commission_dollars
+                )
+            elif strategy_type == "value_averaging":
+                frequency = metadata.get("frequency", "monthly")
+                target_growth_rate = metadata.get("target_growth_rate")
+                if target_growth_rate is not None:
+                    target_growth_rate = float(target_growth_rate) / 100.0  # Convert percentage to decimal
+                final_capital = run_value_averaging_on_prices(
+                    synthetic_prices, capital, frequency, target_growth_rate
                 )
             else:
                 continue

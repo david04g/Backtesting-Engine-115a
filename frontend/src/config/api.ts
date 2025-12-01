@@ -49,6 +49,7 @@ export const API_ENDPOINTS = {
     DCA: getApiEndpoint('api/strategies/dca'),
     SAVE: getApiEndpoint('api/strategies/save'),
     BUY_HOLD_MARKERS: getApiEndpoint('api/strategies/buy_hold_markers'),
+    VALUE_AVERAGING: getApiEndpoint('api/strategies/value_averaging'),
     GET_USER_STRATEGIES: (userId: string) => getApiEndpoint(`api/strategies/user/${userId}`),
     DELETE: (strategyId: string) => getApiEndpoint(`api/strategies/${strategyId}`),
   },
