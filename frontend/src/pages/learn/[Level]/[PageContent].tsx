@@ -14,6 +14,7 @@ import { DragAndDrop, MultipleChoice } from "../../../components/quiz";
 import { EntryExitActivity } from "../../../components/lessons/EntryExitActivity";
 import EntryExitPositionSize from "../../../components/lessons/EntryExitPositionSize";
 import SlippageFeesExecution from "../../../components/lessons/SlippageFeesExecution";
+import Level3PositionSlider from "../../../components/lessons/Level3PositionSlider";
 
 interface LessonRecord {
   id: number;
@@ -264,7 +265,9 @@ const PageContent = () => {
   const isLevel3EntryLesson =
     lessonData?.level === 3 && lessonData?.page_number === 1;
   const isLevel3SlippageLesson =
-    lessonData?.level === 3 && lessonData?.page_number === 2;
+    lessonData?.level === 3 && lessonData?.page_number === 5;
+  const isLevel3PositionSliderLesson =
+    lessonData?.level === 3 && lessonData?.page_number === 3;
 
   const hasPersistedCompletion = lessonData?.id
     ? !!quizCompletionState[lessonData.id]
@@ -445,6 +448,7 @@ const PageContent = () => {
                     {isEntryExitActivityLesson && <EntryExitActivity />}
                     {isLevel3EntryLesson && <EntryExitPositionSize />}
                     {isLevel3SlippageLesson && <SlippageFeesExecution />}
+                    {isLevel3PositionSliderLesson && <Level3PositionSlider />}
 
                     {requiresQuiz && !isLessonComplete && hasAttemptedQuiz && (
                       <p className="text-sm text-rose-700 font-medium text-center">
