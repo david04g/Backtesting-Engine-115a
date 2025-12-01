@@ -265,7 +265,7 @@ const PageContent = () => {
   const isLevel3EntryLesson =
     lessonData?.level === 3 && lessonData?.page_number === 1;
   const isLevel3SlippageLesson =
-    lessonData?.level === 3 && lessonData?.page_number === 2;
+    lessonData?.level === 3 && lessonData?.page_number === 5;
   const isLevel3PositionSliderLesson =
     lessonData?.level === 3 && lessonData?.page_number === 3;
 
