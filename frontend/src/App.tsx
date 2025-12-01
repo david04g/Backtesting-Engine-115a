@@ -36,10 +36,7 @@ const App: React.FC = () => {
           <Route
             path="/profile"
             element={
-              <>
-                <Navigation />
-                <ProfileContent />
-              </>
+              <ProfileContent />
             }
           />
           <Route

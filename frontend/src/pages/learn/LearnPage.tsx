@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { get_all_lessons_by_levels, get_user_progress } from '../../components/apiServices/userApi';
 import { BookOpen, ChevronDown, ChevronRight, CheckCircle2, Circle, X } from 'lucide-react';
-import SidebarSimple from '../../components/SidebarSimple';
 
 interface Lesson {
   id: number;
@@ -162,8 +161,7 @@ export const LearnPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <SidebarSimple active="learn" />
+    <div className="min-h-screen bg-gray-50">
       <div className="flex-1 py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
         {/* Header */}

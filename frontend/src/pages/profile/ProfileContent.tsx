@@ -1,6 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import { useNavigate } from 'react-router-dom';
 import SidebarSimple from '../../components/SidebarSimple';
+import Navigation from '../../components/Navigation';
 import { get_user_progress } from '../../components/apiServices/userApi';
 import { UserProps } from '../../types';
 import EditProfileModal from '../../components/auth/EditProfileModal';
@@ -130,10 +131,12 @@ export const ProfileContent: React.FC = () => {
   };
   
   return (
-    <div className="w-full min-h-[calc(100vh-72px)] bg-white flex flex-col md:flex-row">
-      <SidebarSimple active="strategies" />
-      <div className="flex-1 flex flex-col w-full md:w-auto">
-        <div className="px-4 sm:px-6 md:px-12 pt-6 md:pt-10 pb-6 md:pb-8 border-b border-black/10">
+    <div className="min-h-screen bg-gray-50">
+      <Navigation />
+      <div className="w-full min-h-[calc(100vh-72px)] bg-white flex flex-col md:flex-row">
+        <SidebarSimple active="profile" />
+        <div className="flex-1 flex flex-col w-full md:w-auto">
+          <div className="px-4 sm:px-6 md:px-12 pt-6 md:pt-10 pb-6 md:pb-8 border-b border-black/10">
           <div className="text-2xl md:text-3xl font-bold text-center">Profile Overview</div>
           {loading ? (
             <div className="mt-6 md:mt-8 text-center text-gray-500">Loading profile...</div>
@@ -224,28 +227,7 @@ export const ProfileContent: React.FC = () => {
         user={user}
         onUpdate={handleUpdateProfile}
       />
-      {/* {showCreateLockedPopup && (
-        <div className="fixed bottom-6 right-6 z-50" role="status" aria-live="polite">
-          <div
-            className="relative rounded-3xl border border-black/20 px-6 py-5 shadow-lg"
-            style={{ backgroundColor: '#D9F2A6', minWidth: '320px' }}
-          >
-            <button
-              onClick={() => setShowCreateLockedPopup(false)}
-              aria-label="Close create strategy lock message"
-              className="absolute right-4 top-3 text-black/70 transition-colors hover:text-black"
-            >
-              ×
-            </button>
-            <div
-              className="rounded-2xl px-4 py-4 text-center font-semibold text-black"
-              style={{ backgroundColor: '#E8B6B6' }}
-            >
-              Creating a strategy will be unlocked after completing Level 0. With each level completed, another strategy can be unlocked!
-            </div>
-          </div>
-        </div>
-      )} */}
+      </div>
     </div>
   );
 };

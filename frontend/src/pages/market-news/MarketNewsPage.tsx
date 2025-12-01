@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_ENDPOINTS } from '../../config/api';
 import NewsStockChart from '../../components/NewsStockChart';
-import SidebarSimple from '../../components/SidebarSimple';
 
 interface NewsArticle {
   id: string;
@@ -64,9 +63,8 @@ const MarketNewsPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex">
-        <SidebarSimple active="news" />
-        <div className="flex-1 p-6">
+      <div className="min-h-screen bg-gray-50">
+        <div className="p-6">
           <div className="max-w-6xl mx-auto">
           <h1 className="text-2xl font-bold mb-6">Market News</h1>
           <div className="text-center py-8">
@@ -100,9 +98,8 @@ const MarketNewsPage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex">
-        <SidebarSimple active="news" />
-        <div className="flex-1 p-6">
+      <div className="min-h-screen bg-gray-50">
+        <div className="p-6">
           <div className="max-w-6xl mx-auto">
             <h1 className="text-2xl font-bold mb-6">Market News</h1>
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
@@ -115,9 +112,8 @@ const MarketNewsPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <SidebarSimple active="news" />
-      <div className="flex-1 p-6">
+    <div className="min-h-screen bg-gray-50">
+      <div className="p-6">
         <div className="max-w-6xl mx-auto">
           <h1 className="text-2xl font-bold mb-6">Market News</h1>
           

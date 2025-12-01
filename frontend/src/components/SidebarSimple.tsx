@@ -1,9 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_ENDPOINTS } from '../config/api';
-import { BookOpen, Newspaper } from 'lucide-react';
-
-// IconDot is no longer used but keeping it in case it's needed later
+import { BookOpen, User } from 'lucide-react';
 
 interface User {
   id: string;
@@ -12,7 +10,7 @@ interface User {
 }
 
 type SidebarSimpleProps = {
-  active: 'strategies' | 'learn' | 'news';
+  active: 'profile' | 'learn';
 };
 
 const IconDot: React.FC = () => (
@@ -66,11 +64,12 @@ export const SidebarSimple: React.FC<SidebarSimpleProps> = ({ active }) => {
       <div>
         <nav className="pt-6 space-y-3 px-4">
           <button 
-            onClick={() => navigate('/create')}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-all hover:opacity-80 active:scale-[0.98] cursor-pointer ${active === 'strategies' ? 'bg-white/40' : ''}`}
+            onClick={() => navigate('/profile')}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-all hover:opacity-80 active:scale-[0.98] cursor-pointer ${active === 'profile' ? 'bg-white/40' : ''}`}
           >
-            <IconList />
-            <span className="font-semibold">Strategies</span>
+            <User size={16} />
+            <span className="font-semibold">Profile</span>
+            <span className="ml-auto">‹</span>
           </button>
           <button 
             onClick={() => navigate('/learn')}
@@ -78,14 +77,6 @@ export const SidebarSimple: React.FC<SidebarSimpleProps> = ({ active }) => {
           >
             <BookOpen size={16} />
             <span className="font-semibold">Learn</span>
-            <span className="ml-auto">›</span>
-          </button>
-          <button 
-            onClick={() => navigate('/market-news')}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-all hover:opacity-80 active:scale-[0.98] cursor-pointer ${active === 'news' ? 'bg-white/40' : ''}`}
-          >
-            <Newspaper size={16} />
-            <span className="font-semibold">News</span>
             <span className="ml-auto">›</span>
           </button>
         </nav>

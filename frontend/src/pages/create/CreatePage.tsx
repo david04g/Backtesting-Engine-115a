@@ -1,7 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { API_ENDPOINTS } from '../../config/api';
 import { get_user_progress } from '../../components/apiServices/userApi';
-import SidebarSimple from '../../components/SidebarSimple';
 
 const isWeekday = (date: Date): boolean => {
   const day = date.getDay();
@@ -792,8 +791,7 @@ const CreatePage: React.FC = () => {
 
   if (!selectedStrategy) {
     return (
-      <div className="min-h-screen bg-gray-50 flex">
-        <SidebarSimple active="strategies" />
+      <div className="min-h-screen bg-gray-50">
         <div className="flex-1 pb-16">
           <div className="mx-auto max-w-5xl px-6 pt-12">
           <div className="rounded-3xl bg-pink-200 px-8 py-10 text-center shadow-sm">
@@ -928,8 +926,7 @@ const CreatePage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <SidebarSimple active="strategies" />
+    <div className="min-h-screen bg-gray-50">
       <div className="flex-1 pb-16">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 pt-8 sm:pt-12">
         <div className="rounded-3xl bg-pink-200 px-4 py-6 sm:px-8 sm:py-10 shadow-sm">

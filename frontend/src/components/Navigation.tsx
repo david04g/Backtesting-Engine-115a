@@ -41,6 +41,17 @@ const Navigation: React.FC = () => {
   const navLinks = isLoggedIn ? (
     <>
       <Link
+        to="/market-news"
+        onClick={() => setMobileMenuOpen(false)}
+        className={`px-4 py-2 sm:px-6 sm:py-3 rounded-full font-medium transition-colors text-sm sm:text-base ${
+          location.pathname === "/market-news"
+            ? "bg-lime-300 hover:bg-lime-400 text-gray-800"
+            : "text-gray-700 hover:text-gray-900"
+        }`}
+      >
+        News
+      </Link>
+      <Link
         to="/profile"
         onClick={() => setMobileMenuOpen(false)}
         className={`px-4 py-2 sm:px-6 sm:py-3 rounded-full font-medium transition-colors text-sm sm:text-base ${
@@ -73,6 +84,17 @@ const Navigation: React.FC = () => {
         }`}
       >
         Home
+      </Link>
+      <Link
+        to="/market-news"
+        onClick={() => setMobileMenuOpen(false)}
+        className={`px-4 py-2 sm:px-6 sm:py-3 rounded-full font-medium transition-colors text-sm sm:text-base ${
+          location.pathname === "/market-news"
+            ? "bg-lime-300 hover:bg-lime-400 text-gray-800"
+            : "text-gray-700 hover:text-gray-900"
+        }`}
+      >
+        News
       </Link>
       <button
         onClick={() => {
