@@ -111,6 +111,28 @@ const PageContent = () => {
               const completedLessons = progress.completedLessons || [];
               const completedSet = new Set(completedLessons);
               
+              // Update local progress to include current lesson if it's further than current progress
+              // This ensures visited pages are tracked even when navigating back
+              const currentProgressLevel = progress.level ?? 0;
+              const currentProgressLesson = progress.lesson ?? 1;
+              
+              if (levelNum > currentProgressLevel || 
+                  (levelNum === currentProgressLevel && lessonNum > currentProgressLesson)) {
+                // Update local state to reflect the furthest reached lesson
+                setUserProgress({
+                  level: levelNum,
+                  lesson: lessonNum,
+                  completedLessons: completedLessons,
+                });
+              } else {
+                // Keep existing progress but ensure state is set
+                setUserProgress({
+                  level: currentProgressLevel,
+                  lesson: currentProgressLesson,
+                  completedLessons: completedLessons,
+                });
+              }
+              
               // Find current lesson index
               const currentIndex = sortedLessons.findIndex(l => l.page_number === lessonNum);
               
@@ -328,13 +350,15 @@ const PageContent = () => {
       const hasReached = userProgress && 
                         lesson.level === userProgress.level && 
                         lesson.page_number <= userProgress.lesson;
+      // Also include the current lesson being viewed (even if navigating back)
+      const isCurrentLesson = index === currentIndex;
       
-      if (isCompleted || hasReached) {
+      if (isCompleted || hasReached || isCurrentLesson) {
         completed.add(index);
       }
     });
     return completed;
-  }, [lessons, completedLessonIds, userProgress]);
+  }, [lessons, completedLessonIds, userProgress, currentIndex]);
 
   const handleNavigate = (direction: "prev" | "next") => {
     if (currentIndex < 0 || !lessons.length) {
