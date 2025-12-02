@@ -822,9 +822,8 @@ const CreatePage: React.FC = () => {
 
   if (!selectedStrategy) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="flex-1 pb-16">
-          <div className="mx-auto max-w-5xl px-6 pt-12">
+      <div className="min-h-screen bg-gray-50 pb-16">
+        <div className="mx-auto max-w-5xl px-6 pt-12">
           <div className="rounded-3xl bg-pink-200 px-8 py-10 text-center shadow-sm">
             <h1 className="text-3xl font-semibold text-gray-800">
               Lookup strategy
@@ -956,11 +955,10 @@ const CreatePage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="flex-1 pb-16">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 pt-8 sm:pt-12">
-        <div className="rounded-3xl bg-pink-200 px-4 py-6 sm:px-8 sm:py-10 shadow-sm">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+    <div className="min-h-screen bg-gray-50 pb-16">
+      <div className="mx-auto max-w-6xl px-6 pt-12">
+        <div className="rounded-3xl bg-pink-200 px-8 py-10 shadow-sm">
+          <div className="flex items-center justify-between">
             <button
               onClick={() => setSelectedStrategy(null)}
               className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-gray-800 shadow transition hover:bg-gray-100"

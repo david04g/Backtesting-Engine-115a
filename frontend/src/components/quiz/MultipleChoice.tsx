@@ -37,15 +37,21 @@ export const MultipleChoice: React.FC<QuizFromDBProps> = ({
     null
   );
 
+  // Helper function to normalize strings for comparison (trim whitespace)
+  const normalizeString = (str: string): string => {
+    return str.trim();
+  };
+
   useEffect(() => {
     // If questionData is provided, use it directly
     if (questionData) {
       setQuestion(questionData.question);
+      const normalizedAnswer = normalizeString(questionData.answer);
       const formattedOptions: MultipleChoiceOption[] = questionData.options.map(
         (option: string, index: number) => ({
           id: `option-${index}`,
           label: option,
-          isCorrect: option === questionData.answer,
+          isCorrect: normalizeString(option) === normalizedAnswer,
         })
       );
       setOptions(formattedOptions);
@@ -78,11 +84,12 @@ export const MultipleChoice: React.FC<QuizFromDBProps> = ({
 
         setQuestion(data.question || "");
         const dbOptions = data.options || [];
+        const normalizedAnswer = normalizeString(data.answer);
         const formattedOptions: MultipleChoiceOption[] = dbOptions.map(
           (option: string, index: number) => ({
             id: `option-${index}`,
             label: option,
-            isCorrect: option === data.answer,
+            isCorrect: normalizeString(option) === normalizedAnswer,
           })
         );
         setOptions(formattedOptions);
