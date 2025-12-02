@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { AuthModal } from "./auth/AuthModal";
-import { Menu, X } from "lucide-react";
 
 const Navigation: React.FC = () => {
   const navigate = useNavigate();
@@ -9,7 +8,6 @@ const Navigation: React.FC = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const syncAuth = () => {

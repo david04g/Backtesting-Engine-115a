@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { X } from "lucide-react";
 import {
   get_lesson,
   get_lessons_by_level,
@@ -13,6 +12,9 @@ import { LevelCompletionPopup } from "../../../components/LevelCompletionPopup";
 // Import the new DB-driven components
 import { DragAndDrop, MultipleChoice } from "../../../components/quiz";
 import { EntryExitActivity } from "../../../components/lessons/EntryExitActivity";
+import EntryExitPositionSize from "../../../components/lessons/EntryExitPositionSize";
+import SlippageFeesExecution from "../../../components/lessons/SlippageFeesExecution";
+import Level3PositionSlider from "../../../components/lessons/Level3PositionSlider";
 
 interface LessonRecord {
   id: number;
@@ -41,7 +43,6 @@ const PageContent = () => {
   const [userProgress, setUserProgress] = useState<{
     level: number;
     lesson: number;
-    completedLessons?: number[];
   } | null>(null);
   const [nextLevelInfo, setNextLevelInfo] = useState<{
     level: number;
@@ -52,7 +53,6 @@ const PageContent = () => {
   const [showLevelCompletionPopup, setShowLevelCompletionPopup] =
     useState(false);
   const [levelUpComplete, setLevelUpComplete] = useState(false);
-  const [showLockedLessonPopup, setShowLockedLessonPopup] = useState(false);
 
   const levelNum = Number(level);
   const lessonNum = Number(lesson);
@@ -253,7 +253,7 @@ const PageContent = () => {
   }, [lessonData, quizCompletionState, userProgress]);
 
   const handleQuizCompletion = useCallback(
-    async (complete: boolean) => {
+    (complete: boolean) => {
       const lessonId = lessonData?.id;
       if (!lessonId) {
         setIsQuizComplete(complete);
@@ -267,32 +267,12 @@ const PageContent = () => {
         );
         setIsQuizComplete(true);
         setHasAttemptedQuiz(true);
-        
-        // Add lesson to completed lessons and save to backend
-        if (userId) {
-          const currentCompleted = userProgress?.completedLessons || [];
-          if (!currentCompleted.includes(lessonId)) {
-            const updatedCompleted = [...currentCompleted, lessonId];
-            setUserProgress((prev) => ({
-              ...(prev || { level: 0, lesson: 1 }),
-              completedLessons: updatedCompleted,
-            }));
-            
-            // Save to backend
-            await set_user_learning_progress(
-              userId,
-              levelNum,
-              lessonNum,
-              updatedCompleted
-            );
-          }
-        }
       } else if (!quizCompletionState[lessonId]) {
         setIsQuizComplete(false);
         setHasAttemptedQuiz(true);
       }
     },
-    [lessonData?.id, quizCompletionState, userId, userProgress, levelNum, lessonNum]
+    [lessonData?.id, quizCompletionState]
   );
 
   const currentIndex = useMemo(() => {
@@ -307,40 +287,9 @@ const PageContent = () => {
       lessons.map((entry) => ({
         id: `lesson-${entry.page_number}`,
         title: entry.page_title,
-        lessonId: entry.id,
       })),
     [lessons]
   );
-
-  const completedLessonIds = useMemo(() => {
-    const completed = new Set<number>();
-    if (userProgress?.completedLessons) {
-      userProgress.completedLessons.forEach((id) => completed.add(id));
-    }
-    return completed;
-  }, [userProgress?.completedLessons]);
-
-  const unlockedLessonIds = useMemo(() => {
-    const unlocked = new Set<number>();
-    if (lessons.length === 0 || !userProgress) return unlocked;
-    
-    const currentLevel = userProgress.level;
-    const currentLesson = userProgress.lesson;
-    
-    // Unlock all lessons that the user has already gone through
-    lessons.forEach(lesson => {
-      // Unlock if:
-      // 1. It's on a previous level (user has progressed past it)
-      // 2. It's on the same level and page_number <= user's current lesson (they've already been there)
-      if (lesson.level < currentLevel) {
-        unlocked.add(lesson.id);
-      } else if (lesson.level === currentLevel && lesson.page_number <= currentLesson) {
-        unlocked.add(lesson.id);
-      }
-    });
-    
-    return unlocked;
-  }, [lessons, userProgress]);
 
   const completedSlides = useMemo(() => {
     const completed = new Set<number>();
@@ -389,6 +338,12 @@ const PageContent = () => {
     lessonData?.content_type === "multiple_choice";
   const isEntryExitActivityLesson =
     lessonData?.level === 2 && lessonData?.page_number === 3;
+  const isLevel3EntryLesson =
+    lessonData?.level === 3 && lessonData?.page_number === 1;
+  const isLevel3SlippageLesson =
+    lessonData?.level === 3 && lessonData?.page_number === 5;
+  const isLevel3PositionSliderLesson =
+    lessonData?.level === 3 && lessonData?.page_number === 3;
 
   const hasPersistedCompletion = lessonData?.id
     ? !!quizCompletionState[lessonData.id]
@@ -496,40 +451,13 @@ const PageContent = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="w-full h-[calc(100vh-72px)] flex flex-col md:flex-row overflow-hidden">
-        {/* Sidebar - Hidden on mobile, visible on desktop */}
-        <div className="hidden md:block w-64 p-6 bg-white relative flex-shrink-0">
+      <div className="w-full h-[calc(100vh-72px)] flex overflow-hidden">
+        <div className="w-64 p-6 bg-white relative">
           <ProgressBar
             slides={slides}
             currentSlideIndex={Math.max(0, currentIndex)}
             completedSlides={completedSlides}
             heading={finalHeadingTitle}
-            completedLessonIds={completedLessonIds}
-            unlockedLessonIds={unlockedLessonIds}
-            visitedSlideIndices={completedSlides}
-            onLessonClick={(index) => {
-              const targetLesson = lessons[index];
-              if (!targetLesson?.id) return;
-              
-              // Check if lesson is unlocked
-              const isUnlocked = unlockedLessonIds.has(targetLesson.id);
-              
-              console.log('Lesson click:', {
-                targetLesson: { id: targetLesson.id, level: targetLesson.level, page: targetLesson.page_number },
-                isUnlocked,
-                unlockedIds: Array.from(unlockedLessonIds),
-                completedIds: Array.from(completedLessonIds)
-              });
-              
-              // Only allow navigation if lesson is unlocked
-              if (isUnlocked) {
-                navigate(`/learn/${targetLesson.level}/${targetLesson.page_number}`);
-              } else {
-                // Show popup if lesson is locked
-                console.log('Lesson locked - showing popup');
-                setShowLockedLessonPopup(true);
-              }
-            }}
           />
           <div
             className="absolute right-0 top-0 bottom-0 w-px bg-gray-300"
@@ -538,46 +466,36 @@ const PageContent = () => {
         </div>
 
         <div
-          className="flex-1 flex flex-col p-4 md:p-8 overflow-y-auto"
-          style={{ marginLeft: "0px" }}
+          className="flex-1 flex flex-col p-8"
+          style={{ marginLeft: "32px" }}
         >
           <div className="max-w-5xl mx-auto w-full flex flex-col h-full">
             <div className="flex-1 overflow-y-auto pr-1">
               <div className="flex flex-col gap-6 pb-8">
-                <div className="flex items-center justify-between gap-4">
-                  <div
-                    className="inline-flex items-center gap-2 md:gap-4 rounded-lg px-4 md:px-6 py-2 md:py-3 text-xs md:text-sm font-semibold"
-                    style={{
-                      backgroundColor: "#D9F2A6",
-                      color: "#1f2937",
-                      maxWidth: "fit-content",
-                    }}
-                  >
-                    <span>Level {lessonData.level}</span>
-                    <span className="opacity-70">
-                      Page {lessonData.page_number}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => navigate('/learn')}
-                    className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium transition-colors text-sm md:text-base"
-                    aria-label="Exit to learn page"
-                  >
-                    <X size={18} />
-                    <span className="hidden sm:inline">Exit</span>
-                  </button>
+                <div
+                  className="inline-flex items-center gap-4 rounded-lg px-6 py-3 text-sm font-semibold"
+                  style={{
+                    backgroundColor: "#D9F2A6",
+                    color: "#1f2937",
+                    maxWidth: "fit-content",
+                  }}
+                >
+                  <span>Level {lessonData.level}</span>
+                  <span className="opacity-70">
+                    Page {lessonData.page_number}
+                  </span>
                 </div>
 
                 <div className="rounded-xl border border-black/10 bg-white shadow-sm">
                   <div
-                    className="rounded-t-xl px-4 py-4 md:px-6 md:py-5"
+                    className="rounded-t-xl px-6 py-5"
                     style={{ backgroundColor: "#F5C3D2" }}
                   >
-                    <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900">
+                    <h2 className="text-3xl font-bold text-gray-900">
                       {finalSupportingTitle}
                     </h2>
                   </div>
-                  <div className="p-4 md:p-6 flex flex-col gap-4 md:gap-6">
+                  <div className="p-6 flex flex-col gap-6">
                     <p className="text-lg leading-relaxed text-gray-800">
                       {finalDescription}
                     </p>
@@ -604,6 +522,9 @@ const PageContent = () => {
                     {dragAndDropSection}
 
                     {isEntryExitActivityLesson && <EntryExitActivity />}
+                    {isLevel3EntryLesson && <EntryExitPositionSize />}
+                    {isLevel3SlippageLesson && <SlippageFeesExecution />}
+                    {isLevel3PositionSliderLesson && <Level3PositionSlider />}
 
                     {requiresQuiz && !isLessonComplete && hasAttemptedQuiz && (
                       <p className="text-sm text-rose-700 font-medium text-center">
@@ -668,40 +589,6 @@ const PageContent = () => {
         }}
         onClose={() => setShowLevelCompletionPopup(false)}
       />
-
-      {/* Locked Lesson Popup */}
-      {showLockedLessonPopup && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-200 max-w-md w-full p-6">
-            <button
-              onClick={() => setShowLockedLessonPopup(false)}
-              className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 transition-colors"
-              aria-label="Close"
-            >
-              <X size={24} />
-            </button>
-            <div className="flex flex-col items-center gap-4 pt-4">
-              <div className="w-16 h-16 rounded-full bg-yellow-100 flex items-center justify-center">
-                <svg className="w-8 h-8 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 text-center">
-                Lesson Not Available Yet
-              </h3>
-              <p className="text-gray-600 text-center">
-                This lesson hasn't been activated yet. Please complete the previous lesson first.
-              </p>
-              <button
-                onClick={() => setShowLockedLessonPopup(false)}
-                className="mt-2 px-6 py-2 bg-lime-300 hover:bg-lime-400 text-gray-800 font-semibold rounded-full transition-colors"
-              >
-                Got it
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
