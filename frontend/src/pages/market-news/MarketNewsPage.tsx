@@ -90,6 +90,7 @@ const MarketNewsPage: React.FC = () => {
               <div key={i} className="bg-white p-6 rounded-lg shadow-sm animate-pulse h-32" />
             ))}
           </div>
+          </div>
         </div>
       </div>
     );
