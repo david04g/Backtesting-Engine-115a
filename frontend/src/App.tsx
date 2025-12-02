@@ -7,7 +7,6 @@ import { AboutContent } from "./pages/about";
 import { ProfileContent } from "./pages/profile";
 import { CreatePage } from "./pages/create";
 import MarketNewsPage from "./pages/market-news/MarketNewsPage";
-import LearnPage from "./pages/learn/LearnPage";
 import PageContent from "./pages/learn/[Level]/[PageContent]";
 import { MonteCarloPage } from "./pages/montecarlo";
 
@@ -58,15 +57,6 @@ const App: React.FC = () => {
               <div className="min-h-screen bg-gray-50">
                 <Navigation />
                 <MarketNewsPage />
-              </div>
-            }
-          />
-          <Route
-            path="/learn"
-            element={
-              <div className="min-h-screen bg-gray-50">
-                <Navigation />
-                <LearnPage />
               </div>
             }
           />
