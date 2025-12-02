@@ -54,6 +54,11 @@ export const API_ENDPOINTS = {
     DELETE: (strategyId: string) => getApiEndpoint(`api/strategies/${strategyId}`),
   },
   
+  // Monte Carlo endpoints
+  MONTE_CARLO: {
+    RUN: getApiEndpoint('api/montecarlo/run'),
+  },
+  
   // Ticker endpoints
   GET_TICKER_NEWS: (ticker: string) => getApiEndpoint(`api/ticker/${ticker}/news`),
   GET_MARKET_NEWS: getApiEndpoint('api/market-news/latest'),

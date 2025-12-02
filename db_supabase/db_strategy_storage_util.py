@@ -56,6 +56,29 @@ def get_all_strategies_by_user(user_id: str):
         return []
     return response.data
 
+def get_strategy_by_id(strategy_id: str, user_id: str = None):
+    """
+    Get strategy by ID. Optionally validate user ownership.
+    
+    Args:
+        strategy_id: The strategy ID to fetch
+        user_id: Optional user ID to validate ownership
+    
+    Returns:
+        Strategy dict if found and owned by user (if user_id provided), None otherwise
+    """
+    query = supabase.table("user_strategies").select("*").eq("strategy_id", strategy_id)
+    
+    # If user_id provided, validate ownership
+    if user_id:
+        query = query.eq("user_id", user_id)
+    
+    response = query.execute()
+    if not response.data:
+        print(f"Strategy {strategy_id} not found" + (f" for user {user_id}" if user_id else ""))
+        return None
+    return response.data[0]
+
 def update_strategy(strategy_id: str, updates: dict):
     if "metadata" in updates:
         existing = supabase.table("user_strategies").select("metadata").eq("strategy_id", strategy_id).execute()
