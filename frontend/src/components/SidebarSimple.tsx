@@ -41,39 +41,41 @@ const IconList: React.FC = () => (
 );
 
 export const SidebarSimple: React.FC<SidebarSimpleProps> = ({ active }) => {
+
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchUser() {
-      try {
-        const userId = localStorage.getItem("user_id");
-        if (!userId || userId === "null" || userId === "undefined") {
-          console.log("no valid user id, redirecting");
+      async function fetchUser() {
+        try {
+          const userId = localStorage.getItem("user_id");
+          if (!userId || userId === "null" || userId === "undefined") {
+            console.log("no valid user id, redirecting");
+            navigate("/");
+            return;
+          }
+          const res = await fetch(API_ENDPOINTS.GET_USER(userId));
+          const json = await res.json();
+          if (json.status === "success" && json.data) {
+            setUser(json.data);
+          } else {
+            console.error("api error: ", json.message);
+            navigate("/");
+          }
+        } catch (err) {
+          console.error("error fetching user: ", err);
           navigate("/");
-          return;
+        } finally {
+          setLoading(false);
         }
-        const res = await fetch(API_ENDPOINTS.GET_USER(userId));
-        const json = await res.json();
-        if (json.status === "success" && json.data) {
-          setUser(json.data);
-        } else {
-          console.error("api error: ", json.message);
-          navigate("/");
-        }
-      } catch (err) {
-        console.error("error fetching user: ", err);
-        navigate("/");
-      } finally {
-        setLoading(false);
       }
-    }
-    fetchUser();
-  }, [navigate]);
+      fetchUser();
+    }, [navigate]);
+    
 
   return (
-    <aside className="hidden md:flex flex-col justify-between flex-shrink-0" style={{ width: 240, backgroundColor: '#D9F2A6' }}>
+    <aside className="flex flex-col justify-between" style={{ width: 240, backgroundColor: '#D9F2A6' }}>
       <div>
         <nav className="pt-6 space-y-3 px-4">
           <button 

@@ -303,36 +303,36 @@ export const DragAndDrop: React.FC<DragAndDropFromDBProps> = ({
       {/* Pink header box - only show if title or instructions are provided */}
       {showHeader && (
         <div
-          className="rounded-lg px-4 py-4 md:px-6 md:py-5 shadow-sm"
+          className="rounded-lg px-6 py-5 shadow-sm"
           style={{ backgroundColor: "#F5C3D2" }}
         >
           {displayTitle && (
-            <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
               {displayTitle}
             </h2>
           )}
           {displayInstructions && (
-            <p className="text-sm md:text-base text-gray-900">{displayInstructions}</p>
+            <p className="text-base text-gray-900">{displayInstructions}</p>
           )}
         </div>
       )}
 
       {/* Drag and Drop Area */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 min-h-0">
+      <div className="grid grid-cols-2 gap-6 min-h-0">
         {/* Items Column */}
         <div className="flex flex-col min-h-0">
           <div className="flex items-center gap-2 mb-3">
             <span className="text-xl" style={{ color: "#E8B6B6" }}>
               ★
             </span>
-            <h3 className="font-semibold text-sm md:text-base text-gray-900">
+            <h3 className="font-semibold text-base text-gray-900">
               Items
             </h3>
           </div>
           <div
             onDrop={(e) => handleDrop(e, "items")}
             onDragOver={handleDragOver}
-            className="space-y-2 overflow-y-auto max-h-[300px] md:max-h-[500px] pr-2"
+            className="space-y-2 overflow-y-auto max-h-[500px] pr-2"
           >
             {availableItems.map((item, index) => (
               <div
@@ -340,7 +340,7 @@ export const DragAndDrop: React.FC<DragAndDropFromDBProps> = ({
                 draggable
                 data-source="items"
                 onDragStart={(e) => handleDragStart(e, item)}
-                className="rounded-lg px-3 py-2 md:px-4 md:py-3 text-sm md:text-base font-medium text-gray-900 cursor-move transition-all hover:opacity-80 flex-shrink-0"
+                className="rounded-lg px-4 py-3 text-base font-medium text-gray-900 cursor-move transition-all hover:opacity-80 flex-shrink-0"
                 style={{ backgroundColor: "#F5C3D2" }}
               >
                 {item}
@@ -350,21 +350,21 @@ export const DragAndDrop: React.FC<DragAndDropFromDBProps> = ({
         </div>
 
         {/* Dropzones Column - Stack multiple dropzones vertically */}
-        <div className="flex flex-col gap-4 min-h-0 overflow-y-auto max-h-[300px] md:max-h-[500px]">
+        <div className="flex flex-col gap-4 min-h-0 overflow-y-auto max-h-[500px]">
           {categories.map((category) => (
             <div key={category.id} className="flex flex-col flex-shrink-0">
               <div className="flex items-center gap-2 mb-3">
-                <span className="text-lg md:text-xl" style={{ color: "#D9F2A6" }}>
+                <span className="text-xl" style={{ color: "#D9F2A6" }}>
                   ★
                 </span>
-                <h3 className="font-semibold text-sm md:text-base text-gray-900">
+                <h3 className="font-semibold text-base text-gray-900">
                   {category.label}
                 </h3>
               </div>
               <div
                 onDrop={(e) => handleDrop(e, category.id)}
                 onDragOver={handleDragOver}
-                className="rounded-lg p-3 md:p-4 min-h-[150px] md:min-h-[200px] max-h-[200px] md:max-h-[300px] space-y-2 overflow-y-auto"
+                className="rounded-lg p-4 min-h-[200px] max-h-[300px] space-y-2 overflow-y-auto"
                 style={{ backgroundColor: "#D9F2A6" }}
               >
                 {(categoryItems[category.id] || []).length === 0 &&
@@ -379,16 +379,16 @@ export const DragAndDrop: React.FC<DragAndDropFromDBProps> = ({
                     draggable
                     data-source={category.id}
                     onDragStart={(e) => handleDragStart(e, item)}
-                  className="rounded-lg px-3 py-2 md:px-4 md:py-3 text-sm md:text-base font-medium text-gray-900 cursor-move transition-all hover:opacity-80"
-                  style={{ backgroundColor: "#F5C3D2" }}
-                >
-                  {item}
-                </div>
-              ))}
+                    className="rounded-lg px-4 py-3 text-base font-medium text-gray-900 cursor-move transition-all hover:opacity-80"
+                    style={{ backgroundColor: "#F5C3D2" }}
+                  >
+                    {item}
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
       </div>
 
    
