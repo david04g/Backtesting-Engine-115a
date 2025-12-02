@@ -38,7 +38,6 @@ interface StrategyResult {
   contribution?: number;
   total_contributed?: number;
   frequency?: string;
-  target_growth_rate?: number;
   series: { date: string; value: number; price: number }[];
 }
 
@@ -84,12 +83,6 @@ const ALL_STRATEGIES = [
     id: 'buy_hold_markers',
     name: 'Buy and Hold Advanced',
     description: 'Advanced buy and hold with entry/exit and trading costs',
-    requiredLevel: 4,
-  },
-  {
-    id: 'value_averaging',
-    name: 'Value Averaging',
-    description: 'Invest to reach a target value path that grows over time.',
     requiredLevel: 4,
   }
 ];
@@ -578,13 +571,6 @@ const CreatePage: React.FC = () => {
         commission: result.commission_dollars ? `$${result.commission_dollars.toFixed(2)}` : 'N/A',
         positionPercent: result.position_percent ? `${result.position_percent}%` : '100%',
       };
-    } else if (selectedStrategy === 'value_averaging') {
-      return {
-        ...base,
-        frequency: result.frequency,
-        targetGrowthRate: result.target_growth_rate ? `${result.target_growth_rate.toFixed(2)}%` : 'N/A',
-        totalContrib: result.total_contributed ? `$${result.total_contributed.toFixed(2)}` : 'N/A',
-      };
     }
 
     return base;
@@ -612,9 +598,6 @@ const CreatePage: React.FC = () => {
         case 'buy_hold_markers':
           endpoint = API_ENDPOINTS.STRATEGIES.BUY_HOLD_MARKERS;
           break;
-        case 'value_averaging':
-          endpoint = API_ENDPOINTS.STRATEGIES.VALUE_AVERAGING;
-          break;
         default:
           throw new Error('Unknown strategy');
       }
@@ -641,13 +624,6 @@ const CreatePage: React.FC = () => {
       if (selectedStrategy === 'buy_hold_markers') {
         body.commission_dollars = parseFloat(commission) || 0;
         body.position_percent = Math.min(Math.max(parseFloat(positionPercent) || 100, 0), 100);
-      }
-
-      if (selectedStrategy === 'value_averaging') {
-        body.frequency = frequency;
-        if (contribution.trim() !== '') {
-          body.target_growth_rate = parseFloat(contribution);
-        }
       }
 
       const response = await fetch(endpoint, {
@@ -710,13 +686,6 @@ const CreatePage: React.FC = () => {
         metadata.frequency = frequency;
         if (contribution.trim() !== '') {
           metadata.contribution = parseFloat(contribution);
-        }
-      }
-
-      if (selectedStrategy === 'value_averaging') {
-        metadata.frequency = frequency;
-        if (contribution.trim() !== '') {
-          metadata.target_growth_rate = parseFloat(contribution);
         }
       }
 
@@ -830,17 +799,17 @@ const CreatePage: React.FC = () => {
             </h1>
           </div>
 
-          <div className="mt-8 flex gap-4">
+          <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row gap-3 sm:gap-4">
             <input
               type="text"
               value={search}
               onChange={event => setSearch(event.target.value)}
               placeholder="Search strategies..."
-              className="flex-1 rounded-full border border-gray-200 bg-white px-6 py-3 text-gray-700 shadow-sm focus:border-pink-300 focus:outline-none focus:ring-2 focus:ring-pink-200"
+              className="flex-1 rounded-full border border-gray-200 bg-white px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base text-gray-700 shadow-sm focus:border-pink-300 focus:outline-none focus:ring-2 focus:ring-pink-200"
             />
             <button
               onClick={() => setShowSavedStrategies(true)}
-              className="rounded-full bg-lime-300 px-6 py-3 text-sm font-semibold text-gray-800 shadow transition hover:bg-lime-200"
+              className="rounded-full bg-lime-300 px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-gray-800 shadow transition hover:bg-lime-200 whitespace-nowrap"
             >
               My Strategies ({savedStrategies.length})
             </button>
@@ -872,7 +841,7 @@ const CreatePage: React.FC = () => {
               </div>
             )}
           </div>
-        </div>
+          </div>
 
         {showSavedStrategies && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
@@ -950,8 +919,9 @@ const CreatePage: React.FC = () => {
             </div>
           </div>
         )}
+        </div>
       </div>
-    );
+  );
   }
 
   return (
@@ -961,26 +931,26 @@ const CreatePage: React.FC = () => {
           <div className="flex items-center justify-between">
             <button
               onClick={() => setSelectedStrategy(null)}
-              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-gray-800 shadow transition hover:bg-gray-100"
+              className="rounded-full bg-white px-4 py-2 text-xs sm:text-sm font-semibold text-gray-800 shadow transition hover:bg-gray-100"
             >
               ← Back
             </button>
             <button
               onClick={() => setShowSavedStrategies(true)}
-              className="rounded-full bg-lime-300 px-4 py-2 text-sm font-semibold text-gray-800 shadow transition hover:bg-lime-200"
+              className="rounded-full bg-lime-300 px-4 py-2 text-xs sm:text-sm font-semibold text-gray-800 shadow transition hover:bg-lime-200"
             >
               My Strategies ({savedStrategies.length})
             </button>
           </div>
-          <h1 className="mt-4 text-center text-3xl font-semibold text-gray-800">
+          <h1 className="mt-4 text-center text-2xl sm:text-3xl font-semibold text-gray-800">
             Lookup strategy
           </h1>
-          <p className="mt-2 text-center text-sm text-gray-700">
+          <p className="mt-2 text-center text-xs sm:text-sm text-gray-700">
             {strategies.find(s => s.id === selectedStrategy)?.name}
           </p>
         </div>
 
-        <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(360px,1fr)_minmax(480px,1.25fr)]">
+        <div className="mt-6 sm:mt-10 grid gap-6 sm:gap-8 lg:grid-cols-[minmax(360px,1fr)_minmax(480px,1.25fr)]">
           <section className="rounded-3xl bg-pink-200 p-6 shadow-sm">
             <h2 className="text-2xl font-semibold text-gray-800">Inputs</h2>
             <div className="mt-6 space-y-5">
@@ -1042,38 +1012,6 @@ const CreatePage: React.FC = () => {
                       className="mt-2 w-full rounded-md bg-lime-200 px-4 py-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-lime-400"
                       min={0}
                       step={10}
-                    />
-                  </div>
-                </>
-              )}
-              {selectedStrategy === 'value_averaging' && (
-                <>
-                  <div>
-                    <label className="block text-sm text-gray-700">
-                      Buy Frequency
-                    </label>
-                    <select
-                      value={frequency}
-                      onChange={e => setFrequency(e.target.value)}
-                      className="mt-2 w-full rounded-md bg-lime-200 px-4 py-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-lime-400"
-                    >
-                      <option value="weekly">Weekly</option>
-                      <option value="biweekly">Biweekly</option>
-                      <option value="monthly">Monthly</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm text-gray-700">
-                      Target Growth Rate per Period (%)
-                    </label>
-                    <input
-                      type="number"
-                      value={contribution}
-                      onChange={e => setContribution(e.target.value)}
-                      placeholder="e.g., 1.0 for 1% growth per period"
-                      className="mt-2 w-full rounded-md bg-lime-200 px-4 py-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-lime-400"
-                      min={0}
-                      step={0.1}
                     />
                   </div>
                 </>
@@ -1293,14 +1231,6 @@ const CreatePage: React.FC = () => {
                 <p>Frequency: {summary.frequency}</p>
               </div>
             )}
-            {summary && selectedStrategy === 'value_averaging' && (
-              <div className="rounded-3xl bg-pink-200 p-6 shadow-sm text-gray-800 text-sm space-y-2">
-                <p>Final Value: {summary.finalValue}</p>
-                <p>Total Contributed: {summary.totalContrib}</p>
-                <p>Target Growth Rate: {summary.targetGrowthRate}</p>
-                <p>Frequency: {summary.frequency}</p>
-              </div>
-            )}
             {selectedStrategy === 'buy_hold_markers' && (
               <div className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -1491,7 +1421,8 @@ const CreatePage: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+        </div>
+      </div>
   );
 };
 
