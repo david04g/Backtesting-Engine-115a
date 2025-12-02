@@ -57,13 +57,9 @@ const PageContent = () => {
   const levelNum = Number(level);
   const lessonNum = Number(lesson);
 
-  console.log("Route params:", { level, lesson, levelNum, lessonNum });
-
   useEffect(() => {
     const fetchProgressAndLesson = async () => {
-      console.log("useEffect triggered");
       if (Number.isNaN(levelNum) || Number.isNaN(lessonNum)) {
-        console.log("Early return due to NaN:", { levelNum, lessonNum });
         return;
       }
 
@@ -73,35 +69,27 @@ const PageContent = () => {
         const savedUserId = localStorage.getItem("user_id");
         if (savedUserId) {
           setUserId(savedUserId);
-          try {
-            const progress = await get_user_progress(savedUserId);
-            if (progress) {
-              setUserProgress({
-                level: progress.level ?? 0,
-                lesson: progress.lesson ?? 1,
-              });
+          const progress = await get_user_progress(savedUserId);
+          if (progress) {
+            setUserProgress({
+              level: progress.level ?? 0,
+              lesson: progress.lesson ?? 1,
+              completedLessons: progress.completedLessons || [],
+            });
 
-              if (levelNum > progress.level) {
-                navigate(`/learn/${progress.level}/${progress.lesson || 1}`, {
-                  replace: true,
-                });
-                return;
-              }
+            if (levelNum > progress.level) {
+              navigate(`/learn/${progress.level}/${progress.lesson || 1}`, {
+                replace: true,
+              });
+              return;
             }
-          } catch (progressError) {
-            console.warn("Failed to fetch user progress, continuing without progress check:", progressError);
-            // Continue without progress check - allow access to lessons
           }
         }
 
-        console.log(`Loading lesson: level=${levelNum}, lesson=${lessonNum}`);
         const [lessonResponse, lessonsForLevel] = await Promise.all([
           get_lesson(levelNum, lessonNum),
           get_lessons_by_level(levelNum),
         ]);
-
-        console.log("Lesson response:", lessonResponse);
-        console.log("Lessons for level:", lessonsForLevel);
 
         if (lessonResponse) {
           setLessonData(lessonResponse as LessonRecord);
@@ -114,6 +102,88 @@ const PageContent = () => {
             (a, b) => (a.page_number ?? 0) - (b.page_number ?? 0)
           );
           setLessons(sortedLessons as LessonRecord[]);
+          
+          // Check if current lesson is unlocked
+          const currentLesson = sortedLessons.find(l => l.page_number === lessonNum);
+          if (currentLesson && savedUserId) {
+            const progress = await get_user_progress(savedUserId);
+            if (progress) {
+              const completedLessons = progress.completedLessons || [];
+              const completedSet = new Set(completedLessons);
+              
+              // Update local progress to include current lesson if it's further than current progress
+              // This ensures visited pages are tracked even when navigating back
+              const currentProgressLevel = progress.level ?? 0;
+              const currentProgressLesson = progress.lesson ?? 1;
+              
+              if (levelNum > currentProgressLevel || 
+                  (levelNum === currentProgressLevel && lessonNum > currentProgressLesson)) {
+                // Update local state to reflect the furthest reached lesson
+                setUserProgress({
+                  level: levelNum,
+                  lesson: lessonNum,
+                  completedLessons: completedLessons,
+                });
+              } else {
+                // Keep existing progress but ensure state is set
+                setUserProgress({
+                  level: currentProgressLevel,
+                  lesson: currentProgressLesson,
+                  completedLessons: completedLessons,
+                });
+              }
+              
+              // Find current lesson index
+              const currentIndex = sortedLessons.findIndex(l => l.page_number === lessonNum);
+              
+              // Check if lesson is unlocked
+              let isUnlocked = false;
+              if (currentIndex === 0) {
+                // First lesson is always unlocked
+                isUnlocked = true;
+              } else if (currentIndex > 0) {
+                // Check if previous lesson is completed
+                const prevLesson = sortedLessons[currentIndex - 1];
+                if (prevLesson && completedSet.has(prevLesson.id)) {
+                  isUnlocked = true;
+                }
+                // Only allow access if user is currently viewing this exact lesson (to prevent redirect loops)
+                // But don't allow access to future lessons even if they match progress
+                else if (currentLesson.level === levelNum && 
+                         currentLesson.page_number === lessonNum) {
+                  // They're already on this page, allow them to stay
+                  isUnlocked = true;
+                }
+              }
+              
+              // Redirect if lesson is locked (unless they're already on it)
+              if (!isUnlocked) {
+                // Find the last completed lesson index
+                let lastCompletedIndex = -1;
+                for (let i = sortedLessons.length - 1; i >= 0; i--) {
+                  if (sortedLessons[i]?.id && completedSet.has(sortedLessons[i].id)) {
+                    lastCompletedIndex = i;
+                    break;
+                  }
+                }
+                
+                if (lastCompletedIndex >= 0 && lastCompletedIndex < sortedLessons.length - 1) {
+                  // Go to the next lesson after the last completed one
+                  const targetLesson = sortedLessons[lastCompletedIndex + 1];
+                  navigate(`/learn/${targetLesson.level}/${targetLesson.page_number}`, { replace: true });
+                  return;
+                } else if (lastCompletedIndex >= 0) {
+                  // Last lesson is completed, stay on it (don't redirect)
+                  // This handles the case where user is on the last page
+                  return;
+                } else {
+                  // No completed lessons, go to first lesson
+                  navigate(`/learn/${sortedLessons[0].level}/${sortedLessons[0].page_number}`, { replace: true });
+                  return;
+                }
+              }
+            }
+          }
         } else {
           setLessons([]);
         }
@@ -146,7 +216,6 @@ const PageContent = () => {
         setLessons([]);
         setNextLevelInfo(null);
       } finally {
-        console.log("Setting loading to false");
         setLoading(false);
       }
     };
@@ -224,14 +293,21 @@ const PageContent = () => {
 
   const completedSlides = useMemo(() => {
     const completed = new Set<number>();
-    if (currentIndex < 0) {
-      return completed;
-    }
-    for (let i = 0; i <= currentIndex; i += 1) {
-      completed.add(i);
-    }
+    lessons.forEach((lesson, index) => {
+      // Fill circle if lesson is completed OR if user has reached this lesson
+      const isCompleted = lesson.id && completedLessonIds.has(lesson.id);
+      const hasReached = userProgress && 
+                        lesson.level === userProgress.level && 
+                        lesson.page_number <= userProgress.lesson;
+      // Also include the current lesson being viewed (even if navigating back)
+      const isCurrentLesson = index === currentIndex;
+      
+      if (isCompleted || hasReached || isCurrentLesson) {
+        completed.add(index);
+      }
+    });
     return completed;
-  }, [currentIndex]);
+  }, [lessons, completedLessonIds, userProgress, currentIndex]);
 
   const handleNavigate = (direction: "prev" | "next") => {
     if (currentIndex < 0 || !lessons.length) {

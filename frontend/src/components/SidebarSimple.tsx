@@ -1,6 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_ENDPOINTS } from '../config/api';
+import { BookOpen, User } from 'lucide-react';
 
 interface User {
   id: string;
@@ -9,7 +10,7 @@ interface User {
 }
 
 type SidebarSimpleProps = {
-  active: 'profile' | 'strategies' | 'learn' | 'montecarlo';
+  active: 'profile' | 'learn';
 };
 
 const IconDot: React.FC = () => (
@@ -18,25 +19,11 @@ const IconDot: React.FC = () => (
   </svg>
 );
 
-// const IconList: React.FC = () => (
-//   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-//     <rect x="4" y="6" width="16" height="2" rx="1" />
-//     <rect x="4" y="11" width="16" height="2" rx="1" />
-//     <rect x="4" y="16" width="16" height="2" rx="1" />
-//   </svg>
-// );
-
 const IconList: React.FC = () => (
-  <svg width="16" height="16" viewBox="0 0 26 26" fill="none" aria-hidden="true">
-    {/* Black square background with rounded corners - centered */}
-    <rect x="2" y="2" width="22" height="22" rx="5" fill="black" />
-    {/* White zigzag line from bottom-left to top-right - adjusted for centered box */}
-    <path d="M 4 22 L 8 14 L 12 17 L 16 11 L 19 18 L 22 4" 
-          stroke="white" 
-          strokeWidth="1.5" 
-          fill="none" 
-          strokeLinecap="round" 
-          strokeLinejoin="round" />
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <rect x="4" y="6" width="16" height="2" rx="1" />
+    <rect x="4" y="11" width="16" height="2" rx="1" />
+    <rect x="4" y="16" width="16" height="2" rx="1" />
   </svg>
 );
 
@@ -82,16 +69,17 @@ export const SidebarSimple: React.FC<SidebarSimpleProps> = ({ active }) => {
             onClick={() => navigate('/profile')}
             className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-all hover:opacity-80 active:scale-[0.98] cursor-pointer ${active === 'profile' ? 'bg-white/40' : ''}`}
           >
-            <IconDot />
+            <User size={16} />
             <span className="font-semibold">Profile</span>
             <span className="ml-auto">‹</span>
           </button>
           <button 
-            onClick={() => navigate('/montecarlo')}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-all hover:opacity-80 active:scale-[0.98] cursor-pointer ${active === 'montecarlo' ? 'bg-white/40' : ''}`}
+            onClick={() => navigate('/learn')}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-all hover:opacity-80 active:scale-[0.98] cursor-pointer ${active === 'learn' ? 'bg-white/40' : ''}`}
           >
-            <IconList />
-            <span className="font-semibold">Monte Carlo</span>
+            <BookOpen size={16} />
+            <span className="font-semibold">Learn</span>
+            <span className="ml-auto">›</span>
           </button>
         </nav>
       </div>

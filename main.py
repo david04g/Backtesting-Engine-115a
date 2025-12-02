@@ -52,7 +52,6 @@ from db_supabase.db_strategy_storage_util import (
     get_all_strategies_by_user,
     update_strategy,
     delete_strategy,
-    get_strategy_by_id,
 )
 
 try:
@@ -61,7 +60,6 @@ except Exception:
     yf = None
 
 import pandas as pd
-import numpy as np
 
 
 app = FastAPI()
@@ -758,12 +756,6 @@ async def run_simple_moving_average_crossover(request: Request):
     short_window = int(payload.get("short_window", 100)) #if value is not given, default value is 100
     long_window = int(payload.get("long_window", 250)) #if value is not given, default value is 250
 
-    # Validate window sizes
-    if short_window >= long_window:
-        return {"status": "error", "message": "Short window must be less than long window"}
-    if short_window <= 0 or long_window <= 0:
-        return {"status": "error", "message": "Window sizes must be positive integers"}
-
     try:
         capital = float(capital_raw)
     except (TypeError, ValueError):
@@ -782,7 +774,7 @@ async def run_simple_moving_average_crossover(request: Request):
         }
 
     if start_dt >= end_dt:
-        return {"status": "error", "message": "Start date must be before end date"}
+        return {"status": "error", "message": "Buy date must be before sell date"}
 
     try:
         hist = yf.download(
@@ -834,13 +826,6 @@ async def run_simple_moving_average_crossover(request: Request):
     if prices.empty:
         return {"status": "error", "message": "No closing prices available"}
 
-    # Validate data length
-    if len(prices) < long_window:
-        return {
-            "status": "error",
-            "message": f"Insufficient data: need at least {long_window} trading days, got {len(prices)}",
-        }
-
     short_moving_average = prices.rolling(window=short_window).mean()
     long_moving_average = prices.rolling(window=long_window).mean()
 
@@ -867,15 +852,14 @@ async def run_simple_moving_average_crossover(request: Request):
         else:
             ma_long = None
 
-        # Use signal_shifted to reflect the actual position used for returns
-        signal_val = int(signal_shifted.loc[idx])
+        signal_val = int(signal.loc[idx])
         equity_val = round(equity_curve.loc[idx], 2)
         series.append(
             {
                 "date": date_str,
                 "price": float(price),
-                "short_ma": float(ma_short) if ma_short is not None else None,
-                "long_ma": float(ma_long) if ma_long is not None else None,
+                "short_ma": float(ma_short) if ma_short else None,
+                "long_ma": float(ma_long) if ma_long else None,
                 "signal": signal_val,
                 "value": equity_val,
             }
