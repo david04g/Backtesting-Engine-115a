@@ -15,6 +15,7 @@ import { EntryExitActivity } from "../../../components/lessons/EntryExitActivity
 import EntryExitPositionSize from "../../../components/lessons/EntryExitPositionSize";
 import SlippageFeesExecution from "../../../components/lessons/SlippageFeesExecution";
 import Level3PositionSlider from "../../../components/lessons/Level3PositionSlider";
+import { X } from "lucide-react";
 
 interface LessonRecord {
   id: number;
@@ -396,18 +397,28 @@ const PageContent = () => {
           <div className="max-w-5xl mx-auto w-full flex flex-col h-full">
             <div className="flex-1 overflow-y-auto pr-1">
               <div className="flex flex-col gap-6 pb-8">
-                <div
-                  className="inline-flex items-center gap-4 rounded-lg px-6 py-3 text-sm font-semibold"
-                  style={{
-                    backgroundColor: "#D9F2A6",
-                    color: "#1f2937",
-                    maxWidth: "fit-content",
-                  }}
-                >
-                  <span>Level {lessonData.level}</span>
-                  <span className="opacity-70">
-                    Page {lessonData.page_number}
-                  </span>
+                <div className="flex items-center justify-between gap-4">
+                  <div
+                    className="inline-flex items-center gap-4 rounded-lg px-6 py-3 text-sm font-semibold"
+                    style={{
+                      backgroundColor: "#D9F2A6",
+                      color: "#1f2937",
+                      maxWidth: "fit-content",
+                    }}
+                  >
+                    <span>Level {lessonData.level}</span>
+                    <span className="opacity-70">
+                      Page {lessonData.page_number}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => navigate('/learn')}
+                    className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium transition-colors text-sm md:text-base"
+                    aria-label="Exit to learn page"
+                  >
+                    <X size={18} />
+                    <span className="hidden sm:inline">Exit</span>
+                  </button>
                 </div>
 
                 <div className="rounded-xl border border-black/10 bg-white shadow-sm">
