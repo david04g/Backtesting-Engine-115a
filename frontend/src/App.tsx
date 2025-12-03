@@ -8,7 +8,7 @@ import { ProfileContent } from "./pages/profile";
 import { CreatePage } from "./pages/create";
 import MarketNewsPage from "./pages/market-news/MarketNewsPage";
 import PageContent from "./pages/learn/[Level]/[PageContent]";
-import { MonteCarloPage } from "./pages/montecarlo";
+import MonteCarloPage from "./pages/montecarlo/MonteCarloPage";
 
 const App: React.FC = () => {
   return (
