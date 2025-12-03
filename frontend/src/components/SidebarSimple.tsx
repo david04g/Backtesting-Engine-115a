@@ -1,6 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_ENDPOINTS } from '../config/api';
+import { BookOpen, User } from 'lucide-react';
 
 interface User {
   id: string;
@@ -9,7 +10,7 @@ interface User {
 }
 
 type SidebarSimpleProps = {
-  active: 'profile' | 'strategies' | 'learn' | 'montecarlo';
+  active: 'profile' | 'learn' | 'montecarlo';
 };
 
 const IconDot: React.FC = () => (
@@ -82,11 +83,19 @@ export const SidebarSimple: React.FC<SidebarSimpleProps> = ({ active }) => {
             onClick={() => navigate('/profile')}
             className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-all hover:opacity-80 active:scale-[0.98] cursor-pointer ${active === 'profile' ? 'bg-white/40' : ''}`}
           >
-            <IconDot />
+            <User size={16} />
             <span className="font-semibold">Profile</span>
             <span className="ml-auto">‹</span>
           </button>
           <button 
+            onClick={() => navigate('/learn')}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-all hover:opacity-80 active:scale-[0.98] cursor-pointer ${active === 'learn' ? 'bg-white/40' : ''}`}
+          >
+            <BookOpen size={16} />
+            <span className="font-semibold">Learn</span>
+            <span className="ml-auto">›</span>
+          </button>
+          <button
             onClick={() => navigate('/montecarlo')}
             className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-all hover:opacity-80 active:scale-[0.98] cursor-pointer ${active === 'montecarlo' ? 'bg-white/40' : ''}`}
           >

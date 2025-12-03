@@ -212,7 +212,6 @@ const MonteCarloPage: React.FC = () => {
 
   return (
     <div className="w-full min-h-screen bg-gray-50 flex">
-      <SidebarSimple active="montecarlo" />
       <div className="flex-1 flex flex-col">
         <div className="px-12 pt-10 pb-8 border-b border-black/10 bg-white">
           <div className="text-3xl font-bold">Monte Carlo Simulation</div>
