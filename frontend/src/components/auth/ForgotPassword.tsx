@@ -43,7 +43,9 @@ export const ForgotPassword: React.FC<ForgotPasswordProps> = ({
         setMessage("Password reset code sent to your email!");
         setStep("verify");
       } else {
-        setMessage(data.message || "Failed to send reset code. Please try again.");
+        setMessage(
+          data.message || "Failed to send reset code. Please try again."
+        );
       }
     } catch (err) {
       console.error("Error requesting password reset:", err);
@@ -123,7 +125,9 @@ export const ForgotPassword: React.FC<ForgotPasswordProps> = ({
           onBackToLogin();
         }, 2000);
       } else {
-        setMessage(data.message || "Failed to reset password. Please try again.");
+        setMessage(
+          data.message || "Failed to reset password. Please try again."
+        );
       }
     } catch (err) {
       console.error("Error resetting password:", err);
@@ -136,8 +140,8 @@ export const ForgotPassword: React.FC<ForgotPasswordProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="relative flex w-full max-w-4xl bg-white rounded-2xl overflow-hidden shadow-2xl border border-gray-200">
+    <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+      <div className="relative flex w-full max-w-4xl bg-white rounded-2xl overflow-hidden ">
         {/* Left Side */}
         <div className="w-1/2 bg-lime-200 flex flex-col justify-center items-center p-10 text-center">
           <TrendingUp className="w-12 h-12 text-gray-800 mb-4" />
@@ -159,7 +163,8 @@ export const ForgotPassword: React.FC<ForgotPasswordProps> = ({
                 Forgot Password?
               </h3>
               <p className="text-sm text-gray-600 mb-4">
-                Enter your email address and we'll send you a code to reset your password.
+                Enter your email address and we'll send you a code to reset your
+                password.
               </p>
 
               <div className="mb-4">
@@ -177,11 +182,13 @@ export const ForgotPassword: React.FC<ForgotPasswordProps> = ({
               </div>
 
               {message && (
-                <div className={`mb-4 p-3 rounded-md text-sm ${
-                  message.includes("successfully") || message.includes("sent")
-                    ? "bg-green-100 text-green-700"
-                    : "bg-red-100 text-red-700"
-                }`}>
+                <div
+                  className={`mb-4 p-3 rounded-md text-sm ${
+                    message.includes("successfully") || message.includes("sent")
+                      ? "bg-green-100 text-green-700"
+                      : "bg-red-100 text-red-700"
+                  }`}
+                >
                   {message}
                 </div>
               )}
@@ -210,7 +217,8 @@ export const ForgotPassword: React.FC<ForgotPasswordProps> = ({
                 Enter Reset Code
               </h3>
               <p className="text-sm text-gray-600 mb-4">
-                We've sent a 6-digit code to <strong>{email}</strong>. Enter it below.
+                We've sent a 6-digit code to <strong>{email}</strong>. Enter it
+                below.
               </p>
 
               <div className="mb-4">
@@ -220,7 +228,9 @@ export const ForgotPassword: React.FC<ForgotPasswordProps> = ({
                 <input
                   type="text"
                   value={resetCode}
-                  onChange={(e) => setResetCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  onChange={(e) =>
+                    setResetCode(e.target.value.replace(/\D/g, "").slice(0, 6))
+                  }
                   className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-400"
                   placeholder="000000"
                   maxLength={6}
@@ -229,11 +239,13 @@ export const ForgotPassword: React.FC<ForgotPasswordProps> = ({
               </div>
 
               {message && (
-                <div className={`mb-4 p-3 rounded-md text-sm ${
-                  message.includes("successfully") || message.includes("sent")
-                    ? "bg-green-100 text-green-700"
-                    : "bg-red-100 text-red-700"
-                }`}>
+                <div
+                  className={`mb-4 p-3 rounded-md text-sm ${
+                    message.includes("successfully") || message.includes("sent")
+                      ? "bg-green-100 text-green-700"
+                      : "bg-red-100 text-red-700"
+                  }`}
+                >
                   {message}
                 </div>
               )}
@@ -294,11 +306,13 @@ export const ForgotPassword: React.FC<ForgotPasswordProps> = ({
               </div>
 
               {message && (
-                <div className={`mb-4 p-3 rounded-md text-sm ${
-                  message.includes("successfully")
-                    ? "bg-green-100 text-green-700"
-                    : "bg-red-100 text-red-700"
-                }`}>
+                <div
+                  className={`mb-4 p-3 rounded-md text-sm ${
+                    message.includes("successfully")
+                      ? "bg-green-100 text-green-700"
+                      : "bg-red-100 text-red-700"
+                  }`}
+                >
                   {message}
                 </div>
               )}

@@ -5,6 +5,7 @@ import {
   get_lessons_by_level,
   get_user_progress,
   set_user_learning_progress,
+  set_user_completed_lessons,
 } from "../../../components/apiServices/userApi";
 import { ProgressBar, Slide } from "../../../components/lessons/ProgressBar";
 import { NavigationButtons } from "../../../components/lessons/NavigationButtons";
@@ -44,6 +45,7 @@ const PageContent = () => {
     level: number;
     lesson: number;
   } | null>(null);
+  const [completedLessons, setCompletedLessons] = useState<number[]>([]);
   const [nextLevelInfo, setNextLevelInfo] = useState<{
     level: number;
     firstLesson: number;
@@ -80,6 +82,16 @@ const PageContent = () => {
                 level: progress.level ?? 0,
                 lesson: progress.lesson ?? 1,
               });
+              // Load completed lessons from progress
+              if (progress.completedLessons && Array.isArray(progress.completedLessons)) {
+                setCompletedLessons(progress.completedLessons);
+                // Initialize quiz completion state from saved completed lessons
+                const completedState: Record<number, boolean> = {};
+                progress.completedLessons.forEach((lessonId: number) => {
+                  completedState[lessonId] = true;
+                });
+                setQuizCompletionState(completedState);
+              }
 
               if (levelNum > progress.level) {
                 navigate(`/learn/${progress.level}/${progress.lesson || 1}`, {
@@ -184,7 +196,7 @@ const PageContent = () => {
   }, [lessonData, quizCompletionState, userProgress]);
 
   const handleQuizCompletion = useCallback(
-    (complete: boolean) => {
+    async (complete: boolean) => {
       const lessonId = lessonData?.id;
       if (!lessonId) {
         setIsQuizComplete(complete);
@@ -193,17 +205,29 @@ const PageContent = () => {
       }
 
       if (complete) {
+        // Update local state immediately for UI responsiveness
         setQuizCompletionState((prev) =>
           prev[lessonId] ? prev : { ...prev, [lessonId]: true }
         );
         setIsQuizComplete(true);
         setHasAttemptedQuiz(true);
+
+        // Save to database if user is logged in and lesson not already completed
+        if (userId && !completedLessons.includes(lessonId)) {
+          const updatedCompletedLessons = [...completedLessons, lessonId];
+          setCompletedLessons(updatedCompletedLessons);
+          
+          // Save to database (fire and forget - UI already updated)
+          set_user_completed_lessons(userId, updatedCompletedLessons).catch((err) => {
+            console.error("Error saving completed lesson to database:", err);
+          });
+        }
       } else if (!quizCompletionState[lessonId]) {
         setIsQuizComplete(false);
         setHasAttemptedQuiz(true);
       }
     },
-    [lessonData?.id, quizCompletionState]
+    [lessonData?.id, quizCompletionState, userId, completedLessons]
   );
 
   const currentIndex = useMemo(() => {
@@ -505,7 +529,7 @@ const PageContent = () => {
 
       <LevelCompletionPopup
         isOpen={showLevelCompletionPopup}
-        message={`Congratulations on completing Level ${levelNum}! You've unlocked new content.`}
+        message={levelNum < 4 ? `Congratulations on completing Level ${levelNum}! You've unlocked new content.`: `Congratulations on completing all levels!`}
         actionLabel="Back to Profile"
         onAction={() => {
           setShowLevelCompletionPopup(false);

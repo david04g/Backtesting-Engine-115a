@@ -85,7 +85,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       if (data.success || data.status === "success") {
         const uid = await get_user_id(email);
         const userProgress = await get_user_progress(uid);
-        // persist session
+        
         try {
           localStorage.setItem("user_id", uid);
           localStorage.setItem("isLoggedIn", "true");

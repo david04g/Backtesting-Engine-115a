@@ -127,9 +127,7 @@ export const LearnPage: React.FC = () => {
       console.log('No user progress available');
       return false;
     }
-    // A lesson is visited if:
-    // 1. It's on a previous level (user has progressed past it)
-    // 2. It's on the same level and page_number <= user's current lesson
+    
     if (level < userProgress.level) {
       return true; // All lessons in previous levels are visited
     }

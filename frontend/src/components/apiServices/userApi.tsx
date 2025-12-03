@@ -208,7 +208,7 @@ export const get_all_lessons_by_levels = async (maxLevel: number = 10) => {
     
     results.forEach((lessons, index) => {
       if (lessons && lessons.length > 0) {
-        lessonsByLevel[index] = lessons.sort((a, b) => (a.page_number ?? 0) - (b.page_number ?? 0));
+        lessonsByLevel[index] = lessons.sort((a: any, b: any) => (a.page_number ?? 0) - (b.page_number ?? 0));
       }
     });
     
