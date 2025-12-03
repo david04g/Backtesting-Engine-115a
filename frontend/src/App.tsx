@@ -9,6 +9,7 @@ import { CreatePage } from "./pages/create";
 import MarketNewsPage from "./pages/market-news/MarketNewsPage";
 import PageContent from "./pages/learn/[Level]/[PageContent]";
 import MonteCarloPage from "./pages/montecarlo/MonteCarloPage";
+import LearnPage from "./pages/learn/LearnPage";
 
 const App: React.FC = () => {
   return (
@@ -54,6 +55,15 @@ const App: React.FC = () => {
               <div className="min-h-screen bg-gray-50">
                 <Navigation />
                 <MarketNewsPage />
+              </div>
+            }
+          />
+          <Route
+            path="/learn"
+            element={
+              <div className="min-h-screen bg-gray-50">
+                <Navigation />
+                <LearnPage />
               </div>
             }
           />

@@ -195,6 +195,30 @@ export const get_lessons_by_level = async (level: number) => {
   }
 };
 
+export const get_all_lessons_by_levels = async (maxLevel: number = 10) => {
+  // Fetch lessons for all levels up to maxLevel
+  const levelPromises = [];
+  for (let level = 0; level <= maxLevel; level++) {
+    levelPromises.push(get_lessons_by_level(level));
+  }
+  
+  try {
+    const results = await Promise.all(levelPromises);
+    const lessonsByLevel: Record<number, any[]> = {};
+    
+    results.forEach((lessons, index) => {
+      if (lessons && lessons.length > 0) {
+        lessonsByLevel[index] = lessons.sort((a, b) => (a.page_number ?? 0) - (b.page_number ?? 0));
+      }
+    });
+    
+    return lessonsByLevel;
+  } catch (err) {
+    console.error("Error fetching all lessons:", err);
+    return {};
+  }
+};
+
 export const get_lesson = async (level: number, lesson: number) => {
   const endpoint = API_ENDPOINTS.GET_LESSON;
   const payload = { level, lesson };
